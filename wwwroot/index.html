@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Gestionale Persone</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .persona {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .persona:last-child {
+            border-bottom: none;
+        }
+
+        .nome {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .azioni {
+            display: flex;
+            gap: 8px;
+        }
+
+        #messaggio {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .persona {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .azioni {
+                width: 100%;
+            }
+
+            .azioni button {
+                flex: 1;
+            }
+
+            input {
+                width: 100%;
+                min-width: 100%;
+            }
+
+            .btn-primary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Gestionale Persone</h1>
+</header>
+
+<main>
+
+    <div class="card">
+        <h2>Inserisci persona</h2>
+
+        <div class="form-row">
+            <input
+                type="text"
+                id="nome"
+                placeholder="Nome">
+
+            <input
+                type="text"
+                id="cognome"
+                placeholder="Cognome">
+
+            <button
+                class="btn-primary"
+                onclick="aggiungiPersona()">
+                Aggiungi
+            </button>
+        </div>
+
+        <div id="messaggio"></div>
+    </div>
+
+    <div class="card">
+        <h2>Persone</h2>
+
+        <div id="listaPersone">
+            Caricamento...
+        </div>
+    </div>
+
+</main>
+
+<script>
+
+    const API_URL = "/api/persone";
+
+    async function caricaPersone() {
+
+        try {
+
+            const response = await fetch(API_URL);
+
+            if (!response.ok) {
+                throw new Error("Errore nel caricamento");
+            }
+
+            const persone = await response.json();
+
+            const lista = document.getElementById("listaPersone");
+
+            if (persone.length === 0) {
+
+                lista.innerHTML =
+                    "<p>Nessuna persona presente.</p>";
+
+                return;
+            }
+
+            lista.innerHTML = "";
+
+            persone.forEach(persona => {
+
+                const div = document.createElement("div");
+
+                div.className = "persona";
+
+                div.innerHTML = `
+                    <div>
+                        <div class="nome">
+                            ${persona.nome} ${persona.cognome}
+                        </div>
+                        <small>ID: ${persona.id}</small>
+                    </div>
+
+                    <div class="azioni">
+                        <button
+                            class="btn-danger"
+                            onclick="eliminaPersona(${persona.id})">
+                            Elimina
+                        </button>
+                    </div>
+                `;
+
+                lista.appendChild(div);
+            });
+
+        } catch (error) {
+
+            document.getElementById("listaPersone").innerHTML =
+                "<p>Errore nel collegamento al server.</p>";
+        }
+    }
+
+
+    async function aggiungiPersona() {
+
+        const nome =
+            document.getElementById("nome").value.trim();
+
+        const cognome =
+            document.getElementById("cognome").value.trim();
+
+        const messaggio =
+            document.getElementById("messaggio");
+
+        if (!nome || !cognome) {
+
+            messaggio.textContent =
+                "Inserisci nome e cognome.";
+
+            return;
+        }
+
+        try {
+
+            const response = await fetch(API_URL, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    nome: nome,
+                    cognome: cognome
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
+            document.getElementById("nome").value = "";
+            document.getElementById("cognome").value = "";
+
+            messaggio.textContent =
+                "Persona inserita correttamente.";
+
+            await caricaPersone();
+
+        } catch (error) {
+
+            messaggio.textContent =
+                "Errore durante l'inserimento.";
+        }
+    }
+
+
+    async function eliminaPersona(id) {
+
+        if (!confirm("Vuoi eliminare questa persona?")) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/${id}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
+            await caricaPersone();
+
+        } catch (error) {
+
+            alert("Errore durante l'eliminazione.");
+        }
+    }
+
+
+    caricaPersone();
+
+</script>
+
+</body>
+</html>
