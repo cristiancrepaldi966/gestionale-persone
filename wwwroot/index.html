@@ -152,6 +152,8 @@
         const numeroRichiesta = ++richiestaCorrente;
 
         lista.classList.add("in-aggiornamento");
+        // Mantieni l'altezza mentre si carica, così la pagina non "salta".
+        if (lista.offsetHeight) lista.style.minHeight = lista.offsetHeight + "px";
 
         try {
             const response = await api(`${API}?${parametriRicerca()}`);
@@ -185,7 +187,10 @@
                 lista.replaceChildren(el("p", "errore", "Errore nel caricamento delle uscite."));
             }
         } finally {
-            if (numeroRichiesta === richiestaCorrente) lista.classList.remove("in-aggiornamento");
+            if (numeroRichiesta === richiestaCorrente) {
+                lista.classList.remove("in-aggiornamento");
+                lista.style.minHeight = "";
+            }
         }
     }
 
@@ -338,8 +343,30 @@
     ["dal", "al"].forEach(id =>
         document.getElementById(id).addEventListener("input", aggiornaSegnaposti));
 
-    ["filtroCategoria", "dal", "al"].forEach(id =>
-        document.getElementById(id).addEventListener("change", filtriCambiati));
+    // Su telefono il filtro si applica quando il selettore (categoria o data) si
+    // chiude: se l'elenco si accorciasse mentre è aperto, su iPhone i tocchi
+    // resterebbero spostati rispetto a quello che si vede. Su computer è immediato.
+    const touch = matchMedia("(pointer: coarse)").matches;
+
+    ["filtroCategoria", "dal", "al"].forEach(id => {
+        const campo = document.getElementById(id);
+
+        campo.addEventListener("change", () => {
+            aggiornaSegnaposti();
+            if (touch && document.activeElement === campo) {
+                campo.dataset.daApplicare = "1";
+            } else {
+                filtriCambiati();
+            }
+        });
+
+        campo.addEventListener("blur", () => {
+            if (campo.dataset.daApplicare) {
+                delete campo.dataset.daApplicare;
+                filtriCambiati();
+            }
+        });
+    });
 
     document.getElementById("azzera").addEventListener("click", () => {
         ["filtroCategoria", "dal", "al"].forEach(id => document.getElementById(id).value = "");
