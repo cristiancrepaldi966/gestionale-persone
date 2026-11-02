@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Componenti - Gestionale Uscite</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="componenti.css">
+    <style>
+        /* Solo per questa pagina di esempi. */
+        code.classi { font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<!--
+    Pagina di riferimento: un esempio di ogni componente usato nell'app,
+    con le classi da copiare. Base: Bootstrap 5 (solo CSS) + componenti.css.
+    Funzioni JavaScript: componenti.js.
+-->
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <span class="h4 mb-0 me-auto text-white fw-bold">Gestionale Uscite · Componenti</span>
+    <div class="barra-utente" id="barraEsempio"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <p class="text-body-secondary">
+        Esempi dei componenti dell'app. La base è <strong>Bootstrap 5</strong> (solo il CSS, in
+        <code>lib/bootstrap</code>); le aggiunte sono in <code>componenti.css</code> e le funzioni in
+        <code>componenti.js</code>. Sotto ogni esempio ci sono le classi da usare.
+    </p>
+
+    <!-- Pulsanti -->
+    <section class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Pulsanti</h2>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" class="btn btn-primary">Salva</button>
+            <button type="button" class="btn btn-light border">Annulla</button>
+            <button type="button" class="btn btn-danger">Elimina</button>
+            <button type="button" class="btn btn-sm btn-light border">Modifica</button>
+            <button type="button" class="btn btn-sm btn-danger">Elimina</button>
+            <button type="button" class="btn btn-link btn-sm p-0">Azzera filtri</button>
+        </div>
+        <code class="classi mt-2">btn btn-primary · btn btn-light border · btn btn-danger · btn btn-sm … · btn btn-link btn-sm p-0</code>
+
+        <h3 class="h6 fw-bold mt-4">Pulsanti rotondi</h3>
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-outline-primary bg-white btn-tondo" aria-label="Cerca">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                    <line x1="15.5" y1="15.5" x2="21" y2="21"></line>
+                </svg>
+                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-2 border-white rounded-circle"></span>
+            </button>
+            <button type="button" class="btn btn-primary btn-tondo" aria-label="Nuovo">+</button>
+        </div>
+        <code class="classi mt-2">btn btn-primary btn-tondo · btn btn-outline-primary bg-white btn-tondo · pallino: position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-2 border-white rounded-circle</code>
+
+        <h3 class="h6 fw-bold mt-4">Pulsante con cerchietto di attesa</h3>
+        <div class="d-flex gap-2" id="esempioAttesa"></div>
+        <code class="classi mt-2">JS: pulsante("Salva", "btn btn-primary", async () => …) · moduli: alInvio(form, async () => …)</code>
+    </section>
+
+    <!-- Campi -->
+    <section class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Campi</h2>
+        <div class="row g-3">
+            <div class="col-6">
+                <label for="esData" class="form-label fw-semibold">Data</label>
+                <input type="date" id="esData" class="form-control" value="2026-11-02">
+            </div>
+            <div class="col-6">
+                <label for="esImporto" class="form-label fw-semibold">Importo (€)</label>
+                <input type="text" id="esImporto" class="form-control" placeholder="0,00">
+            </div>
+            <div class="col-12">
+                <label for="esCategoria" class="form-label fw-semibold">Categoria</label>
+                <select id="esCategoria" class="form-select">
+                    <option>Scegli una categoria</option><option>Casa</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <label for="esNote" class="form-label fw-semibold">Note <span class="fw-normal text-body-secondary">(facoltative)</span></label>
+                <textarea id="esNote" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="esCheck">
+                    <label class="form-check-label" for="esCheck">Amministratore</label>
+                </div>
+            </div>
+        </div>
+        <code class="classi mt-2">form-label fw-semibold · form-control · form-select · form-check / form-check-input / form-check-label · griglia: row g-3 + col-6 / col-12</code>
+
+        <h3 class="h6 fw-bold mt-4">Filtri con segnaposto (sempre sulla stessa riga)</h3>
+        <div class="row g-2 filtri">
+            <div class="col-4">
+                <select class="form-select vuoto" aria-label="Categoria"><option value="">Categoria</option></select>
+            </div>
+            <div class="col-4 campo-data">
+                <input type="date" class="form-control vuoto" aria-label="Dal">
+                <span class="segnaposto" aria-hidden="true">Dal</span>
+            </div>
+            <div class="col-4 campo-data">
+                <input type="date" class="form-control vuoto" aria-label="Al">
+                <span class="segnaposto" aria-hidden="true">Al</span>
+            </div>
+        </div>
+        <code class="classi mt-2">row g-2 filtri · form-select vuoto · col-4 campo-data + input.form-control.vuoto + span.segnaposto</code>
+
+        <h3 class="h6 fw-bold mt-4">Messaggi</h3>
+        <div class="small text-danger">Scegli una categoria.</div>
+        <div class="small text-success">Categoria "Regali" aggiunta.</div>
+        <code class="classi mt-2">JS: mostraMessaggio(elemento, testo) · mostraMessaggio(elemento, testo, "successo")</code>
+    </section>
+
+    <!-- Elenchi -->
+    <section class="mb-3">
+        <div class="d-flex justify-content-between align-items-baseline px-1 mb-2">
+            <span class="text-body-secondary">2 uscite</span>
+            <strong class="fs-5">Totale 1.264,56 €</strong>
+        </div>
+        <div class="card shadow-sm border-0">
+            <div class="list-group list-group-flush rounded">
+                <div class="list-group-item d-flex flex-column flex-sm-row justify-content-between gap-2 py-3">
+                    <div class="text-break">
+                        <div class="fw-bold fs-5">Trasporti</div>
+                        <div class="d-flex flex-wrap gap-2 small"><span>02/11/2026</span><span class="text-body-secondary">admin@example.com</span></div>
+                        <div class="small text-body-secondary testo-note mt-1">Rata annuale</div>
+                    </div>
+                    <div class="d-flex flex-sm-column justify-content-between align-items-center align-items-sm-end gap-2">
+                        <div class="fw-bold fs-5 text-nowrap">1.234,56 €</div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-light border">Modifica</button>
+                            <button type="button" class="btn btn-sm btn-danger">Elimina</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                    <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                    <span>Caricamento...</span>
+                </div>
+            </div>
+        </div>
+        <code class="classi d-block mt-2">card shadow-sm border-0 · list-group list-group-flush · list-group-item … · caricamento: JS caricamentoElenco()</code>
+    </section>
+
+    <!-- Etichette -->
+    <section class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Etichette</h2>
+        <div class="d-flex flex-wrap gap-2" id="esempioEtichette"></div>
+        <code class="classi mt-2">JS: etichetta("Amministratore", "primary") · classi: badge rounded-pill text-bg-primary fw-normal</code>
+    </section>
+
+    <!-- Tendina utente -->
+    <section class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Barra in alto e menu utente</h2>
+        <p class="mb-0">La barra scura in cima a questa pagina è quella dell'app: clicca il cerchio a destra per aprire
+            la tendina. <code>JS: menuPagine(utente)</code>, <code>menuProfilo(utente)</code> (li crea
+            <code>avviaPagina()</code>).</p>
+    </section>
+
+</main>
+
+<script src="componenti.js"></script>
+<script>
+    // Esempi interattivi (nessun dato reale).
+    const utenteEsempio = { id: 0, email: "admin@example.com", isAdmin: true };
+    document.getElementById("barraEsempio").append(menuPagine(utenteEsempio), menuProfilo(utenteEsempio));
+
+    const attesa = ms => new Promise(r => setTimeout(r, ms));
+    document.getElementById("esempioAttesa").append(
+        pulsante("Salva (prova)", "btn btn-primary", () => attesa(1500)),
+        pulsante("Elimina (prova)", "btn btn-sm btn-danger align-self-center", () => attesa(1500)));
+
+    document.getElementById("esempioEtichette").append(
+        etichetta("tu"), etichetta("Amministratore", "primary"),
+        etichetta("Disattivato", "danger"), etichetta("Trasporti", "light"));
+</script>
+
+</body>
+</html>

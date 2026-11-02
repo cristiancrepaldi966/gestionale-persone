@@ -4,28 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accesso - Gestionale Uscite</title>
-    <link rel="stylesheet" href="stile.css">
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="componenti.css">
 </head>
 <body>
 
-<header>
-    <h1>Gestionale Uscite</h1>
+<header class="d-flex align-items-center px-3 py-3 bg-dark" data-bs-theme="dark">
+    <span class="h4 mb-0 text-white fw-bold">Gestionale Uscite</span>
 </header>
 
-<main>
-    <form class="card accesso" id="form">
-        <h2>Accedi</h2>
+<main class="container contenuto-stretto py-5">
+    <form class="card card-body shadow-sm border-0 p-4" id="form" novalidate>
+        <h2 class="h4 fw-bold mb-3">Accedi</h2>
 
-        <input type="email" id="email" placeholder="Email" autocomplete="username" required autofocus>
-        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+        <input type="email" id="email" class="form-control mb-3" placeholder="Email"
+               aria-label="Email" autocomplete="username" autofocus>
+        <input type="password" id="password" class="form-control mb-3" placeholder="Password"
+               aria-label="Password" autocomplete="current-password">
 
-        <button type="submit" class="btn-primary" id="entra">Entra</button>
+        <button type="submit" class="btn btn-primary w-100" id="entra">Entra</button>
 
-        <div id="messaggio" class="errore"></div>
+        <div id="messaggio"></div>
     </form>
 </main>
 
-<script src="app.js"></script>
+<script src="componenti.js"></script>
 <script>
 
     // Pagina a cui tornare dopo l'accesso (solo percorsi interni).
@@ -44,9 +47,17 @@
         const messaggio = document.getElementById("messaggio");
         messaggio.textContent = "";
 
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        if (!email || !password) {
+            mostraMessaggio(messaggio, "Inserisci email e password.");
+            return;
+        }
+
         // Su Render il server si "addormenta": il primo accesso può richiedere fino a un minuto.
         const avviso = setTimeout(() => {
-            messaggio.className = "nota";
+            messaggio.className = "small mt-2 text-body-secondary";
             messaggio.textContent = "Il server si sta avviando, può volerci fino a un minuto...";
         }, 4000);
 
@@ -54,29 +65,25 @@
 
             const response = await fetch("/api/auth/login", {
                 credentials: "same-origin",
-                ...jsonBody("POST", {
-                    email: document.getElementById("email").value.trim(),
-                    password: document.getElementById("password").value
-                })
+                ...jsonBody("POST", { email, password })
             });
 
             clearTimeout(avviso);
-            messaggio.className = "errore";
 
             if (!response.ok) {
-                messaggio.textContent = await messaggioErrore(response, "Accesso non riuscito.");
+                mostraMessaggio(messaggio, await messaggioErrore(response, "Accesso non riuscito."));
                 document.getElementById("password").value = "";
                 return;
             }
 
+            messaggio.textContent = "";
             location.href = paginaRitorno();
             // Il cerchietto continua a girare finché la nuova pagina non si apre.
             return new Promise(() => { });
 
         } catch {
             clearTimeout(avviso);
-            messaggio.className = "errore";
-            messaggio.textContent = "Errore nel collegamento al server.";
+            mostraMessaggio(messaggio, "Errore nel collegamento al server.");
         }
     });
 
