@@ -184,7 +184,7 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formUscita"), salvaUscita);
 
-avviaPagina()
+avviaPagina({ modulo: MODULI.uscite })
     .then(caricaCategorie)
     .then(caricaUscite)
     .catch(() => {

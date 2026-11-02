@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using GestionalePersone.Data;
 using GestionalePersone.Models;
+using GestionalePersone.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GestionalePersone.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = Politiche.Uscite)]
 [Route("api/uscite")]
 public class UsciteController : ControllerBase
 {

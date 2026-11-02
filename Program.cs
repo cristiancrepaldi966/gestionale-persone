@@ -59,7 +59,8 @@ builder.Services
             var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
 
             var utente = int.TryParse(id, out var idUtente)
-                ? await db.Utenti.AsNoTracking().SingleOrDefaultAsync(u => u.Id == idUtente)
+                ? await db.Utenti.AsNoTracking().Include(u => u.Autorizzazioni)
+                    .SingleOrDefaultAsync(u => u.Id == idUtente)
                 : null;
 
             if (utente == null || !utente.Attivo || versione != utente.VersioneSessione.ToString())
@@ -69,19 +70,21 @@ builder.Services
                 return;
             }
 
-            if (ctx.Principal!.IsInRole("Admin") != utente.IsAdmin)
+            // Autorizzazioni cambiate dall'amministratore: valgono subito.
+            var attuali = ctx.Principal!.FindAll(Accesso.TipoClaim).Select(c => c.Value).Order().ToList();
+            var nuove = Accesso.Claims(utente.Autorizzazioni).Select(c => c.Value).Order().ToList();
+            if (!attuali.SequenceEqual(nuove))
             {
                 var identity = (ClaimsIdentity)ctx.Principal.Identity!;
-                foreach (var ruolo in identity.FindAll(ClaimTypes.Role).ToList())
-                    identity.RemoveClaim(ruolo);
-                if (utente.IsAdmin)
-                    identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+                foreach (var c in identity.FindAll(Accesso.TipoClaim).ToList())
+                    identity.RemoveClaim(c);
+                identity.AddClaims(Accesso.Claims(utente.Autorizzazioni));
                 ctx.ShouldRenew = true;
             }
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(Politiche.Configura);
 
 // Al massimo 10 tentativi di login al minuto per indirizzo IP.
 builder.Services.AddRateLimiter(options =>

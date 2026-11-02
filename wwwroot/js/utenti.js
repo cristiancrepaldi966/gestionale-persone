@@ -16,13 +16,38 @@ const ricerca = pannelloRicerca({
     pannello: $("pannelloFiltri"),
     pallino: $("pallinoFiltri"),
     azzera: $("azzera"),
-    campi: [$("filtroRuolo"), $("filtroTesto"), $("filtroStato")],
+    campi: [$("filtroModulo"), $("filtroTesto"), $("filtroStato")],
     applica: () => mostraUtenti()
 });
 
 const modulo = moduloFinestra($("finestra"), { primoCampo: $("nome") });
 
 const nomeCompleto = u => `${u.nome} ${u.cognome}`.trim();
+
+let moduli = [];   // da /api/moduli: { codice, nome, descrizione, livelli }
+
+// Una tendina per modulo (Nessun accesso / livelli) nella finestra dell'utente.
+function preparaModuli() {
+    riempiTendina($("filtroModulo"), "Modulo", moduli.map(m => [m.codice, "Con accesso a " + m.nome]));
+    $("autorizzazioniModulo").replaceChildren(...moduli.map(m => {
+        const col = el("div", "col-6");
+        const label = el("label", "form-label small mb-1", m.nome);
+        label.htmlFor = "mod-" + m.codice;
+        const select = el("select", "form-select");
+        select.id = "mod-" + m.codice;
+        select.dataset.modulo = m.codice;
+        select.append(new Option("Nessuno", ""), ...m.livelli.map(l => new Option(l, l)));
+        col.append(label, select);
+        return col;
+    }));
+}
+
+function riempiTendina(select, primaVoce, voci) {
+    select.replaceChildren(new Option(primaVoce, ""), ...voci.map(([v, t]) => new Option(t, v)));
+}
+
+const autorizzazioniScelte = () => Object.fromEntries(
+    [...document.querySelectorAll("#autorizzazioniModulo select")].map(s => [s.dataset.modulo, s.value || null]));
 
 async function caricaUtenti() {
     try {
@@ -35,15 +60,15 @@ async function caricaUtenti() {
     }
 }
 
-// Elenco filtrato per ruolo, nome/cognome/email e stato (la ricerca avviene qui, gli utenti sono pochi).
+// Elenco filtrato per modulo, nome/cognome/email e stato (la ricerca avviene qui, gli utenti sono pochi).
 function mostraUtenti() {
 
-    const { filtroRuolo, filtroTesto, filtroStato } = ricerca.valori();
+    const { filtroModulo, filtroTesto, filtroStato } = ricerca.valori();
     const testo = filtroTesto.toLocaleLowerCase("it-IT");
 
     const trovati = utenti.filter(u =>
         `${u.nome} ${u.cognome} ${u.cognome} ${u.nome} ${u.email}`.toLocaleLowerCase("it-IT").includes(testo) &&
-        (filtroRuolo === "" || (filtroRuolo === "admin") === u.isAdmin) &&
+        (filtroModulo === "" || !!u.autorizzazioni[filtroModulo]) &&
         (filtroStato === "" ||
             (filtroStato === "attivi" && u.attivo) ||
             (filtroStato === "disattivati" && !u.attivo) ||
@@ -69,8 +94,9 @@ function rigaUtente(u) {
     const info = el("div", "text-break");
 
     // 1. Ruolo
-    const ruolo = el("div", "d-flex flex-wrap align-items-center gap-1 mb-1");
-    ruolo.appendChild(u.isAdmin ? etichetta("Amministratore", "primary") : etichetta("Utente", "secondary"));
+    // 1. Autorizzazioni ai moduli
+    const ruolo = etichetteModuli(u.autorizzazioni);
+    ruolo.classList.add("align-items-center", "mb-1");
     if (u.id === idCorrente) ruolo.appendChild(etichetta("tu", "light"));
     info.appendChild(ruolo);
 
@@ -104,8 +130,12 @@ function apri(u) {
     inModifica = u || null;
     const stessoUtente = !!u && u.id === idCorrente;
 
-    $("ruolo").value = u && u.isAdmin ? "admin" : "utente";
-    $("ruolo").disabled = stessoUtente;
+    // Nuovo utente: per comodità Utente nel primo modulo con quel livello (es. Uscite).
+    document.querySelectorAll("#autorizzazioniModulo select").forEach(s => {
+        const m = moduli.find(x => x.codice === s.dataset.modulo);
+        s.value = u ? (u.autorizzazioni[s.dataset.modulo] || "") : (m.livelli.includes("Utente") ? "Utente" : "");
+        s.disabled = stessoUtente && s.dataset.modulo === MODULI.admin;
+    });
     $("nome").value = u ? u.nome : "";
     $("cognome").value = u ? u.cognome : "";
     $("email").value = u ? u.email : "";
@@ -131,7 +161,6 @@ async function salva() {
     const password = $("password").value;
     const nome = $("nome").value.trim();
     const cognome = $("cognome").value.trim();
-    const isAdmin = $("ruolo").value === "admin";
 
     if (!nome || !cognome) {
         errore.textContent = "Inserisci nome e cognome.";
@@ -153,7 +182,7 @@ async function salva() {
             ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", {
                 nome,
                 cognome,
-                isAdmin,
+                autorizzazioni: autorizzazioniScelte(),
                 attivo: $("attivo").checked,
                 nuovaPassword: password || null
             }))
@@ -162,7 +191,7 @@ async function salva() {
                 cognome,
                 email: $("email").value.trim(),
                 password,
-                isAdmin
+                autorizzazioni: autorizzazioniScelte()
             }));
 
         if (!response.ok) {
@@ -198,7 +227,9 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formUtente"), salva);
 
-avviaPagina({ soloAdmin: true }).then(u => {
+avviaPagina({ modulo: MODULI.admin, amministratore: true }).then(async u => {
     idCorrente = u.id;
+    moduli = await (await api("/api/moduli")).json();
+    preparaModuli();
     return caricaUtenti();
 });

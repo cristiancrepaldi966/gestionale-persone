@@ -13,13 +13,13 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   dati) e grafico a torta per categoria (al massimo 6 fette, le minori in "Altre", con elenco
   di importi e percentuali; colore fisso per categoria). Grafici con **Chart.js** (in
   `wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
-- **Menu**: Dashboard, Uscite e, solo per gli amministratori, **Admin** con la tendina
-  Utenti / Categorie.
+- **Menu**: mostra solo i moduli a cui la persona ha accesso: Dashboard e Uscite (modulo
+  Uscite) e **Admin** con la tendina Utenti / Autorizzazioni / Categorie (modulo Admin).
 - **Icona e colore delle categorie**: ogni categoria ha un'icona (Bootstrap Icons, in
   `wwwroot/lib/bootstrap-icons`) e un colore scelti dall'amministratore tra quelli ammessi
   (`Models/AspettoCategoria.cs`). Nell'elenco delle uscite ogni riga ha la striscia del colore
   e l'icona della categoria; la dashboard usa gli stessi colori e icone.
-- **Categorie** e **Utenti** (solo amministratori): stesso layout delle uscite (lente per cercare, + per inserire,
+- **Categorie**, **Utenti** e **Autorizzazioni** (modulo Admin): stesso layout delle uscite (lente per cercare, + per inserire,
   modifica nella stessa finestra). Categorie: aggiungi, rinomina, elimina (solo se non usate).
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
   Svago, Altro.
@@ -84,26 +84,49 @@ dotnet tool install --global dotnet-ef   # una volta sola
 dotnet ef migrations add NomeModifica
 ```
 
+## Moduli e autorizzazioni
+
+L'app è divisa in **moduli** (`Models/Moduli.cs`). Ogni persona ha, per ogni modulo, un
+livello: *Nessuno*, *Utente* o *Amministratore* (tabella `Autorizzazioni`).
+
+| Modulo | Contiene | Livelli |
+|---|---|---|
+| **Uscite** | Dashboard, elenco e inserimento delle uscite | Utente, Amministratore (per ora con gli stessi permessi) |
+| **Admin** | Utenti, Autorizzazioni, Categorie | Amministratore |
+
+- Le autorizzazioni si gestiscono dal modulo Admin: nella pagina **Autorizzazioni**
+  (persone × moduli, ogni modifica si salva subito) o nella finestra di ogni utente.
+- Valgono subito: alla richiesta successiva la persona ha (o perde) l'accesso.
+- Il server controlla ogni API con una regola per modulo (`Services/Accesso.cs`,
+  classe `Politiche`); le pagine mostrano solo i moduli consentiti e chi apre una pagina
+  senza accesso viene portato alla prima pagina consentita (o a *Nessun accesso*).
+- Le categorie si leggono da Uscite (per sceglierle) e si gestiscono da Admin.
+- Nessuno può togliere a se stesso l'amministrazione del modulo Admin, e deve sempre restare
+  almeno un amministratore attivo del modulo Admin.
+
+**Aggiungere un modulo**: una riga in `Moduli.Tutti` (codice, nome, descrizione, livelli),
+una regola in `Politiche`, `[Authorize(Policy = ...)]` sui suoi controller, la voce di menu
+in `menuPagine` (`componenti.js`) e `avviaPagina({ modulo: "codice" })` nelle sue pagine.
+
 ## Accesso e utenti
 
-Per usare l'app bisogna accedere con email e password. Gli utenti (ruolo, nome, cognome,
-email) sono salvati nella tabella `Utenti`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Core Identity).
+Per usare l'app bisogna accedere con email e password. Gli utenti (nome, cognome, email e
+autorizzazioni ai moduli) sono salvati nelle tabelle `Utenti` e `Autorizzazioni`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Core Identity).
 
 - **Primo amministratore**: all'avvio, se la tabella `Utenti` è vuota, viene creato con
-  le variabili d'ambiente `ADMIN_EMAIL` e `ADMIN_PASSWORD` (almeno 8 caratteri).
+  le variabili d'ambiente `ADMIN_EMAIL` e `ADMIN_PASSWORD` (almeno 8 caratteri), con il
+  livello più alto in tutti i moduli.
   Dopo il primo avvio queste variabili non servono più e si possono togliere.
 - **Nome e cognome**: obbligatori per i nuovi utenti; gli utenti creati prima di questa
   funzione compaiono come "Nome non inserito" finché non vengono completati con *Modifica*.
-- **Gestione utenti** (pagina *Utenti*, solo amministratori): creare utenti, renderli
-  amministratori, disattivarli, reimpostare la password, eliminarli. Deve sempre restare
-  almeno un amministratore attivo.
+- **Gestione utenti** (pagina *Utenti*, modulo Admin): creare utenti con le loro
+  autorizzazioni, disattivarli, reimpostare la password, eliminarli.
 - **Password dimenticata / account bloccato**: imposta `RESET_EMAIL` (l'email dell'utente)
   e `RESET_PASSWORD` (la nuova password, almeno 8 caratteri) e riavvia: all'avvio l'utente
   riceve la nuova password e viene sbloccato e riattivato. Dopo l'accesso **togli le due
   variabili**.
-- **Ruoli**: gli amministratori gestiscono uscite, categorie e utenti; gli utenti normali
-  gestiscono le uscite e possono solo scegliere le categorie esistenti. Tutti gli utenti vedono
-  tutte le uscite; per ognuna è indicato chi l'ha inserita.
+- **Uscite condivise**: chi ha accesso al modulo Uscite vede e gestisce tutte le uscite; per
+  ognuna è indicato chi l'ha inserita.
 - **Cambio password**: ognuno può cambiare la propria dalla pagina *Password*; le altre
   sessioni aperte con la vecchia password vengono chiuse.
 - **Protezioni**: dopo 5 password errate l'account si blocca per 5 minuti; massimo 10
@@ -139,14 +162,16 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | DELETE | `/api/uscite/{id}`  | Elimina uscita       |
 | GET    | `/api/categorie`    | Elenco categorie     |
 | GET    | `/api/categorie/aspetto` | Icone e colori ammessi |
-| POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (solo admin) |
-| PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria (solo admin) |
+| POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (modulo Admin) |
+| PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria (modulo Admin) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |
 | POST   | `/api/auth/password`| Cambio della propria password |
-| GET/POST | `/api/utenti`     | Elenco / crea utenti (solo admin) |
-| PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (solo admin) |
+| GET    | `/api/moduli`       | Moduli dell'app e loro livelli |
+| GET/POST | `/api/utenti`     | Elenco / crea utenti con autorizzazioni (modulo Admin) |
+| PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (modulo Admin) |
+| PUT    | `/api/utenti/{id}/autorizzazioni` | Solo le autorizzazioni, es. `{"uscite":"Utente","admin":null}` (modulo Admin) |
 
 Un'uscita richiede data, importo maggiore di zero e categoria; le note (max 1000
 caratteri) sono facoltative. Se i dati non sono validi l'API risponde
