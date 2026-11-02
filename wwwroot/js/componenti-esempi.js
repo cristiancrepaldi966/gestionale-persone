@@ -1,0 +1,15 @@
+// Script della pagina componenti.html (separato dall'HTML: la Content-Security-Policy
+// permette solo script caricati da file del sito).
+
+// Esempi interattivi (nessun dato reale).
+const utenteEsempio = { id: 0, email: "admin@example.com", isAdmin: true };
+document.getElementById("barraEsempio").append(menuPagine(utenteEsempio), menuProfilo(utenteEsempio));
+
+const attesa = ms => new Promise(r => setTimeout(r, ms));
+document.getElementById("esempioAttesa").append(
+    pulsante("Salva (prova)", "btn btn-primary", () => attesa(1500)),
+    pulsante("Elimina (prova)", "btn btn-sm btn-danger align-self-center", () => attesa(1500)));
+
+document.getElementById("esempioEtichette").append(
+    etichetta("tu"), etichetta("Amministratore", "primary"),
+    etichetta("Disattivato", "danger"), etichetta("Trasporti", "light"));

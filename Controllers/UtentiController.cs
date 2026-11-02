@@ -48,7 +48,7 @@ public class UtentiController : ControllerBase
     {
         var email = ServizioUtenti.NormalizzaEmail(richiesta.Email ?? "");
 
-        if (email.Length == 0 || email.Length > 256 || !email.Contains('@'))
+        if (!ServizioUtenti.EmailValida(email))
             return BadRequest(new { messaggio = "Inserisci un'email valida." });
 
         var errore = ServizioUtenti.ErrorePassword(richiesta.Password);

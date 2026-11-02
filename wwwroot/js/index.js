@@ -1,0 +1,312 @@
+// Script della pagina index.html (separato dall'HTML: la Content-Security-Policy
+// permette solo script caricati da file del sito).
+
+const API = "/api/uscite";
+let categorie = [];
+let inModifica = null; // uscita in modifica, null se è nuova
+
+const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", useGrouping: "always" });
+
+const formatoData = iso => {
+    const [a, m, g] = iso.split("-");
+    return `${g}/${m}/${a}`;
+};
+
+const oggi = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 10);
+};
+
+// Accetta "12,50", "12.50", "1.234,56", "€ 12".
+function leggiImporto(testo) {
+    let t = testo.replace(/[€\s]/g, "");
+    if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+    if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+    const n = Number(t);
+    return n > 0 ? n : null;
+}
+
+async function caricaCategorie() {
+    const response = await api("/api/categorie");
+    categorie = await response.json();
+
+    const filtro = document.getElementById("filtroCategoria");
+    const scelta = filtro.value;
+    filtro.replaceChildren(new Option("Categoria", ""),
+        ...categorie.map(c => new Option(c.nome, c.id)));
+    filtro.value = scelta;
+
+    document.getElementById("categoria").replaceChildren(
+        new Option("Scegli una categoria", ""),
+        ...categorie.map(c => new Option(c.nome, c.id)));
+}
+
+function parametriRicerca() {
+    const p = new URLSearchParams();
+    const valore = id => document.getElementById(id).value.trim();
+    if (valore("filtroCategoria")) p.set("categoriaId", valore("filtroCategoria"));
+    if (valore("dal")) p.set("dal", valore("dal"));
+    if (valore("al")) p.set("al", valore("al"));
+    return p;
+}
+
+let richiestaCorrente = 0;
+
+async function caricaUscite() {
+
+    const lista = document.getElementById("listaUscite");
+    const riepilogo = document.getElementById("riepilogo");
+    const numeroRichiesta = ++richiestaCorrente;
+
+    // Un solo cerchietto: al primo caricamento c'è già "Caricamento...",
+    // l'effetto di aggiornamento serve solo quando l'elenco è già mostrato.
+    const aggiornamento = !lista.querySelector(".caricamento-elenco");
+    if (aggiornamento) {
+        lista.classList.add("opacity-50");
+        document.getElementById("cerchiettoAggiornamento").hidden = false;
+        // Mantieni l'altezza mentre si carica, così la pagina non "salta".
+        if (lista.offsetHeight) lista.style.minHeight = lista.offsetHeight + "px";
+    }
+
+    try {
+        const response = await api(`${API}?${parametriRicerca()}`);
+        if (!response.ok) throw new Error();
+        const r = await response.json();
+
+        // Ignora risposte arrivate in ritardo rispetto a una ricerca più recente.
+        if (numeroRichiesta !== richiestaCorrente) return;
+
+        riepilogo.replaceChildren(
+            el("span", "text-body-secondary", `${r.numero} ${r.numero === 1 ? "uscita" : "uscite"}`),
+            el("strong", "fs-5", `Totale ${euro.format(r.totale)}`));
+
+        if (r.uscite.length === 0) {
+            const filtrato = parametriRicerca().toString() !== "";
+            lista.replaceChildren(el("p", "p-3 mb-0 text-body-secondary", filtrato
+                ? "Nessuna uscita corrisponde alla ricerca."
+                : "Nessuna uscita inserita. Usa il pulsante + in alto a destra."));
+            return;
+        }
+
+        lista.replaceChildren(...r.uscite.map(rigaUscita));
+
+        if (r.troncato) {
+            lista.appendChild(el("p", "list-group-item small text-body-secondary mb-0",
+                `Mostrate le ${r.uscite.length} più recenti: restringi la ricerca per vedere le altre. Il totale è calcolato su tutte.`));
+        }
+
+    } catch {
+        if (numeroRichiesta === richiestaCorrente) {
+            lista.replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel caricamento delle uscite."));
+        }
+    } finally {
+        if (numeroRichiesta === richiestaCorrente) {
+            lista.classList.remove("opacity-50");
+            document.getElementById("cerchiettoAggiornamento").hidden = true;
+            lista.style.minHeight = "";
+        }
+    }
+}
+
+function rigaUscita(u) {
+
+    const riga = el("div", "list-group-item uscita d-flex flex-column flex-sm-row justify-content-between gap-2 py-3");
+
+    const info = el("div", "text-break");
+    info.appendChild(el("div", "fw-bold fs-5", u.categoria));
+
+    const dettagli = el("div", "d-flex flex-wrap gap-2 small");
+    dettagli.appendChild(el("span", null, formatoData(u.data)));
+    if (u.creatoDa) dettagli.appendChild(el("span", "text-body-secondary", u.creatoDa));
+    info.appendChild(dettagli);
+
+    if (u.note) info.appendChild(el("div", "small text-body-secondary testo-note mt-1", u.note));
+
+    const destra = el("div", "d-flex flex-sm-column justify-content-between align-items-center align-items-sm-end gap-2");
+    destra.appendChild(el("div", "fw-bold fs-5 text-nowrap", euro.format(u.importo)));
+
+    const azioni = el("div", "d-flex gap-2");
+    azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apriFinestra(u)));
+    azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => eliminaUscita(u)));
+    destra.appendChild(azioni);
+
+    riga.append(info, destra);
+    return riga;
+}
+
+function apriFinestra(u) {
+
+    inModifica = u || null;
+
+    document.getElementById("titoloFinestra").textContent = u ? "Modifica uscita" : "Nuova uscita";
+    document.getElementById("data").value = u ? u.data : oggi();
+    document.getElementById("importo").value = u ? u.importo.toFixed(2).replace(".", ",") : "";
+    document.getElementById("categoria").value = u ? u.categoriaId : "";
+    document.getElementById("note").value = u && u.note ? u.note : "";
+    document.getElementById("erroreFinestra").textContent = "";
+
+    const finestra = document.getElementById("finestra");
+    scrollSalvato = window.scrollY;
+
+    if (moduloAPagina()) {
+        // Telefono: il modulo è una schermata normale al posto dell'elenco
+        // (niente finestra sospesa, che su iPhone con la tastiera sposta i tocchi).
+        document.body.classList.add("modulo-a-pagina");
+        finestra.show();
+        window.scrollTo(0, 0);
+    } else {
+        finestra.showModal();
+        document.getElementById("importo").focus();
+    }
+}
+
+function chiudiFinestra() {
+    document.getElementById("finestra").close();
+}
+
+const moduloAPagina = () => matchMedia("(max-width: 600px), (pointer: coarse)").matches;
+
+let scrollSalvato = 0;
+
+// "close" scatta anche chiudendo con Esc: torna all'elenco dov'eri.
+document.getElementById("finestra").addEventListener("close", () => {
+    if (document.body.classList.contains("modulo-a-pagina")) {
+        document.body.classList.remove("modulo-a-pagina");
+        window.scrollTo(0, scrollSalvato);
+    }
+});
+
+async function salvaUscita() {
+
+    const errore = document.getElementById("erroreFinestra");
+    const importo = leggiImporto(document.getElementById("importo").value);
+
+    if (importo === null) {
+        errore.textContent = "Inserisci un importo valido maggiore di zero (es. 12,50).";
+        return;
+    }
+
+    const categoriaId = Number(document.getElementById("categoria").value);
+    if (!categoriaId) {
+        errore.textContent = "Scegli una categoria.";
+        return;
+    }
+
+    const dati = {
+        data: document.getElementById("data").value,
+        importo,
+        categoriaId,
+        note: document.getElementById("note").value.trim() || null
+    };
+
+    if (!dati.data) {
+        errore.textContent = "Inserisci la data.";
+        return;
+    }
+
+    try {
+        const response = inModifica
+            ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", dati))
+            : await api(API, jsonBody("POST", dati));
+
+        if (!response.ok) {
+            errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
+            return;
+        }
+
+        chiudiFinestra();
+        await caricaUscite();
+
+    } catch {
+        errore.textContent = "Errore nel collegamento al server.";
+    }
+}
+
+async function eliminaUscita(u) {
+
+    if (!confirm(`Eliminare l'uscita di ${euro.format(u.importo)} del ${formatoData(u.data)} (${u.categoria})?`)) return;
+
+    try {
+        const response = await api(`${API}/${u.id}`, { method: "DELETE" });
+        if (!response.ok) throw new Error();
+        await caricaUscite();
+    } catch {
+        alert("Errore durante l'eliminazione.");
+    }
+}
+
+// Il pallino sulla lente segnala che ci sono filtri attivi.
+function aggiornaPallino() {
+    document.getElementById("pallinoFiltri").hidden = parametriRicerca().toString() === "";
+}
+
+// Classe "vuoto": mostra il segnaposto (Categoria, Dal, Al) in grigio.
+function aggiornaSegnaposti() {
+    ["filtroCategoria", "dal", "al"].forEach(id => {
+        const campo = document.getElementById(id);
+        campo.classList.toggle("vuoto", campo.value === "");
+    });
+}
+
+function filtriCambiati() {
+    aggiornaSegnaposti();
+    aggiornaPallino();
+    caricaUscite();
+}
+
+["dal", "al"].forEach(id =>
+    document.getElementById(id).addEventListener("input", aggiornaSegnaposti));
+
+// Su telefono il filtro si applica quando il selettore (categoria o data) si
+// chiude: se l'elenco si accorciasse mentre è aperto, su iPhone i tocchi
+// resterebbero spostati rispetto a quello che si vede. Su computer è immediato.
+const touch = matchMedia("(pointer: coarse)").matches;
+
+["filtroCategoria", "dal", "al"].forEach(id => {
+    const campo = document.getElementById(id);
+
+    campo.addEventListener("change", () => {
+        aggiornaSegnaposti();
+        if (touch && document.activeElement === campo) {
+            campo.dataset.daApplicare = "1";
+        } else {
+            filtriCambiati();
+        }
+    });
+
+    campo.addEventListener("blur", () => {
+        if (campo.dataset.daApplicare) {
+            delete campo.dataset.daApplicare;
+            filtriCambiati();
+        }
+    });
+});
+
+document.getElementById("azzera").addEventListener("click", () => {
+    ["filtroCategoria", "dal", "al"].forEach(id => document.getElementById(id).value = "");
+    filtriCambiati();
+});
+
+// La lente apre e chiude il pannello dei filtri.
+document.getElementById("cerca").addEventListener("click", () => {
+    const pannello = document.getElementById("pannelloFiltri");
+    const cerca = document.getElementById("cerca");
+    pannello.hidden = !pannello.hidden;
+    cerca.setAttribute("aria-expanded", String(!pannello.hidden));
+    cerca.classList.toggle("active", !pannello.hidden);
+    cerca.classList.toggle("bg-white", pannello.hidden);
+    if (!pannello.hidden && !touch) document.getElementById("filtroCategoria").focus();
+});
+
+document.getElementById("nuova").addEventListener("click", () => apriFinestra(null));
+document.getElementById("annulla").addEventListener("click", chiudiFinestra);
+alInvio(document.getElementById("formUscita"), salvaUscita);
+
+avviaPagina()
+    .then(caricaCategorie)
+    .then(caricaUscite)
+    .catch(() => {
+        document.getElementById("listaUscite").replaceChildren(
+            el("p", "p-3 mb-0 text-danger", "Errore nel collegamento al server."));
+    });
