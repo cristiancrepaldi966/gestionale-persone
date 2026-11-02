@@ -127,71 +127,6 @@ namespace GestionalePersone.Migrations
                         });
                 });
 
-            modelBuilder.Entity("GestionalePersone.Models.ParametriMercato", b =>
-                {
-                    b.Property<string>("Modulo")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<decimal>("Abbandono")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
-
-                    b.Property<int?>("AggiornatoDaId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("AggiornatoIl")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("BudgetMarketing")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal>("CostiFissi")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal>("CostoOrario")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal>("CostoPerUtente")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal>("CrescitaOrganica")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
-
-                    b.Property<int>("Mesi")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("OreSettimanali")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
-
-                    b.Property<decimal>("PrezzoMensile")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<decimal>("QuotaPaganti")
-                        .HasPrecision(6, 2)
-                        .HasColumnType("numeric(6,2)");
-
-                    b.Property<decimal>("RicavoPubblicitario")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
-                    b.Property<int>("UtentiIniziali")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Modulo");
-
-                    b.HasIndex("AggiornatoDaId");
-
-                    b.ToTable("ParametriMercato");
-                });
-
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
                 {
                     b.Property<int>("Id")
@@ -319,16 +254,6 @@ namespace GestionalePersone.Migrations
                         .IsRequired();
 
                     b.Navigation("Utente");
-                });
-
-            modelBuilder.Entity("GestionalePersone.Models.ParametriMercato", b =>
-                {
-                    b.HasOne("GestionalePersone.Models.Utente", "AggiornatoDa")
-                        .WithMany()
-                        .HasForeignKey("AggiornatoDaId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("AggiornatoDa");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>

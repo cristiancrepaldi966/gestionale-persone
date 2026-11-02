@@ -70,12 +70,6 @@ public static class Politiche
     // Fantapolitica, livello Amministratore: gestisce politici ed eventi.
     public const string FantapoliticaAmministratore = "FantapoliticaAmministratore";
 
-    // Modulo Analisi di mercato: qualsiasi livello (legge le schede e prova le simulazioni).
-    public const string Mercato = "Mercato";
-
-    // Analisi di mercato, livello Amministratore: salva le ipotesi delle simulazioni.
-    public const string MercatoAmministratore = "MercatoAmministratore";
-
     // Modulo Admin: solo Super admin.
     public const string Admin = "Admin";
 
@@ -88,8 +82,6 @@ public static class Politiche
         o.AddPolicy(FinanzeAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Finanze, Livelli.Amministratore)));
         o.AddPolicy(Fantapolitica, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Fantapolitica)));
         o.AddPolicy(FantapoliticaAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Fantapolitica, Livelli.Amministratore)));
-        o.AddPolicy(Mercato, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Mercato)));
-        o.AddPolicy(MercatoAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Mercato, Livelli.Amministratore)));
         o.AddPolicy(Admin, p => p.RequireAssertion(c => c.User.SuperAdmin()));
         o.AddPolicy(LetturaCategorie, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Finanze)));
     }

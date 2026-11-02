@@ -1,9 +1,8 @@
 # Gestionale
 
 Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia web in
-`wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria),
-**Fantapolitica** (in costruzione) e **Analisi di mercato** (posizionamento e piano di crescita
-degli altri moduli).
+`wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria) e
+**Fantapolitica** (in costruzione).
 
 - **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
   modulo abilitato con le sue pagine. In alto, la barra mostra un menu per ogni modulo
@@ -21,20 +20,6 @@ degli altri moduli).
     `wwwroot/lib/bootstrap-icons`) e colore tra quelli ammessi (`Models/AspettoCategoria.cs`);
     aggiungi, modifica, elimina (solo se non usate). Al primo avvio vengono create: Casa,
     Spesa alimentare, Bollette, Trasporti, Salute, Svago, Altro.
-- **Analisi di mercato**:
-  - **Confronto moduli** (`mercato.html`): totali (utenti previsti, soldi da investire, soldi da
-    tenere pronti, ore di lavoro), **da quale modulo partire** (utenti raggiunti ogni 1.000 €
-    investiti), grafico e tabella di confronto, una card per modulo.
-  - **Scheda di un modulo** (`mercato-scheda.html?modulo=codice`): idea e posizionamento (radar
-    modulo / media concorrenti), clienti e dimensione del mercato (totale, raggiungibile,
-    obiettivo a 3 anni), concorrenti, punti di forza e rischi, **piano di evoluzione** a fasi
-    (obiettivo, attività, ore, costi, utenti), **ricerca dei clienti** (canali con costo per
-    utente), **simulazione** mese per mese di utenti, ricavi, uscite e saldo con le ipotesi
-    modificabili, fonti.
-  - Le ricerche (testi, numeri, fasi, canali, ipotesi predefinite) sono in
-    `Services/SchedeMercato.cs`; il calcolo in `Services/Proiezione.cs`. Tutti gli utenti del
-    modulo possono provare ipotesi diverse; l'**Amministratore** del modulo le salva per tutti
-    (tabella `ParametriMercato`) o ripristina quelle predefinite.
 - **Admin** (solo Super admin): **Utenti** (anagrafica e Super admin) e **Moduli** (chi
   accede a ciascun modulo e con che livello).
 
@@ -115,7 +100,6 @@ c'è il **Super admin** (`Utenti.SuperAdmin`).
 |---|---|---|
 | **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
 | **Fantapolitica** (`fantapolitica`) | Panoramica; Politici ed eventi (solo Amministratore). Pagine in costruzione | Utente, Amministratore |
-| **Analisi di mercato** (`mercato`) | Confronto moduli e scheda di ogni modulo; salvare le ipotesi solo Amministratore | Utente, Amministratore |
 | **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |
 
 Dal modulo **Admin** (Super admin):
@@ -193,10 +177,6 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | GET    | `/api/categorie/aspetto` | Icone e colori ammessi |
 | POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (Amministratore di Gestione finanze) |
 | PUT/DELETE | `/api/categorie/{id}` | Modifica / elimina categoria (Amministratore di Gestione finanze) |
-| GET    | `/api/mercato`      | Confronto tra i moduli analizzati (Analisi di mercato) |
-| GET    | `/api/mercato/{modulo}` | Scheda di mercato, ipotesi in vigore e proiezione |
-| POST   | `/api/mercato/{modulo}/simulazione` | Proiezione con ipotesi diverse, senza salvarle |
-| PUT/DELETE | `/api/mercato/{modulo}/parametri` | Salva / ripristina le ipotesi (Amministratore di Analisi di mercato) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |
