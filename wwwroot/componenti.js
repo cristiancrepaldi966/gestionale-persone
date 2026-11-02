@@ -147,36 +147,37 @@ async function esci() {
 // Moduli dell'app (codici come in Models/Moduli.cs) con nome, icona e pagine.
 // Menu in alto, pagina di ingresso e controllo delle pagine leggono tutti da qui.
 // amministratore: true = pagina riservata al livello Amministratore del modulo.
+// colore: colore dell'icona del modulo (pagina di ingresso e pagina del modulo).
 const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", stampa3d: "stampa3d", admin: "admin" };
 
 const DEFINIZIONE_MODULI = {
     finanze: {
-        nome: "Gestione finanze", icona: "wallet2", descrizione: "Dashboard, uscite e categorie",
+        nome: "Gestione finanze", icona: "wallet2", colore: "#2a78d6", descrizione: "Dashboard, uscite e categorie",
         pagine: [
-            { testo: "Dashboard", href: "/dashboard.html", icona: "bar-chart" },
-            { testo: "Uscite", href: "/uscite.html", icona: "list-ul" },
-            { testo: "Categorie", href: "/categorie.html", icona: "tags", amministratore: true },
+            { testo: "Dashboard", href: "/dashboard.html", icona: "bar-chart", descrizione: "Grafici delle spese per data e per categoria" },
+            { testo: "Uscite", href: "/uscite.html", icona: "list-ul", descrizione: "Inserisci, cerca e modifica le uscite" },
+            { testo: "Categorie", href: "/categorie.html", icona: "tags", amministratore: true, descrizione: "Nomi, icone e colori delle categorie" },
         ]
     },
     fantapolitica: {
-        nome: "Fantapolitica", icona: "bank", descrizione: "Squadre di politici, eventi e classifica",
+        nome: "Fantapolitica", icona: "bank", colore: "#6250d6", descrizione: "Squadre di politici, eventi e classifica",
         pagine: [
-            { testo: "Panoramica", href: "/fantapolitica.html", icona: "trophy" },
-            { testo: "Politici ed eventi", href: "/fantapolitica-gestione.html", icona: "person-badge", amministratore: true },
+            { testo: "Panoramica", href: "/fantapolitica.html", icona: "trophy", descrizione: "La tua squadra e la classifica" },
+            { testo: "Politici ed eventi", href: "/fantapolitica-gestione.html", icona: "person-badge", amministratore: true, descrizione: "Elenco dei politici ed eventi che danno punti" },
         ]
     },
     stampa3d: {
-        nome: "Stampa 3D", icona: "printer", descrizione: "Catalogo di oggetti personalizzabili, anteprima e file da stampare",
+        nome: "Stampa 3D", icona: "printer", colore: "#eb6834", descrizione: "Catalogo di oggetti personalizzabili, anteprima e file da stampare",
         pagine: [
-            { testo: "Catalogo", href: "/stampa3d.html", icona: "grid-3x3-gap", anche: ["/stampa3d-configuratore.html"] },
-            { testo: "Progetti", href: "/stampa3d-progetti.html", icona: "folder2-open" },
+            { testo: "Catalogo", href: "/stampa3d.html", icona: "grid-3x3-gap", anche: ["/stampa3d-configuratore.html"], descrizione: "Scegli un oggetto, regola le misure, scarica l'STL" },
+            { testo: "Progetti", href: "/stampa3d-progetti.html", icona: "folder2-open", descrizione: "Le configurazioni salvate" },
         ]
     },
     admin: {
-        nome: "Admin", icona: "shield-lock", descrizione: "Utenti e autorizzazioni ai moduli",
+        nome: "Admin", icona: "shield-lock", colore: "#212529", descrizione: "Utenti e autorizzazioni ai moduli",
         pagine: [
-            { testo: "Utenti", href: "/utenti.html", icona: "people" },
-            { testo: "Moduli", href: "/moduli.html", icona: "grid", anche: ["/modulo.html"] },
+            { testo: "Utenti", href: "/utenti.html", icona: "people", descrizione: "Anagrafica, password e Super admin" },
+            { testo: "Moduli", href: "/moduli.html", icona: "grid", anche: ["/modulo.html"], descrizione: "Chi accede a ogni modulo e con che livello" },
         ]
     },
 };
@@ -221,48 +222,91 @@ async function avviaPagina({ modulo = null, amministratore = false } = {}) {
 
     const barra = document.getElementById("barraUtente");
     if (barra) {
-        barra.replaceChildren(menuPagine(utente), menuProfilo(utente));
+        barra.replaceChildren(menuModuli(utente, modulo), menuProfilo(utente));
+    }
+
+    // Dentro un modulo: barra di schede con le sue pagine, sotto l'intestazione.
+    if (modulo && DEFINIZIONE_MODULI[modulo]) {
+        document.querySelector("header")?.after(schedeModulo(utente, modulo));
     }
 
     document.body.classList.remove("in-attesa");
     return utente;
 }
 
-// Barra in alto: un menu a tendina per ogni modulo abilitato (es. "Gestione finanze",
-// "Admin"), con le sue pagine; il modulo della pagina aperta è evidenziato.
-function menuPagine(utente) {
-    const menu = el("nav", "menu-pagine nav nav-pills gap-1");
-    const corrente = location.pathname;
-    const eCorrente = p => p.href === corrente || (p.anche || []).includes(corrente);
+// Pagina principale di un modulo: i riquadri delle sue pagine (area.html).
+const paginaModulo = codice => `/area.html?modulo=${encodeURIComponent(codice)}`;
 
-    for (const codice of moduliAbilitati(utente)) {
+// La pagina aperta è questa voce del menu? (anche le pagine collegate, es. modulo.html)
+const eCorrente = p => p.href === location.pathname || (p.anche || []).includes(location.pathname);
+
+// Barra in alto: la tendina "Moduli" con i soli moduli abilitati per l'utente (ognuno porta
+// alla sua pagina principale) e, accanto, il nome del modulo aperto.
+function menuModuli(utente, moduloCorrente) {
+    const menu = el("nav", "menu-pagine nav nav-pills align-items-center gap-1");
+    menu.setAttribute("aria-label", "Moduli");
+
+    const contenitore = el("div", "dropdown");
+    const bottone = el("button", "nav-link py-1 px-3 dropdown-toggle link-light link-opacity-75 link-opacity-100-hover");
+    bottone.type = "button";
+    bottone.append(el("i", "bi bi-grid-3x3-gap me-1"), document.createTextNode("Moduli"));
+    bottone.firstChild.setAttribute("aria-hidden", "true");
+
+    const tendina = el("div", "dropdown-menu shadow");
+    tendina.setAttribute("data-bs-theme", "light");
+    const moduli = moduliAbilitati(utente);
+    if (moduli.length === 0) {
+        tendina.appendChild(el("span", "dropdown-item-text text-body-secondary small", "Nessun modulo abilitato"));
+    }
+    for (const codice of moduli) {
         const def = DEFINIZIONE_MODULI[codice];
-        const pagine = pagineAbilitate(utente, codice);
-        const attivo = pagine.some(eCorrente);
+        const attivo = codice === moduloCorrente;
+        const a = el("a", "dropdown-item py-2 d-flex align-items-center gap-2" + (attivo ? " active" : ""));
+        a.href = paginaModulo(codice);
+        if (attivo) a.setAttribute("aria-current", "true");
+        const icona = el("i", "bi bi-" + def.icona);
+        icona.setAttribute("aria-hidden", "true");
+        a.append(icona, el("span", null, def.nome));
+        tendina.appendChild(a);
+    }
 
-        const contenitore = el("div", "dropdown");
-        const bottone = el("button", "nav-link py-1 px-3 dropdown-toggle " +
-            (attivo ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), def.nome);
-        bottone.type = "button";
+    contenitore.append(bottone, tendina);
+    collegaTendina(contenitore, bottone, tendina);
+    menu.appendChild(contenitore);
 
-        const tendina = el("div", "dropdown-menu shadow");
-        tendina.setAttribute("data-bs-theme", "light");
-        for (const p of pagine) {
-            const a = el("a", "dropdown-item py-2 d-flex align-items-center gap-2" + (eCorrente(p) ? " active" : ""));
-            a.href = p.href;
-            if (eCorrente(p)) a.setAttribute("aria-current", "page");
-            const icona = el("i", "bi bi-" + p.icona);
-            icona.setAttribute("aria-hidden", "true");
-            a.append(icona, el("span", null, p.testo));
-            tendina.appendChild(a);
-        }
-
-        contenitore.append(bottone, tendina);
-        collegaTendina(contenitore, bottone, tendina);
-        menu.appendChild(contenitore);
+    // Nome del modulo aperto: porta alla sua pagina principale.
+    if (moduloCorrente && DEFINIZIONE_MODULI[moduloCorrente]) {
+        const nome = el("a", "nav-link py-1 px-2 text-white fw-semibold text-truncate modulo-corrente",
+            DEFINIZIONE_MODULI[moduloCorrente].nome);
+        nome.href = paginaModulo(moduloCorrente);
+        menu.appendChild(nome);
     }
 
     return menu;
+}
+
+// Schede del modulo aperto: Home (pagina principale) e le pagine che l'utente può aprire.
+function schedeModulo(utente, codice) {
+    const barra = el("nav", "schede-modulo bg-body border-bottom");
+    barra.setAttribute("aria-label", "Pagine di " + DEFINIZIONE_MODULI[codice].nome);
+    const elenco = el("div", "container contenuto nav nav-underline flex-nowrap gap-3");
+
+    const voci = [
+        { testo: "Home", href: paginaModulo(codice), icona: "house", attiva: location.pathname === "/area.html" },
+        ...pagineAbilitate(utente, codice).map(p => ({ ...p, attiva: eCorrente(p) })),
+    ];
+    for (const v of voci) {
+        const a = el("a", "nav-link py-2 d-flex align-items-center gap-1 text-nowrap" + (v.attiva ? " active" : " text-body-secondary"));
+        a.href = v.href;
+        if (v.attiva) a.setAttribute("aria-current", "page");
+        const icona = el("i", "bi bi-" + v.icona);
+        icona.setAttribute("aria-hidden", "true");
+        a.append(icona, el("span", null, v.testo));
+        elenco.appendChild(a);
+    }
+
+    barra.appendChild(elenco);
+    return barra;
 }
 
 // Apre e chiude una tendina (dropdown-menu di Bootstrap) senza il JavaScript di Bootstrap:

@@ -1,8 +1,6 @@
 // Pagina di ingresso (index.html), per tutti: i moduli abilitati per l'utente,
 // ognuno con le sue pagine. Componenti e funzioni comuni: componenti.js.
 
-const COLORI_MODULI = { finanze: "#2a78d6", fantapolitica: "#6250d6", stampa3d: "#eb6834", admin: "#212529" };
-
 function riquadroModulo(utente, codice) {
     const def = DEFINIZIONE_MODULI[codice];
     const pagine = pagineAbilitate(utente, codice);
@@ -11,12 +9,12 @@ function riquadroModulo(utente, codice) {
     const card = el("div", "card shadow-sm border-0 h-100");
     const corpo = el("div", "card-body d-flex flex-column gap-3");
 
-    // Intestazione cliccabile: porta alla prima pagina del modulo.
+    // Intestazione cliccabile: porta alla pagina principale del modulo.
     const testa = el("a", "d-flex align-items-center gap-3 text-reset text-decoration-none");
-    testa.href = pagine[0].href;
+    testa.href = paginaModulo(codice);
     const info = el("div");
     info.append(el("div", "fw-bold fs-5", def.nome), el("div", "small text-body-secondary", def.descrizione));
-    testa.append(iconaCategoria(def.icona, COLORI_MODULI[codice] || "#6c757d"), info);
+    testa.append(iconaCategoria(def.icona, def.colore || "#6c757d"), info);
 
     const livelloModulo = utente.superAdmin ? "Super admin" : livello(utente, codice);
     const badge = etichetta(livelloModulo, utente.superAdmin ? "dark" :

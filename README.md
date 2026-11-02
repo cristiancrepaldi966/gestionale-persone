@@ -5,8 +5,12 @@ Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia 
 **Fantapolitica** (in costruzione) e **Stampa 3D** (oggetti personalizzabili da stampare).
 
 - **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
-  modulo abilitato con le sue pagine. In alto, la barra mostra un menu per ogni modulo
-  abilitato (es. *Gestione finanze ▾*, *Admin ▾*).
+  modulo abilitato con le sue pagine.
+- **Menu**: in alto la tendina **Moduli ▾** elenca solo i moduli a cui l'utente ha accesso
+  (il Super admin li vede tutti); accanto c'è il nome del modulo aperto. Ogni modulo porta
+  alla sua **pagina principale** (`area.html?modulo=codice`), con un riquadro per ogni sua
+  pagina. Dentro un modulo, sotto la barra scura, le **schede** (Home e le pagine) passano da
+  una pagina all'altra. Le pagine riservate all'Amministratore del modulo compaiono solo a lui.
 - **Gestione finanze**:
   - **Dashboard** (`dashboard.html`): filtri come le uscite; grafici in un **carosello**
     (swipe su telefono, frecce e pallini sopra): barre delle spese per data (per giorno fino
@@ -131,9 +135,10 @@ Dal modulo **Admin** (Super admin):
 
 **Aggiungere un modulo**: una riga in `Moduli.Tutti` (codice, nome, descrizione, livelli),
 una regola in `Politiche` e `[Authorize(Policy = ...)]` sui suoi controller; in
-`componenti.js` una voce in `MODULI`, `DEFINIZIONE_MODULI` (nome, icona, pagine) e
+`componenti.js` una voce in `MODULI`, `DEFINIZIONE_MODULI` (nome, icona, colore, pagine con
+descrizione) e
 `ORDINE_MODULI`; nelle sue pagine `avviaPagina({ modulo: "codice" })`. Comparirà da solo nel
-menu, nella pagina di ingresso e in Admin → Moduli.
+menu Moduli, nella pagina di ingresso, nella sua pagina principale e in Admin → Moduli.
 
 ## Accesso e utenti
 

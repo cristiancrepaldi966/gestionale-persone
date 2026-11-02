@@ -428,3 +428,31 @@ body.modale-telefono dialog.finestra[open] {
 .min-w-0 {
     min-width: 0;
 }
+
+/* --- Barra in alto: modulo aperto e schede del modulo --- */
+
+/* Nome del modulo aperto accanto alla tendina "Moduli". */
+.modulo-corrente {
+    max-width: 14rem;
+}
+
+.modulo-corrente::before {
+    content: "·";
+    margin-right: 0.5rem;
+    opacity: 0.5;
+}
+
+/* Schede delle pagine del modulo: scorrono in orizzontale su telefono. */
+.schede-modulo .nav {
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.schede-modulo .nav::-webkit-scrollbar {
+    display: none;
+}
+
+.schede-modulo .nav-link.active {
+    color: var(--bs-primary);
+    border-bottom-color: var(--bs-primary);
+}
