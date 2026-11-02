@@ -77,36 +77,40 @@
         <p class="card card-body shadow-sm border-0 text-body-secondary mb-0" id="nessunDato" hidden></p>
 
         <div id="grafici" hidden>
-            <section class="card card-body shadow-sm border-0 mb-3">
-                <h3 class="h5 fw-bold mb-0">Spese per data</h3>
-                <p class="small text-body-secondary mb-2" id="sottotitoloDate"></p>
-                <div class="grafico-barre">
-                    <canvas id="graficoDate" role="img" aria-label="Grafico a barre delle spese per data"></canvas>
-                </div>
-                <details class="mt-2 small">
-                    <summary class="text-body-secondary">Vedi i dati in tabella</summary>
-                    <div class="table-responsive mt-2">
-                        <table class="table table-sm mb-0">
-                            <thead><tr><th scope="col" id="intestazionePeriodo">Periodo</th><th scope="col" class="text-end">Speso</th></tr></thead>
-                            <tbody id="tabellaDate"></tbody>
-                        </table>
-                    </div>
-                </details>
-            </section>
-
-            <section class="card card-body shadow-sm border-0">
-                <h3 class="h5 fw-bold mb-3">Spese per categoria</h3>
-                <div class="row g-4 align-items-center">
-                    <div class="col-md-6">
-                        <div class="grafico-torta mx-auto" id="contenitoreTorta">
-                            <canvas id="graficoCategorie" role="img" aria-label="Grafico a torta delle spese per categoria"></canvas>
+            <div class="carosello" id="carosello" aria-roledescription="carosello" aria-label="Grafici">
+                <div class="carosello-binario" tabindex="0">
+                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="1 di 2: Spese per data">
+                        <h3 class="h5 fw-bold mb-0">Spese per data</h3>
+                        <p class="small text-body-secondary mb-2" id="sottotitoloDate"></p>
+                        <div class="grafico-barre">
+                            <canvas id="graficoDate" role="img" aria-label="Grafico a barre delle spese per data"></canvas>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <ul class="list-group list-group-flush" id="legendaCategorie"></ul>
-                    </div>
+                        <details class="mt-2 small">
+                            <summary class="text-body-secondary">Vedi i dati in tabella</summary>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm mb-0">
+                                    <thead><tr><th scope="col" id="intestazionePeriodo">Periodo</th><th scope="col" class="text-end">Speso</th></tr></thead>
+                                    <tbody id="tabellaDate"></tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </section>
+
+                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="2 di 2: Spese per categoria">
+                        <h3 class="h5 fw-bold mb-3">Spese per categoria</h3>
+                        <div class="row g-4 align-items-center">
+                            <div class="col-md-6">
+                                <div class="grafico-torta mx-auto" id="contenitoreTorta">
+                                    <canvas id="graficoCategorie" role="img" aria-label="Grafico a torta delle spese per categoria"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-group list-group-flush" id="legendaCategorie"></ul>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-            </section>
+            </div>
         </div>
     </div>
 

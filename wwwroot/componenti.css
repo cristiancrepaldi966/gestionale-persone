@@ -309,3 +309,68 @@ body.modale-telefono dialog.finestra[open] {
     outline: 2px solid var(--bs-primary);
     outline-offset: 3px;
 }
+
+/* --- Carosello (es. grafici della dashboard) --- */
+/* Scorrimento orizzontale "a scatti" del browser: swipe su telefono,
+   frecce e pallini sopra le slide (componenti.js: carosello). */
+.carosello-binario {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* spazio per l'ombra delle card */
+    padding: 2px 2px 8px;
+    margin: -2px -2px 0;
+}
+
+.carosello-binario::-webkit-scrollbar {
+    display: none;
+}
+
+.carosello-binario:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.carosello-slide {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+.carosello-comandi {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.carosello-pallino {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--bs-secondary-bg);
+    box-shadow: inset 0 0 0 1px var(--bs-border-color);
+}
+
+.carosello-pallino[aria-current="true"] {
+    background: var(--bs-primary);
+    box-shadow: none;
+    width: 24px;
+    border-radius: 5px;
+}
+
+/* Area di tocco più grande del pallino. */
+.carosello-pallino-area {
+    padding: 10px 4px;
+    background: none;
+    border: none;
+    line-height: 0;
+}

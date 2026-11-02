@@ -265,6 +265,8 @@ async function caricaRiepilogo() {
     }
 }
 
+carosello($("carosello"));
+
 avviaPagina()
     .then(caricaCategorie)
     .then(caricaRiepilogo)
