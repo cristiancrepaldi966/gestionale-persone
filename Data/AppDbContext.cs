@@ -19,6 +19,9 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Autorizzazione> Autorizzazioni => Set<Autorizzazione>();
 
+    // Ipotesi della simulazione salvate per ogni modulo (Analisi di mercato).
+    public DbSet<ParametriMercato> ParametriMercato => Set<ParametriMercato>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -42,6 +45,22 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             a.HasOne(x => x.Utente).WithMany(u => u.Autorizzazioni)
                 .HasForeignKey(x => x.UtenteId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ParametriMercato>(p =>
+        {
+            p.HasKey(x => x.Modulo);
+            p.Property(x => x.Modulo).HasMaxLength(30);
+            foreach (var euro in new[] { nameof(ParametriSimulazione.PrezzoMensile), nameof(ParametriSimulazione.RicavoPubblicitario),
+                         nameof(ParametriSimulazione.BudgetMarketing), nameof(ParametriSimulazione.CostoPerUtente),
+                         nameof(ParametriSimulazione.CostoOrario), nameof(ParametriSimulazione.CostiFissi) })
+                p.Property(euro).HasPrecision(12, 2);
+            foreach (var percentuale in new[] { nameof(ParametriSimulazione.QuotaPaganti), nameof(ParametriSimulazione.CrescitaOrganica),
+                         nameof(ParametriSimulazione.Abbandono), nameof(ParametriSimulazione.OreSettimanali) })
+                p.Property(percentuale).HasPrecision(6, 2);
+            p.HasOne(x => x.AggiornatoDa).WithMany()
+                .HasForeignKey(x => x.AggiornatoDaId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Categoria>(c =>

@@ -384,3 +384,52 @@ body.modale-telefono dialog.finestra[open] {
     border: none;
     line-height: 0;
 }
+
+/* --- Analisi di mercato --- */
+
+/* Grafico a radar del posizionamento (quadrato). */
+.grafico-radar {
+    position: relative;
+    max-width: 340px;
+    aspect-ratio: 1;
+}
+
+/* Riquadro con un numero chiave (utenti, soldi, ore...). */
+.numero-chiave {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* Barra proporzionale (mercato totale, raggiungibile, obiettivo). */
+.barra-mercato {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--colore, var(--bs-primary));
+    min-width: 6px;
+}
+
+/* Fasi del piano: linea verticale a sinistra. */
+.fase-piano {
+    border-left: 4px solid var(--bs-primary) !important;
+}
+
+/* Collegamenti alle sezioni della scheda: scorrono in orizzontale su telefono. */
+.indice-sezioni {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+}
+
+.indice-sezioni::-webkit-scrollbar {
+    display: none;
+}
+
+.indice-sezioni .nav-link {
+    white-space: nowrap;
+}
+
+/* Le sezioni non finiscono sotto il bordo quando si arriva da un collegamento. */
+.sezione-scheda {
+    scroll-margin-top: 1rem;
+}
