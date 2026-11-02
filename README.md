@@ -1,7 +1,14 @@
-# Gestionale Persone
+# Gestionale Uscite
 
-Piccola applicazione ASP.NET Core 10 + PostgreSQL per gestire un elenco di persone
-(inserimento, modifica, eliminazione), con interfaccia web in `wwwroot/index.html`.
+Piccola applicazione ASP.NET Core 10 + PostgreSQL per registrare le uscite (spese)
+divise per categoria, con interfaccia web in `wwwroot/`.
+
+- **Dashboard** (`index.html`): ricerca per testo (descrizione e note), categoria e
+  intervallo di date, con numero e totale delle uscite trovate; pulsante **+** in alto a
+  destra per inserire un'uscita; elenco con modifica ed eliminazione.
+- **Categorie** (`categorie.html`): aggiungi, rinomina, elimina (solo se non usate).
+  Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
+  Svago, Altro.
 
 ## Avvio rapido con Docker (consigliato)
 
@@ -37,11 +44,11 @@ La connessione viene letta, in ordine, da:
    `ConnectionStrings:DefaultConnection` in `appsettings.json`.
 
 All'avvio l'applicazione applica automaticamente le migrazioni (`Migrations/`),
-quindi la tabella `Persone` viene creata o aggiornata da sola.
+quindi le tabelle vengono create o aggiornate da sole.
 
 ### Modificare il modello dati
 
-Dopo aver cambiato `Models/Persona.cs`:
+Dopo aver cambiato i modelli in `Models/`:
 
 ```bash
 dotnet tool install --global dotnet-ef   # una volta sola
@@ -59,7 +66,8 @@ tabella `Utenti`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Cor
 - **Gestione utenti** (pagina *Utenti*, solo amministratori): creare utenti, renderli
   amministratori, disattivarli, reimpostare la password, eliminarli. Deve sempre restare
   almeno un amministratore attivo.
-- **Ruoli**: gli amministratori gestiscono persone e utenti; gli utenti normali solo le persone.
+- **Ruoli**: gli amministratori gestiscono uscite, categorie e utenti; gli utenti normali
+  uscite e categorie. Tutti gli utenti vedono tutte le uscite; per ognuna è indicato chi l'ha inserita.
 - **Cambio password**: ognuno può cambiare la propria dalla pagina *Password*; le altre
   sessioni aperte con la vecchia password vengono chiuse.
 - **Protezioni**: dopo 5 password errate l'account si blocca per 5 minuti; massimo 10
@@ -72,11 +80,13 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 
 | Metodo | URL                 | Descrizione          |
 |--------|---------------------|----------------------|
-| GET    | `/api/persone`      | Elenco persone       |
-| GET    | `/api/persone/{id}` | Dettaglio persona    |
-| POST   | `/api/persone`      | Crea persona         |
-| PUT    | `/api/persone/{id}` | Modifica persona     |
-| DELETE | `/api/persone/{id}` | Elimina persona      |
+| GET    | `/api/uscite?q=&categoriaId=&dal=&al=` | Ricerca uscite (con numero e totale) |
+| GET    | `/api/uscite/{id}`  | Dettaglio uscita     |
+| POST   | `/api/uscite`       | Crea uscita          |
+| PUT    | `/api/uscite/{id}`  | Modifica uscita      |
+| DELETE | `/api/uscite/{id}`  | Elimina uscita       |
+| GET/POST | `/api/categorie`  | Elenco / crea categorie |
+| PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |
@@ -84,5 +94,6 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | GET/POST | `/api/utenti`     | Elenco / crea utenti (solo admin) |
 | PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (solo admin) |
 
-Nome e cognome sono obbligatori (massimo 100 caratteri): in caso contrario l'API
-risponde `400 Bad Request` con i dettagli dell'errore.
+Un'uscita richiede data, importo maggiore di zero, descrizione (max 200 caratteri) e
+categoria; le note sono facoltative. Se i dati non sono validi l'API risponde
+`400 Bad Request` con i dettagli dell'errore.
