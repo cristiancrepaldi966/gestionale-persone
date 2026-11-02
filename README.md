@@ -12,7 +12,9 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   dati) e grafico a torta per categoria (al massimo 6 fette, le minori in "Altre", con elenco
   di importi e percentuali; colore fisso per categoria). Grafici con **Chart.js** (in
   `wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
-- **Categorie** e **Utenti**: stesso layout delle uscite (lente per cercare, + per inserire,
+- **Menu**: Dashboard, Uscite e, solo per gli amministratori, **Admin** con la tendina
+  Utenti / Categorie.
+- **Categorie** e **Utenti** (solo amministratori): stesso layout delle uscite (lente per cercare, + per inserire,
   modifica nella stessa finestra). Categorie: aggiungi, rinomina, elimina (solo se non usate).
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
   Svago, Altro.
@@ -95,7 +97,8 @@ email) sono salvati nella tabella `Utenti`; le password sono salvate solo come h
   riceve la nuova password e viene sbloccato e riattivato. Dopo l'accesso **togli le due
   variabili**.
 - **Ruoli**: gli amministratori gestiscono uscite, categorie e utenti; gli utenti normali
-  uscite e categorie. Tutti gli utenti vedono tutte le uscite; per ognuna è indicato chi l'ha inserita.
+  gestiscono le uscite e possono solo scegliere le categorie esistenti. Tutti gli utenti vedono
+  tutte le uscite; per ognuna è indicato chi l'ha inserita.
 - **Cambio password**: ognuno può cambiare la propria dalla pagina *Password*; le altre
   sessioni aperte con la vecchia password vengono chiuse.
 - **Protezioni**: dopo 5 password errate l'account si blocca per 5 minuti; massimo 10
@@ -129,8 +132,9 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | POST   | `/api/uscite`       | Crea uscita          |
 | PUT    | `/api/uscite/{id}`  | Modifica uscita      |
 | DELETE | `/api/uscite/{id}`  | Elimina uscita       |
-| GET/POST | `/api/categorie`  | Elenco / crea categorie |
-| PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria |
+| GET    | `/api/categorie`    | Elenco categorie     |
+| POST   | `/api/categorie`    | Crea categoria (solo admin) |
+| PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria (solo admin) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |

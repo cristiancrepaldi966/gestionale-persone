@@ -1,4 +1,4 @@
-// Pagina Categorie (categorie.html). Componenti e funzioni comuni: componenti.js.
+// Pagina Categorie (categorie.html, solo amministratori: menu Admin). Componenti e funzioni comuni: componenti.js.
 
 const API = "/api/categorie";
 let categorie = [];
@@ -121,4 +121,4 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formCategoria"), salva);
 
-avviaPagina().then(caricaCategorie);
+avviaPagina({ soloAdmin: true }).then(caricaCategorie);
