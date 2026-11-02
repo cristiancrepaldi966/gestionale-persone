@@ -19,6 +19,7 @@ public static class Moduli
 {
     public const string Finanze = "finanze";
     public const string Fantapolitica = "fantapolitica";
+    public const string Mercato = "mercato";
     public const string Admin = "admin";
 
     public static readonly DefinizioneModulo[] Tutti =
@@ -27,6 +28,8 @@ public static class Moduli
         new(Finanze, "Gestione finanze", "Dashboard, uscite e categorie",
             [Livelli.Utente, Livelli.Amministratore]),
         new(Fantapolitica, "Fantapolitica", "Squadre di politici, eventi e classifica",
+            [Livelli.Utente, Livelli.Amministratore]),
+        new(Mercato, "Analisi di mercato", "Posizionamento, piano di crescita e investimento dei moduli",
             [Livelli.Utente, Livelli.Amministratore]),
     ];
 
