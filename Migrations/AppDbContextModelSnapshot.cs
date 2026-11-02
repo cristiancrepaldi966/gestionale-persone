@@ -22,7 +22,7 @@ namespace GestionalePersone.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("GestionalePersone.Models.Persona", b =>
+            modelBuilder.Entity("GestionalePersone.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,19 +30,98 @@ namespace GestionalePersone.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Cognome")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("Nome")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Persone");
+                    b.HasIndex("Nome")
+                        .IsUnique();
+
+                    b.ToTable("Categorie");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Nome = "Casa"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Nome = "Spesa alimentare"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Nome = "Bollette"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Nome = "Trasporti"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Nome = "Salute"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Nome = "Svago"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Nome = "Altro"
+                        });
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoriaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CreatoDaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatoIl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Descrizione")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("Importo")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("CreatoDaId");
+
+                    b.HasIndex("Data");
+
+                    b.ToTable("Uscite");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Utente", b =>
@@ -108,6 +187,24 @@ namespace GestionalePersone.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("DataProtectionKeys");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Categoria", "Categoria")
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GestionalePersone.Models.Utente", "CreatoDa")
+                        .WithMany()
+                        .HasForeignKey("CreatoDaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Categoria");
+
+                    b.Navigation("CreatoDa");
                 });
 #pragma warning restore 612, 618
         }

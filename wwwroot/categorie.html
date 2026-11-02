@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorie - Gestionale Uscite</title>
+    <link rel="stylesheet" href="stile.css">
+</head>
+<body class="in-attesa">
+
+<header>
+    <h1><a href="/" style="text-decoration:none">Gestionale Uscite</a></h1>
+    <nav class="barra-utente" id="barraUtente"></nav>
+</header>
+
+<main>
+
+    <div class="card">
+        <h2>Nuova categoria</h2>
+
+        <form class="form-row" id="formNuova">
+            <input type="text" id="nome" maxlength="50" placeholder="Nome della categoria" required>
+            <button type="submit" class="btn-primary">Aggiungi</button>
+        </form>
+
+        <div id="messaggio"></div>
+    </div>
+
+    <div class="card">
+        <h2>Categorie</h2>
+        <div id="listaCategorie">Caricamento...</div>
+    </div>
+
+</main>
+
+<script src="app.js"></script>
+<script>
+
+    const API = "/api/categorie";
+
+    function mostraMessaggio(testo, errore) {
+        const m = document.getElementById("messaggio");
+        m.textContent = testo;
+        m.className = errore ? "errore" : "successo";
+    }
+
+    async function caricaCategorie() {
+
+        const lista = document.getElementById("listaCategorie");
+
+        try {
+            const response = await api(API);
+            if (!response.ok) throw new Error();
+            const categorie = await response.json();
+
+            if (categorie.length === 0) {
+                lista.replaceChildren(el("p", null, "Nessuna categoria."));
+                return;
+            }
+
+            lista.replaceChildren(...categorie.map(rigaCategoria));
+
+        } catch {
+            lista.replaceChildren(el("p", "errore", "Errore nel caricamento delle categorie."));
+        }
+    }
+
+    function rigaCategoria(c) {
+
+        const div = el("div", "riga");
+
+        const info = el("div");
+        info.appendChild(el("div", "nome", c.nome));
+        info.appendChild(el("small", null,
+            c.numeroUscite === 0 ? "Nessuna uscita" :
+            c.numeroUscite === 1 ? "1 uscita" : `${c.numeroUscite} uscite`));
+
+        const azioni = el("div", "azioni");
+        azioni.appendChild(pulsante("Rinomina", "btn-secondary", () => rinomina(div, c)));
+        azioni.appendChild(pulsante("Elimina", "btn-danger", () => elimina(c)));
+
+        div.append(info, azioni);
+        return div;
+    }
+
+    function rinomina(div, c) {
+
+        const input = el("input");
+        input.value = c.nome;
+        input.maxLength = 50;
+
+        const errore = el("div", "errore");
+        const contenitore = el("div", "modifica");
+        contenitore.append(input, errore);
+
+        const salva = async () => {
+            const nome = input.value.trim();
+            if (!nome) {
+                errore.textContent = "Inserisci un nome.";
+                return;
+            }
+            try {
+                const response = await api(`${API}/${c.id}`, jsonBody("PUT", { nome }));
+                if (!response.ok) {
+                    errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
+                    return;
+                }
+                await caricaCategorie();
+            } catch {
+                errore.textContent = "Errore nel collegamento al server.";
+            }
+        };
+
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter") salva();
+            if (e.key === "Escape") div.replaceWith(rigaCategoria(c));
+        });
+
+        const azioni = el("div", "azioni");
+        azioni.appendChild(pulsante("Salva", "btn-primary", salva));
+        azioni.appendChild(pulsante("Annulla", "btn-secondary", () => div.replaceWith(rigaCategoria(c))));
+
+        div.replaceChildren(contenitore, azioni);
+        input.focus();
+    }
+
+    async function elimina(c) {
+
+        if (!confirm(`Eliminare la categoria "${c.nome}"?`)) return;
+
+        try {
+            const response = await api(`${API}/${c.id}`, { method: "DELETE" });
+            if (!response.ok) {
+                alert(await messaggioErrore(response, "Errore durante l'eliminazione."));
+                return;
+            }
+            mostraMessaggio(`Categoria "${c.nome}" eliminata.`, false);
+            await caricaCategorie();
+        } catch {
+            alert("Errore nel collegamento al server.");
+        }
+    }
+
+    document.getElementById("formNuova").addEventListener("submit", async e => {
+
+        e.preventDefault();
+        const input = document.getElementById("nome");
+
+        try {
+            const response = await api(API, jsonBody("POST", { nome: input.value.trim() }));
+            if (!response.ok) {
+                mostraMessaggio(await messaggioErrore(response, "Errore durante l'inserimento."), true);
+                return;
+            }
+            const nuova = await response.json();
+            input.value = "";
+            mostraMessaggio(`Categoria "${nuova.nome}" aggiunta.`, false);
+            await caricaCategorie();
+        } catch {
+            mostraMessaggio("Errore nel collegamento al server.", true);
+        }
+    });
+
+    avviaPagina().then(caricaCategorie);
+
+</script>
+
+</body>
+</html>

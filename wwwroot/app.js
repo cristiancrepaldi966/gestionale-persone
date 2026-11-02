@@ -84,6 +84,8 @@ async function avviaPagina({ soloAdmin = false } = {}) {
             return a;
         };
 
+        barra.appendChild(link("Uscite", "/"));
+        barra.appendChild(link("Categorie", "/categorie.html"));
         if (utente.isAdmin) barra.appendChild(link("Utenti", "/utenti.html"));
         barra.appendChild(link("Password", "/password.html"));
         barra.appendChild(pulsante("Esci", null, esci));

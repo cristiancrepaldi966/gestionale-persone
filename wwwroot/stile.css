@@ -88,7 +88,7 @@ button {
     margin-top: 8px;
 }
 
-.persona {
+.riga {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -97,7 +97,7 @@ button {
     border-bottom: 1px solid #eee;
 }
 
-.persona:last-child {
+.riga:last-child {
     border-bottom: none;
 }
 
@@ -117,7 +117,7 @@ button {
 }
 
 @media (max-width: 600px) {
-    .persona {
+    .riga {
         flex-direction: column;
         align-items: flex-start;
     }
@@ -243,4 +243,229 @@ label.check input {
 /* Nasconde il contenuto finché non è verificato l'accesso. */
 body.in-attesa main {
     visibility: hidden;
+}
+
+/* --- Dashboard uscite --- */
+
+.titolo-pagina {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.titolo-pagina h2 {
+    margin: 0;
+    font-size: 26px;
+}
+
+.btn-aggiungi {
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    background: #2563eb;
+    color: white;
+    font-size: 32px;
+    line-height: 1;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+}
+
+.btn-aggiungi:hover {
+    background: #1d4ed8;
+}
+
+.filtri {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.filtri .filtro-testo {
+    flex: 2 1 260px;
+}
+
+select,
+textarea,
+input[type="date"] {
+    padding: 11px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: inherit;
+    background: white;
+}
+
+.filtri select {
+    flex: 1 1 180px;
+}
+
+.filtri input[type="date"] {
+    flex: none;
+    min-width: 0;
+}
+
+label.data {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+}
+
+.riepilogo {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 5px 12px;
+    font-size: 17px;
+}
+
+.riepilogo strong {
+    font-size: 20px;
+}
+
+.uscita {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 14px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.uscita:last-child {
+    border-bottom: none;
+}
+
+.uscita-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.uscita-info .nome {
+    overflow-wrap: anywhere;
+}
+
+.uscita-dettagli {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 14px;
+}
+
+.uscita-dettagli .etichetta {
+    margin-left: 0;
+}
+
+.nota {
+    color: #6b7280;
+    font-size: 14px;
+    margin-top: 4px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.uscita-destra {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.importo {
+    font-size: 19px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.btn-piccolo {
+    padding: 7px 12px;
+    font-size: 14px;
+}
+
+/* --- Finestra inserimento/modifica --- */
+
+dialog {
+    border: none;
+    border-radius: 12px;
+    padding: 24px;
+    width: min(520px, calc(100vw - 32px));
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+}
+
+dialog::backdrop {
+    background: rgba(17,24,39,0.5);
+}
+
+.griglia-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.griglia-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.griglia-form .intera {
+    grid-column: 1 / -1;
+}
+
+.griglia-form input,
+.griglia-form select,
+.griglia-form textarea {
+    width: 100%;
+    min-width: 0;
+    font-weight: normal;
+}
+
+.azioni-finestra {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+@media (max-width: 600px) {
+    .filtri > * {
+        width: 100%;
+        flex: 1 1 100% !important;
+    }
+
+    .filtri label.data input {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+    }
+
+    label.data {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+    }
+
+    .uscita {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .uscita-destra {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .uscita-destra .azioni {
+        width: auto;
+    }
+
+    .griglia-form {
+        grid-template-columns: 1fr;
+    }
 }
