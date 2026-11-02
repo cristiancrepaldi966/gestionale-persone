@@ -19,6 +19,7 @@ public static class Moduli
 {
     public const string Finanze = "finanze";
     public const string Fantapolitica = "fantapolitica";
+    public const string Stampa3d = "stampa3d";
     public const string Admin = "admin";
 
     public static readonly DefinizioneModulo[] Tutti =
@@ -27,6 +28,8 @@ public static class Moduli
         new(Finanze, "Gestione finanze", "Dashboard, uscite e categorie",
             [Livelli.Utente, Livelli.Amministratore]),
         new(Fantapolitica, "Fantapolitica", "Squadre di politici, eventi e classifica",
+            [Livelli.Utente, Livelli.Amministratore]),
+        new(Stampa3d, "Stampa 3D", "Catalogo di oggetti personalizzabili, anteprima e file da stampare",
             [Livelli.Utente, Livelli.Amministratore]),
     ];
 

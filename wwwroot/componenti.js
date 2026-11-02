@@ -147,7 +147,7 @@ async function esci() {
 // Moduli dell'app (codici come in Models/Moduli.cs) con nome, icona e pagine.
 // Menu in alto, pagina di ingresso e controllo delle pagine leggono tutti da qui.
 // amministratore: true = pagina riservata al livello Amministratore del modulo.
-const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", admin: "admin" };
+const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", stampa3d: "stampa3d", admin: "admin" };
 
 const DEFINIZIONE_MODULI = {
     finanze: {
@@ -165,6 +165,13 @@ const DEFINIZIONE_MODULI = {
             { testo: "Politici ed eventi", href: "/fantapolitica-gestione.html", icona: "person-badge", amministratore: true },
         ]
     },
+    stampa3d: {
+        nome: "Stampa 3D", icona: "printer", descrizione: "Catalogo di oggetti personalizzabili, anteprima e file da stampare",
+        pagine: [
+            { testo: "Catalogo", href: "/stampa3d.html", icona: "grid-3x3-gap", anche: ["/stampa3d-configuratore.html"] },
+            { testo: "Progetti", href: "/stampa3d-progetti.html", icona: "folder2-open" },
+        ]
+    },
     admin: {
         nome: "Admin", icona: "shield-lock", descrizione: "Utenti e autorizzazioni ai moduli",
         pagine: [
@@ -174,7 +181,7 @@ const DEFINIZIONE_MODULI = {
     },
 };
 
-const ORDINE_MODULI = [MODULI.admin, MODULI.finanze, MODULI.fantapolitica];   // ordine nella barra e nella pagina di ingresso
+const ORDINE_MODULI = [MODULI.admin, MODULI.finanze, MODULI.fantapolitica, MODULI.stampa3d];   // ordine nella barra e nella pagina di ingresso
 
 // Livello dell'utente in un modulo ("Utente", "Amministratore") o undefined se non ha accesso.
 // Il server dà al Super admin tutti i moduli come Amministratore.

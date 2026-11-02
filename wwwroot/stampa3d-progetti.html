@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progetti - Stampa 3D - Gestionale</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale</a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <div class="small text-body-secondary mb-1"><i class="bi bi-printer" aria-hidden="true"></i> Stampa 3D</div>
+    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="h3 fw-bold mb-0">Progetti</h2>
+        <a class="btn btn-primary btn-tondo" href="/stampa3d.html" title="Nuovo progetto" aria-label="Nuovo progetto">+</a>
+    </div>
+
+    <div class="form-check form-switch mb-3" id="filtroTutti" hidden>
+        <input class="form-check-input" type="checkbox" role="switch" id="tutti">
+        <label class="form-check-label" for="tutti">Mostra i progetti di tutti</label>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-baseline px-1 mb-2 text-body-secondary" id="riepilogo"></div>
+
+    <div class="position-relative">
+        <div class="position-absolute top-0 start-50 translate-middle-x mt-5 text-primary grafico-cerchietto" id="cerchiettoAggiornamento" hidden>
+            <span class="spinner-border" aria-hidden="true"></span>
+            <span class="visually-hidden">Aggiornamento...</span>
+        </div>
+        <ul class="list-group shadow-sm" id="elenco">
+            <li class="list-group-item p-0">
+                <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                    <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                    <span>Caricamento...</span>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+</main>
+
+<script src="componenti.js"></script>
+<script src="js/stampa3d-progetti.js"></script>
+
+</body>
+</html>

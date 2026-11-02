@@ -14,6 +14,11 @@ RUN dotnet publish "GestionalePersone.csproj" \
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 
+# OpenSCAD genera i file STL del modulo Stampa 3D; i font DejaVu servono per i testi.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openscad fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=build /app/publish .

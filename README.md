@@ -1,8 +1,8 @@
 # Gestionale
 
 Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia web in
-`wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria) e
-**Fantapolitica** (in costruzione).
+`wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria),
+**Fantapolitica** (in costruzione) e **Stampa 3D** (oggetti personalizzabili da stampare).
 
 - **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
   modulo abilitato con le sue pagine. In alto, la barra mostra un menu per ogni modulo
@@ -20,6 +20,19 @@ Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia 
     `wwwroot/lib/bootstrap-icons`) e colore tra quelli ammessi (`Models/AspettoCategoria.cs`);
     aggiungi, modifica, elimina (solo se non usate). Al primo avvio vengono create: Casa,
     Spesa alimentare, Bollette, Trasporti, Salute, Svago, Altro.
+- **Stampa 3D**:
+  - **Catalogo** (`stampa3d.html`): 8 oggetti personalizzabili (targhetta, portachiavi, scatola
+    con coperchio, portapenne, supporto per telefono, gancio, sottobicchiere, distanziale).
+  - **Configuratore** (`stampa3d-configuratore.html?oggetto=codice` o `?progetto=id`): le misure
+    dell'oggetto, l'**anteprima 3D** girevole (three.js, `wwwroot/lib/three`) e **Scarica STL**;
+    si salva come progetto.
+  - **Progetti** (`stampa3d-progetti.html`): i propri progetti; l'Amministratore del modulo
+    può mostrare quelli di tutti.
+  - Ogni oggetto è un file **OpenSCAD** in `Modelli3d/`; il catalogo (misure, minimi, massimi,
+    valori predefiniti) è in `Services/CatalogoStampa3d.cs`. Il server controlla le misure e
+    genera l'STL con OpenSCAD (`Services/GeneratoreStl.cs`: massimo 2 generazioni insieme,
+    60 secondi, risultati recenti in memoria). Nel Docker OpenSCAD e i font DejaVu sono già
+    installati; senza Docker serve OpenSCAD nel PATH (oppure `OPENSCAD_PATH`).
 - **Admin** (solo Super admin): **Utenti** (anagrafica e Super admin) e **Moduli** (chi
   accede a ciascun modulo e con che livello).
 
@@ -100,6 +113,7 @@ c'è il **Super admin** (`Utenti.SuperAdmin`).
 |---|---|---|
 | **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
 | **Fantapolitica** (`fantapolitica`) | Panoramica; Politici ed eventi (solo Amministratore). Pagine in costruzione | Utente, Amministratore |
+| **Stampa 3D** (`stampa3d`) | Catalogo, configuratore, progetti propri; l'Amministratore vede i progetti di tutti | Utente, Amministratore |
 | **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |
 
 Dal modulo **Admin** (Super admin):
@@ -177,6 +191,10 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | GET    | `/api/categorie/aspetto` | Icone e colori ammessi |
 | POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (Amministratore di Gestione finanze) |
 | PUT/DELETE | `/api/categorie/{id}` | Modifica / elimina categoria (Amministratore di Gestione finanze) |
+| GET    | `/api/stampa3d/catalogo` | Oggetti del catalogo con le loro misure (Stampa 3D) |
+| POST   | `/api/stampa3d/stl` | File STL di un oggetto, es. `{"oggetto":"targhetta","parametri":{"testo":"CASA"}}` |
+| GET    | `/api/stampa3d/progetti?tutti=` | I miei progetti (tutti, per l'Amministratore) |
+| GET/POST/PUT/DELETE | `/api/stampa3d/progetti/{id}` | Leggi / crea / modifica / elimina un progetto |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |
