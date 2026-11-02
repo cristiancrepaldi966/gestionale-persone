@@ -26,7 +26,7 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   Il JavaScript di Bootstrap non è usato: finestra e tendina sono gestite da `componenti.js`
   (le versioni di Bootstrap su iPhone spostano i tocchi quando si apre la tastiera).
 - **`componenti.css`**: solo le aggiunte a Bootstrap (pulsanti rotondi, cerchio utente,
-  segnaposto delle date, modulo a schermata su telefono).
+  segnaposto delle date, finestra di inserimento su telefono).
 - **`componenti.js`**: funzioni comuni (pulsanti con cerchietto di attesa, invio dei moduli,
   pannello di ricerca, modulo di inserimento, messaggi, etichette, formati, chiamate al
   server, barra in alto e menu utente).

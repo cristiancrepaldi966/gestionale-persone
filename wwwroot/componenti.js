@@ -382,32 +382,43 @@ function pannelloRicerca({ bottone, pannello, pallino, azzera, campi, applica })
 // Modulo di inserimento/modifica (pulsante + e "Modifica")
 // ---------------------------------------------------------------------------
 
-// Su computer è una finestra sospesa; su telefono una schermata normale al posto
-// del contenuto (una finestra sospesa, su iPhone con la tastiera, sposta i tocchi).
+// Su computer è la finestra modale del browser (fissata sullo schermo).
+// Su telefono è una finestra sopra la pagina con lo sfondo scuro, ma "agganciata"
+// alla pagina (position: absolute) invece che fissata sullo schermo: su iPhone gli
+// elementi fissati, quando si apre la tastiera, fanno finire i tocchi nel punto
+// sbagliato; quelli agganciati alla pagina si spostano con lei e restano allineati.
 // Il <dialog> deve contenere un <h2> (titolo) con tabindex="-1" autofocus.
 function moduloFinestra(dialog, { primoCampo } = {}) {
 
-    let scrollSalvato = 0;
-    const aPagina = () => matchMedia("(max-width: 600px), (pointer: coarse)").matches;
+    const suTelefono = () => matchMedia("(max-width: 600px), (pointer: coarse)").matches;
+    let sfondo = null;
 
-    // "close" scatta anche chiudendo con Esc: torna dov'eri.
-    dialog.addEventListener("close", () => {
-        if (document.body.classList.contains("modulo-a-pagina")) {
-            document.body.classList.remove("modulo-a-pagina");
-            window.scrollTo(0, scrollSalvato);
-        }
+    const chiudiSuTelefono = () => {
+        document.body.classList.remove("modale-telefono");
+        if (sfondo) { sfondo.remove(); sfondo = null; }
+    };
+
+    // "close" scatta anche chiudendo con Esc.
+    dialog.addEventListener("close", chiudiSuTelefono);
+
+    // Esc chiude anche la versione per telefono (es. iPad con tastiera).
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && dialog.open && sfondo) dialog.close();
     });
 
     return {
         apri(titolo) {
             if (titolo) dialog.querySelector("h2").textContent = titolo;
-            scrollSalvato = window.scrollY;
 
-            if (aPagina()) {
-                document.body.classList.add("modulo-a-pagina");
+            if (suTelefono()) {
+                sfondo = el("div", "sfondo-modale");
+                sfondo.style.height = document.documentElement.scrollHeight + "px";
+                document.body.appendChild(sfondo);
+                document.body.classList.add("modale-telefono");
+                dialog.style.top = (window.scrollY + 12) + "px";
                 dialog.show();
-                window.scrollTo(0, 0);
             } else {
+                dialog.style.top = "";
                 dialog.showModal();
                 if (primoCampo && !primoCampo.disabled && !primoCampo.readOnly) primoCampo.focus();
             }

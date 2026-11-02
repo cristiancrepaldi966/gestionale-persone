@@ -193,25 +193,31 @@ dialog.finestra h2:focus {
     outline: none;
 }
 
-/* Telefono: il modulo è una schermata normale al posto dell'elenco
-   (una finestra sospesa, su iPhone con la tastiera, sposta i tocchi). */
-body.modulo-a-pagina main {
-    display: none;
+/* Telefono: finestra sopra la pagina con sfondo scuro, agganciata alla pagina
+   (position: absolute) e non fissata sullo schermo: su iPhone, con la tastiera,
+   gli elementi fissati spostano i tocchi. "top" viene impostato da componenti.js. */
+.sfondo-modale {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    min-height: 100%;
+    background: rgba(17, 24, 39, 0.5);
+    z-index: 1040;
 }
 
-body.modulo-a-pagina dialog.finestra[open] {
-    position: static;
-    display: block;
-    width: auto;
+body.modale-telefono {
+    position: relative;
+}
+
+body.modale-telefono dialog.finestra[open] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: calc(100% - 24px);
     max-width: 520px;
-    margin: 1rem;
-    box-shadow: var(--bs-box-shadow-sm);
-}
-
-@media (min-width: 552px) {
-    body.modulo-a-pagina dialog.finestra[open] {
-        margin: 2rem auto;
-    }
+    z-index: 1050;
 }
 
 /* --- Dashboard: grafici --- */
