@@ -37,9 +37,9 @@
             <button type="button" class="btn btn-danger">Elimina</button>
             <button type="button" class="btn btn-sm btn-light border">Modifica</button>
             <button type="button" class="btn btn-sm btn-danger">Elimina</button>
-            <button type="button" class="btn btn-link btn-sm p-0">Azzera filtri</button>
+            <button type="button" class="btn btn-sm btn-light border">Azzera filtri</button>
         </div>
-        <code class="small classi mt-2">btn btn-primary · btn btn-light border · btn btn-danger · btn btn-sm … · btn btn-link btn-sm p-0</code>
+        <code class="small classi mt-2">btn btn-primary · btn btn-light border · btn btn-danger · btn btn-sm btn-light border (Modifica, Azzera filtri) · btn btn-sm btn-danger</code>
 
         <h3 class="h6 fw-bold mt-4">Pulsanti rotondi</h3>
         <div class="d-flex gap-2 align-items-center">
@@ -96,16 +96,20 @@
             <div class="col-4">
                 <select class="form-select vuoto" aria-label="Categoria"><option value="">Categoria</option></select>
             </div>
-            <div class="col-4 campo-data">
-                <input type="date" class="form-control vuoto" aria-label="Dal">
-                <span class="segnaposto" aria-hidden="true">Dal</span>
+            <div class="col-4">
+                <div class="campo-data">
+                    <input type="date" class="form-control vuoto" aria-label="Dal">
+                    <span class="segnaposto" aria-hidden="true">Dal</span>
+                </div>
             </div>
-            <div class="col-4 campo-data">
-                <input type="date" class="form-control vuoto" aria-label="Al">
-                <span class="segnaposto" aria-hidden="true">Al</span>
+            <div class="col-4">
+                <div class="campo-data">
+                    <input type="date" class="form-control vuoto" aria-label="Al">
+                    <span class="segnaposto" aria-hidden="true">Al</span>
+                </div>
             </div>
         </div>
-        <code class="small classi mt-2">row g-2 filtri · form-select vuoto · col-4 campo-data + input.form-control.vuoto + span.segnaposto</code>
+        <code class="small classi mt-2">row g-2 filtri · form-select vuoto · col-4 > div.campo-data > input.form-control.vuoto + span.segnaposto</code>
 
         <h3 class="h6 fw-bold mt-4">Messaggi</h3>
         <div class="small text-danger">Scegli una categoria.</div>
