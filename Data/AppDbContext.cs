@@ -47,7 +47,6 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Uscita>(u =>
         {
             u.Property(x => x.Importo).HasPrecision(12, 2);
-            u.Property(x => x.Descrizione).HasMaxLength(200).IsRequired();
             u.Property(x => x.Note).HasMaxLength(1000);
             u.HasIndex(x => x.Data);
 

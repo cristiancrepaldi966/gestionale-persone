@@ -3,7 +3,7 @@
 Piccola applicazione ASP.NET Core 10 + PostgreSQL per registrare le uscite (spese)
 divise per categoria, con interfaccia web in `wwwroot/`.
 
-- **Dashboard** (`index.html`): ricerca per testo (descrizione e note), categoria e
+- **Dashboard** (`index.html`): ricerca per testo (note e nome della categoria), categoria e
   intervallo di date, con numero e totale delle uscite trovate; pulsante **+** in alto a
   destra per inserire un'uscita; elenco con modifica ed eliminazione.
 - **Categorie** (`categorie.html`): aggiungi, rinomina, elimina (solo se non usate).
@@ -94,6 +94,6 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | GET/POST | `/api/utenti`     | Elenco / crea utenti (solo admin) |
 | PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (solo admin) |
 
-Un'uscita richiede data, importo maggiore di zero, descrizione (max 200 caratteri) e
-categoria; le note sono facoltative. Se i dati non sono validi l'API risponde
+Un'uscita richiede data, importo maggiore di zero e categoria; le note (max 1000
+caratteri) sono facoltative. Se i dati non sono validi l'API risponde
 `400 Bad Request` con i dettagli dell'errore.
