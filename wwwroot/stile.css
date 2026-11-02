@@ -708,3 +708,92 @@ input:not([type="checkbox"]),
 select {
     height: 46px;
 }
+
+/* --- Cerchietto di caricamento --- */
+
+@keyframes gira {
+    to { transform: rotate(360deg); }
+}
+
+.cerchietto {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #d1d5db;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: gira 0.8s linear infinite;
+    flex: none;
+}
+
+/* Pulsante in attesa: il testo resta (per la larghezza) ma è nascosto, al centro gira il cerchietto. */
+button.caricamento {
+    position: relative;
+    color: transparent !important;
+    cursor: wait;
+    pointer-events: none;
+}
+
+button.caricamento:disabled {
+    opacity: 1;
+}
+
+button.caricamento::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    margin: -12px 0 0 -12px;
+    border: 3px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: gira 0.8s linear infinite;
+}
+
+button.btn-secondary.caricamento::after,
+button.tendina-voce.caricamento::after,
+button.link.caricamento::after {
+    border-color: #d1d5db;
+    border-top-color: #374151;
+}
+
+button.btn-piccolo.caricamento::after {
+    width: 14px;
+    height: 14px;
+    margin: -10px 0 0 -10px;
+}
+
+.caricamento-elenco {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #6b7280;
+    padding: 10px 0;
+}
+
+/* Elenco che si aggiorna (es. cambio filtri): leggermente sbiadito con il cerchietto in alto. */
+.in-aggiornamento {
+    position: relative;
+}
+
+.in-aggiornamento > * {
+    opacity: 0.45;
+    transition: opacity 0.15s;
+}
+
+.in-aggiornamento::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 24px;
+    width: 24px;
+    height: 24px;
+    margin-left: -15px;
+    border: 3px solid #d1d5db;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: gira 0.8s linear infinite;
+    z-index: 1;
+}

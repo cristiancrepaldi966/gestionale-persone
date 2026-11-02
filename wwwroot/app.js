@@ -8,11 +8,53 @@ function el(tag, className, text) {
     return e;
 }
 
+// Se onClick è asincrono (salva, elimina, esci...), il pulsante mostra il
+// cerchietto che gira finché l'operazione non è finita.
 function pulsante(testo, className, onClick) {
     const b = el("button", className, testo);
     b.type = "button";
-    b.addEventListener("click", onClick);
+    b.addEventListener("click", e => {
+        const risultato = onClick(e);
+        if (risultato && typeof risultato.then === "function") {
+            conAttesa(b, () => risultato);
+        }
+    });
     return b;
+}
+
+// Mostra il cerchietto nel pulsante e lo blocca mentre "azione" è in corso
+// (così un doppio clic non invia la stessa richiesta due volte).
+async function conAttesa(bottone, azione) {
+    if (!bottone || bottone.classList.contains("caricamento")) {
+        return bottone ? undefined : azione();
+    }
+    bottone.classList.add("caricamento");
+    bottone.disabled = true;
+    bottone.setAttribute("aria-busy", "true");
+    try {
+        return await azione();
+    } finally {
+        bottone.classList.remove("caricamento");
+        bottone.disabled = false;
+        bottone.removeAttribute("aria-busy");
+    }
+}
+
+// Collega l'invio di un modulo: il pulsante di invio mostra il cerchietto.
+function alInvio(form, gestore) {
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+        const bottone = form.querySelector('button[type="submit"]');
+        if (bottone && bottone.classList.contains("caricamento")) return;
+        conAttesa(bottone, () => gestore(e));
+    });
+}
+
+// Cerchietto da mettere in un elenco mentre si carica.
+function cerchiettoCaricamento(testo = "Caricamento...") {
+    const div = el("div", "caricamento-elenco");
+    div.append(el("span", "cerchietto"), el("span", null, testo));
+    return div;
 }
 
 // Estrae un messaggio leggibile dalla risposta di errore dell'API.
