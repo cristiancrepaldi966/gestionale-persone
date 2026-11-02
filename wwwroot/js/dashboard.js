@@ -267,7 +267,7 @@ async function caricaRiepilogo() {
 
 carosello($("carosello"));
 
-avviaPagina()
+avviaPagina({ modulo: MODULI.uscite })
     .then(caricaCategorie)
     .then(caricaRiepilogo)
     .catch(() => {

@@ -171,7 +171,7 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formCategoria"), salva);
 
-avviaPagina({ soloAdmin: true })
+avviaPagina({ modulo: MODULI.admin, amministratore: true })
     .then(async () => {
         aspetto = await (await api(`${API}/aspetto`)).json();
         preparaScelte();

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nessun accesso - Gestionale Uscite</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale Uscite</a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto-stretto py-5">
+    <div class="card card-body shadow-sm border-0 p-4 text-center">
+        <i class="bi bi-lock fs-1 text-body-secondary" aria-hidden="true"></i>
+        <h2 class="h4 fw-bold mt-2">Nessun modulo disponibile</h2>
+        <p class="text-body-secondary mb-0">
+            Il tuo utente non ha ancora accesso a nessun modulo.
+            Chiedi a un amministratore di assegnarti le autorizzazioni.
+        </p>
+    </div>
+</main>
+
+<script src="componenti.js"></script>
+<script src="js/nessun-accesso.js"></script>
+
+</body>
+</html>

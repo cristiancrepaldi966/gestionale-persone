@@ -2,7 +2,7 @@
 // permette solo script caricati da file del sito).
 
 // Esempi interattivi (nessun dato reale).
-const utenteEsempio = { id: 0, email: "admin@example.com", isAdmin: true };
+const utenteEsempio = { id: 0, nome: "Mario", cognome: "Rossi", email: "admin@example.com", moduli: { uscite: "Utente", admin: "Amministratore" } };
 document.getElementById("barraEsempio").append(menuPagine(utenteEsempio), menuProfilo(utenteEsempio));
 
 const attesa = ms => new Promise(r => setTimeout(r, ms));

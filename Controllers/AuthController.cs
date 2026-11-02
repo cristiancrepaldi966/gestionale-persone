@@ -29,7 +29,8 @@ public class AuthController : ControllerBase
 
     public record CambioPasswordRequest(string PasswordAttuale, string NuovaPassword);
 
-    public record UtenteCorrente(int Id, string Nome, string Cognome, string Email, bool IsAdmin);
+    // Moduli: codice del modulo → livello (solo i moduli a cui ha accesso).
+    public record UtenteCorrente(int Id, string Nome, string Cognome, string Email, Dictionary<string, string> Moduli);
 
     [HttpPost("login")]
     [AllowAnonymous]
@@ -53,8 +54,9 @@ public class AuthController : ControllerBase
             new(ClaimTypes.Name, utente.Email),
             new(ClaimVersione, utente.VersioneSessione.ToString()),
         };
-        if (utente.IsAdmin)
-            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        var autorizzazioni = await _context.Autorizzazioni.AsNoTracking()
+            .Where(a => a.UtenteId == utente.Id).ToListAsync();
+        claims.AddRange(Accesso.Claims(autorizzazioni));
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -62,7 +64,7 @@ public class AuthController : ControllerBase
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identity));
 
-        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, utente.IsAdmin);
+        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, Accesso.Mappa(autorizzazioni));
     }
 
     [HttpPost("logout")]
@@ -79,10 +81,11 @@ public class AuthController : ControllerBase
     {
         // Letto dal database: nome e cognome possono essere cambiati dall'amministratore.
         var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var utente = await _context.Utenti.AsNoTracking().SingleOrDefaultAsync(u => u.Id == id);
+        var utente = await _context.Utenti.AsNoTracking().Include(u => u.Autorizzazioni)
+            .SingleOrDefaultAsync(u => u.Id == id);
         if (utente == null)
             return Unauthorized();
-        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, utente.IsAdmin);
+        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, Accesso.Mappa(utente.Autorizzazioni));
     }
 
     [HttpPost("password")]

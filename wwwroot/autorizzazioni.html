@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autorizzazioni - Gestionale Uscite</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale Uscite</a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h3 fw-bold mb-0">Autorizzazioni</h2>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary bg-white btn-tondo" id="cerca"
+                    title="Cerca" aria-label="Cerca" aria-expanded="false" aria-controls="pannelloFiltri">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                    <line x1="15.5" y1="15.5" x2="21" y2="21"></line>
+                </svg>
+                <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-2 border-white rounded-circle"
+                      id="pallinoFiltri" hidden><span class="visually-hidden">Filtri attivi</span></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="card card-body shadow-sm border-0 mb-3" id="pannelloFiltri" hidden>
+        <div class="row g-2 filtri">
+            <div class="col-12">
+                <input type="search" id="filtroTesto" class="form-control" placeholder="Nome, cognome o email"
+                       aria-label="Cerca per nome, cognome o email" enterkeyhint="search">
+            </div>
+        </div>
+        <div class="text-end mt-2">
+            <button type="button" class="btn btn-sm btn-light border" id="azzera">Azzera filtri</button>
+        </div>
+    </div>
+
+    <p class="small text-body-secondary px-1 mb-2" id="spiegazione"></p>
+
+    <div class="card shadow-sm border-0">
+        <div class="list-group list-group-flush rounded" id="listaAutorizzazioni">
+            <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                <span>Caricamento...</span>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="componenti.js"></script>
+<script src="js/autorizzazioni.js"></script>
+
+</body>
+</html>

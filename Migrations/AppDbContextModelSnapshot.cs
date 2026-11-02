@@ -22,6 +22,25 @@ namespace GestionalePersone.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GestionalePersone.Models.Autorizzazione", b =>
+                {
+                    b.Property<int>("UtenteId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Modulo")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Livello")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("UtenteId", "Modulo");
+
+                    b.ToTable("Autorizzazioni");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
@@ -176,9 +195,6 @@ namespace GestionalePersone.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Nome")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -226,6 +242,17 @@ namespace GestionalePersone.Migrations
                     b.ToTable("DataProtectionKeys");
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.Autorizzazione", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Utente", "Utente")
+                        .WithMany("Autorizzazioni")
+                        .HasForeignKey("UtenteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Utente");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
                 {
                     b.HasOne("GestionalePersone.Models.Categoria", "Categoria")
@@ -242,6 +269,11 @@ namespace GestionalePersone.Migrations
                     b.Navigation("Categoria");
 
                     b.Navigation("CreatoDa");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Utente", b =>
+                {
+                    b.Navigation("Autorizzazioni");
                 });
 #pragma warning restore 612, 618
         }

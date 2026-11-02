@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using GestionalePersone.Data;
 using GestionalePersone.Models;
+using GestionalePersone.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GestionalePersone.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Policy = Politiche.LetturaCategorie)]
 [Route("api/categorie")]
 public class CategorieController : ControllerBase
 {
@@ -61,7 +62,7 @@ public class CategorieController : ControllerBase
     // Tutti possono leggere le categorie (servono per inserire le uscite);
     // crearle, rinominarle ed eliminarle è riservato agli amministratori.
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politiche.Admin)]
     public async Task<ActionResult<CategoriaDto>> CreaCategoria(CategoriaRequest categoria)
     {
         var nome = categoria.Nome.Trim();
@@ -82,7 +83,7 @@ public class CategorieController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politiche.Admin)]
     public async Task<IActionResult> RinominaCategoria(int id, CategoriaRequest categoria)
     {
         var esistente = await _context.Categorie.FindAsync(id);
@@ -106,7 +107,7 @@ public class CategorieController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = Politiche.Admin)]
     public async Task<IActionResult> EliminaCategoria(int id)
     {
         var categoria = await _context.Categorie.FindAsync(id);

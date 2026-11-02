@@ -144,9 +144,25 @@ async function esci() {
 // Pagina e barra in alto
 // ---------------------------------------------------------------------------
 
+// Moduli dell'app (devono corrispondere a Models/Moduli.cs).
+const MODULI = { uscite: "uscite", admin: "admin" };
+
+// Livello dell'utente in un modulo ("Utente", "Amministratore") o undefined se non ha accesso.
+const livello = (utente, modulo) => (utente.moduli || {})[modulo];
+const eAmministratoreAdmin = utente => livello(utente, MODULI.admin) === "Amministratore";
+
+// Prima pagina a cui l'utente ha accesso.
+function paginaIniziale(utente) {
+    if (livello(utente, MODULI.uscite)) return "/";
+    if (eAmministratoreAdmin(utente)) return "/utenti.html";
+    return "/nessun-accesso.html";
+}
+
 // Controlla l'accesso e disegna la barra in alto. Restituisce l'utente corrente.
+// modulo: la pagina richiede l'accesso a quel modulo; amministratore: richiede il
+// livello Amministratore. Senza accesso si va alla prima pagina consentita.
 // Se serve cambiare pagina, la promessa non si risolve mai: il resto non viene eseguito.
-async function avviaPagina({ soloAdmin = false } = {}) {
+async function avviaPagina({ modulo = null, amministratore = false } = {}) {
     const response = await fetch("/api/auth/me", { credentials: "same-origin" });
 
     if (!response.ok) {
@@ -156,8 +172,11 @@ async function avviaPagina({ soloAdmin = false } = {}) {
 
     const utente = await response.json();
 
-    if (soloAdmin && !utente.isAdmin) {
-        location.href = "/";
+    const consentito = !modulo ||
+        (amministratore ? livello(utente, modulo) === "Amministratore" : !!livello(utente, modulo));
+
+    if (!consentito) {
+        location.href = paginaIniziale(utente);
         return new Promise(() => { });
     }
 
@@ -171,7 +190,8 @@ async function avviaPagina({ soloAdmin = false } = {}) {
 }
 
 // Link alle pagine (nav-pills di Bootstrap); quella aperta è evidenziata.
-// Gli amministratori hanno in più la voce "Admin" con la tendina Utenti / Categorie.
+// Dashboard e Uscite per chi ha il modulo Uscite; "Admin" (Utenti, Autorizzazioni,
+// Categorie) per chi è Amministratore del modulo Admin.
 function menuPagine(utente) {
     const menu = el("nav", "menu-pagine nav nav-pills gap-1");
     const corrente = location.pathname === "/index.html" ? "/" : location.pathname;
@@ -183,14 +203,15 @@ function menuPagine(utente) {
         return a;
     };
 
-    for (const [testo, href] of [["Dashboard", "/dashboard.html"], ["Uscite", "/"]]) {
+    const pagine = livello(utente, MODULI.uscite) ? [["Dashboard", "/dashboard.html"], ["Uscite", "/"]] : [];
+    for (const [testo, href] of pagine) {
         const attiva = href === corrente;
         menu.appendChild(voce(testo, href, "nav-link py-1 px-3 " +
             (attiva ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), attiva));
     }
 
-    if (utente.isAdmin) {
-        const pagineAdmin = [["Utenti", "/utenti.html"], ["Categorie", "/categorie.html"]];
+    if (eAmministratoreAdmin(utente)) {
+        const pagineAdmin = [["Utenti", "/utenti.html"], ["Autorizzazioni", "/autorizzazioni.html"], ["Categorie", "/categorie.html"]];
         const inAdmin = pagineAdmin.some(([, href]) => href === corrente);
 
         const contenitore = el("div", "dropdown");
@@ -259,7 +280,7 @@ function menuProfilo(utente) {
     intestazione.appendChild(el("div", "small text-body-secondary", "Accesso effettuato come"));
     if (nome) intestazione.appendChild(el("div", "fw-bold text-break mt-1", nome));
     intestazione.appendChild(el("div", (nome ? "small text-body-secondary" : "fw-bold mt-1") + " text-break mb-1", utente.email));
-    if (utente.isAdmin) intestazione.appendChild(etichetta("Amministratore", "primary"));
+    intestazione.appendChild(etichetteModuli(utente.moduli));
 
     const cambio = el("a", "dropdown-item py-2", "Cambia password");
     cambio.href = "/password.html";
@@ -542,4 +563,25 @@ function carosello(contenitore) {
     });
 
     aggiorna();
+}
+
+// ---------------------------------------------------------------------------
+// Moduli e autorizzazioni
+// ---------------------------------------------------------------------------
+
+const NOMI_MODULI = { uscite: "Uscite", admin: "Admin" };
+
+// Etichette "Modulo · Livello" (es. "Admin · Amministratore", "Uscite · Utente").
+function etichetteModuli(moduli) {
+    const div = el("div", "d-flex flex-wrap gap-1");
+    const voci = Object.entries(moduli || {});
+    if (voci.length === 0) {
+        div.appendChild(etichetta("Nessun accesso", "danger"));
+        return div;
+    }
+    for (const [modulo, liv] of voci.sort()) {
+        div.appendChild(etichetta(`${NOMI_MODULI[modulo] || modulo} · ${liv}`,
+            liv === "Amministratore" ? "primary" : "secondary"));
+    }
+    return div;
 }

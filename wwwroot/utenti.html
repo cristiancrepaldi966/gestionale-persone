@@ -37,10 +37,8 @@
     <div class="card card-body shadow-sm border-0 mb-3" id="pannelloFiltri" hidden>
         <div class="row g-2 filtri">
             <div class="col-6 col-sm-3">
-                <select id="filtroRuolo" class="form-select vuoto" aria-label="Ruolo">
-                    <option value="">Ruolo</option>
-                    <option value="admin">Amministratori</option>
-                    <option value="utente">Utenti</option>
+                <select id="filtroModulo" class="form-select vuoto" aria-label="Modulo">
+                    <option value="">Modulo</option>
                 </select>
             </div>
             <div class="col-12 col-sm-6 order-last order-sm-0">
@@ -80,12 +78,8 @@
 
         <div class="row g-3">
             <div class="col-12">
-                <label for="ruolo" class="form-label fw-semibold">Ruolo</label>
-                <select id="ruolo" class="form-select" aria-describedby="aiutoRuolo">
-                    <option value="utente">Utente</option>
-                    <option value="admin">Amministratore</option>
-                </select>
-                <div class="form-text" id="aiutoRuolo">L'utente gestisce le uscite; l'amministratore anche utenti e categorie.</div>
+                <div class="fw-semibold mb-1">Autorizzazioni ai moduli</div>
+                <div class="row g-2" id="autorizzazioniModulo"></div>
             </div>
 
             <div class="col-6">
@@ -114,7 +108,7 @@
                     <input class="form-check-input" type="checkbox" id="attivo">
                     <label class="form-check-label" for="attivo">Attivo (può accedere)</label>
                 </div>
-                <div class="form-text" id="aiutoSeStesso" hidden>Non puoi togliere a te stesso i permessi di amministratore o disattivarti.</div>
+                <div class="form-text" id="aiutoSeStesso" hidden>Non puoi togliere a te stesso l'amministrazione del modulo Admin o disattivarti.</div>
             </div>
         </div>
 

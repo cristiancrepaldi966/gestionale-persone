@@ -160,7 +160,14 @@ public class ServizioUtenti
             return;
         }
 
-        var admin = new Utente { Email = NormalizzaEmail(email), IsAdmin = true };
+        // Il primo amministratore riceve il livello più alto in tutti i moduli.
+        var admin = new Utente
+        {
+            Email = NormalizzaEmail(email),
+            Autorizzazioni = Moduli.Tutti
+                .Select(m => new Autorizzazione { Modulo = m.Codice, Livello = m.Livelli[^1] })
+                .ToList()
+        };
         ImpostaPassword(admin, password);
         _context.Utenti.Add(admin);
         await _context.SaveChangesAsync();

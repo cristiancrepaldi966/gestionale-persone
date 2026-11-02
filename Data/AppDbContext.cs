@@ -17,6 +17,8 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Utente> Utenti => Set<Utente>();
 
+    public DbSet<Autorizzazione> Autorizzazioni => Set<Autorizzazione>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -30,6 +32,16 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             u.Property(x => x.Cognome).HasMaxLength(100).IsRequired().HasDefaultValue("");
             u.HasIndex(x => x.Email).IsUnique();
             u.Property(x => x.PasswordHash).IsRequired();
+        });
+
+        modelBuilder.Entity<Autorizzazione>(a =>
+        {
+            a.HasKey(x => new { x.UtenteId, x.Modulo });
+            a.Property(x => x.Modulo).HasMaxLength(30);
+            a.Property(x => x.Livello).HasMaxLength(20).IsRequired();
+            a.HasOne(x => x.Utente).WithMany(u => u.Autorizzazioni)
+                .HasForeignKey(x => x.UtenteId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Categoria>(c =>
