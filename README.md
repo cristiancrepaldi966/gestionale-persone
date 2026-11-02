@@ -14,6 +14,10 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   `wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
 - **Menu**: Dashboard, Uscite e, solo per gli amministratori, **Admin** con la tendina
   Utenti / Categorie.
+- **Icona e colore delle categorie**: ogni categoria ha un'icona (Bootstrap Icons, in
+  `wwwroot/lib/bootstrap-icons`) e un colore scelti dall'amministratore tra quelli ammessi
+  (`Models/AspettoCategoria.cs`). Nell'elenco delle uscite ogni riga ha la striscia del colore
+  e l'icona della categoria; la dashboard usa gli stessi colori e icone.
 - **Categorie** e **Utenti** (solo amministratori): stesso layout delle uscite (lente per cercare, + per inserire,
   modifica nella stessa finestra). Categorie: aggiungi, rinomina, elimina (solo se non usate).
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
@@ -133,7 +137,8 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | PUT    | `/api/uscite/{id}`  | Modifica uscita      |
 | DELETE | `/api/uscite/{id}`  | Elimina uscita       |
 | GET    | `/api/categorie`    | Elenco categorie     |
-| POST   | `/api/categorie`    | Crea categoria (solo admin) |
+| GET    | `/api/categorie/aspetto` | Icone e colori ammessi |
+| POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (solo admin) |
 | PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria (solo admin) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |

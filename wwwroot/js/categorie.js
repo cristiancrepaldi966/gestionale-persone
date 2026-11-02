@@ -17,6 +17,48 @@ const ricerca = pannelloRicerca({
 
 const modulo = moduloFinestra($("finestra"), { primoCampo: $("nome") });
 
+let aspetto = { icone: [], colori: [] };   // icone e colori ammessi (dal server)
+
+const scelto = nome => (document.querySelector(`input[name="${nome}"]:checked`) || {}).value;
+
+// Griglia di icone e campioni di colore (pulsanti radio di Bootstrap).
+function preparaScelte() {
+    $("sceltaIcone").replaceChildren(...aspetto.icone.flatMap(icona => {
+        const input = el("input", "btn-check");
+        Object.assign(input, { type: "radio", name: "icona", id: "icona-" + icona, value: icona });
+        const label = el("label", "btn btn-outline-secondary");
+        label.htmlFor = input.id;
+        label.title = icona;
+        label.appendChild(el("i", "bi bi-" + icona));
+        label.appendChild(el("span", "visually-hidden", icona));
+        return [input, label];
+    }));
+
+    $("sceltaColori").replaceChildren(...aspetto.colori.map((colore, i) => {
+        const span = el("span");
+        const input = el("input", "btn-check");
+        Object.assign(input, { type: "radio", name: "colore", id: "colore-" + i, value: colore });
+        const label = el("label", "campione-scelta");
+        label.htmlFor = input.id;
+        label.title = colore;
+        label.style.setProperty("--colore", colore);
+        label.appendChild(el("span", "visually-hidden", "Colore " + (i + 1)));
+        span.append(input, label);
+        return span;
+    }));
+
+    $("finestra").addEventListener("change", aggiornaAnteprima);
+}
+
+function aggiornaAnteprima() {
+    $("anteprima").replaceChildren(iconaCategoria(scelto("icona") || "tag", scelto("colore") || "#6c757d"));
+}
+
+function seleziona(nome, valore) {
+    const input = document.querySelector(`input[name="${nome}"][value="${valore}"]`);
+    if (input) input.checked = true;
+}
+
 async function caricaCategorie() {
     try {
         const response = await api(API);
@@ -50,9 +92,14 @@ function mostraCategorie() {
 
 function rigaCategoria(c) {
 
-    const riga = el("div", "list-group-item riga d-flex justify-content-between align-items-center gap-3 py-3");
+    const riga = coloraRiga(
+        el("div", "list-group-item riga d-flex justify-content-between align-items-center gap-3 py-3"), c.colore);
+
+    const sinistra = el("div", "d-flex align-items-center gap-3");
+    sinistra.appendChild(iconaCategoria(c.icona, c.colore));
 
     const info = el("div", "text-break");
+    sinistra.appendChild(info);
     info.appendChild(el("div", "fw-bold fs-5", c.nome));
     info.appendChild(el("div", "small text-body-secondary",
         c.numeroUscite === 0 ? "Nessuna uscita" :
@@ -62,13 +109,16 @@ function rigaCategoria(c) {
     azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apri(c)));
     azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => elimina(c)));
 
-    riga.append(info, azioni);
+    riga.append(sinistra, azioni);
     return riga;
 }
 
 function apri(c) {
     inModifica = c || null;
     $("nome").value = c ? c.nome : "";
+    seleziona("icona", c ? c.icona : "tag");
+    seleziona("colore", c ? c.colore : aspetto.colori[0]);
+    aggiornaAnteprima();
     $("erroreFinestra").textContent = "";
     modulo.apri(c ? "Modifica categoria" : "Nuova categoria");
 }
@@ -85,8 +135,8 @@ async function salva() {
 
     try {
         const response = inModifica
-            ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", { nome }))
-            : await api(API, jsonBody("POST", { nome }));
+            ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", { nome, icona: scelto("icona"), colore: scelto("colore") }))
+            : await api(API, jsonBody("POST", { nome, icona: scelto("icona"), colore: scelto("colore") }));
 
         if (!response.ok) {
             errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
@@ -121,4 +171,9 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formCategoria"), salva);
 
-avviaPagina({ soloAdmin: true }).then(caricaCategorie);
+avviaPagina({ soloAdmin: true })
+    .then(async () => {
+        aspetto = await (await api(`${API}/aspetto`)).json();
+        preparaScelte();
+    })
+    .then(caricaCategorie);

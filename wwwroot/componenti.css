@@ -245,3 +245,67 @@ body.modale-telefono dialog.finestra[open] {
 .grafico-cerchietto {
     z-index: 2;
 }
+
+/* --- Categorie: icona colorata e riga colorata --- */
+
+/* Cerchio con l'icona della categoria; il colore arriva da --colore (impostato da componenti.js). */
+.icona-categoria {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--colore, #6c757d);
+    color: #fff;
+    font-size: 1.15rem;
+}
+
+.icona-categoria.piccola {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+}
+
+/* Riga dell'elenco con la striscia del colore della categoria a sinistra. */
+.riga-colorata {
+    border-left: 5px solid var(--colore, #6c757d) !important;
+}
+
+/* Scelta di icona e colore nella finestra della categoria. */
+.scelta-icone {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 6px;
+}
+
+.scelta-icone .btn {
+    font-size: 1.2rem;
+    padding: 0.35rem 0;
+}
+
+.scelta-colori {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.campione-scelta {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--colore);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.btn-check:checked + .campione-scelta {
+    box-shadow: 0 0 0 3px var(--bs-body-color);
+}
+
+.btn-check:focus-visible + .campione-scelta {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 3px;
+}

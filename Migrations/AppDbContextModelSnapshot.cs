@@ -30,6 +30,20 @@ namespace GestionalePersone.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Colore")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasDefaultValue("#6c757d");
+
+                    b.Property<string>("Icona")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("tag");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -46,36 +60,50 @@ namespace GestionalePersone.Migrations
                         new
                         {
                             Id = 1,
+                            Colore = "#2a78d6",
+                            Icona = "house-door",
                             Nome = "Casa"
                         },
                         new
                         {
                             Id = 2,
+                            Colore = "#eb6834",
+                            Icona = "cart3",
                             Nome = "Spesa alimentare"
                         },
                         new
                         {
                             Id = 3,
+                            Colore = "#eda100",
+                            Icona = "lightning-charge",
                             Nome = "Bollette"
                         },
                         new
                         {
                             Id = 4,
+                            Colore = "#1baf7a",
+                            Icona = "car-front",
                             Nome = "Trasporti"
                         },
                         new
                         {
                             Id = 5,
+                            Colore = "#e34948",
+                            Icona = "heart-pulse",
                             Nome = "Salute"
                         },
                         new
                         {
                             Id = 6,
+                            Colore = "#e87ba4",
+                            Icona = "controller",
                             Nome = "Svago"
                         },
                         new
                         {
                             Id = 7,
+                            Colore = "#6c757d",
+                            Icona = "tag",
                             Nome = "Altro"
                         });
                 });

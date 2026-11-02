@@ -81,9 +81,15 @@ async function caricaUscite() {
 
 function rigaUscita(u) {
 
-    const riga = el("div", "list-group-item uscita d-flex flex-column flex-sm-row justify-content-between gap-2 py-3");
+    const riga = coloraRiga(
+        el("div", "list-group-item uscita d-flex flex-column flex-sm-row justify-content-between gap-2 py-3"),
+        u.categoriaColore);
+
+    const sinistra = el("div", "d-flex gap-3 align-items-start");
+    sinistra.appendChild(iconaCategoria(u.categoriaIcona, u.categoriaColore));
 
     const info = el("div", "text-break");
+    sinistra.appendChild(info);
     info.appendChild(el("div", "fw-bold fs-5", u.categoria));
 
     const dettagli = el("div", "d-flex flex-wrap gap-2 small");
@@ -101,7 +107,7 @@ function rigaUscita(u) {
     azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => eliminaUscita(u)));
     destra.appendChild(azioni);
 
-    riga.append(info, destra);
+    riga.append(sinistra, destra);
     return riga;
 }
 
