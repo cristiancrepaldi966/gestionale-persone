@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GestionalePersone.Controllers;
 
-// Modulo Admin: persone e loro autorizzazioni ai moduli.
+// Modulo Admin (solo Super admin): anagrafica delle persone e Super admin.
 [ApiController]
 [Route("api/utenti")]
 [Authorize(Policy = Politiche.Admin)]
@@ -25,19 +25,20 @@ public class UtentiController : ControllerBase
 
     // Autorizzazioni: codice del modulo → livello (solo i moduli a cui ha accesso).
     public record UtenteDto(
-        int Id, string Nome, string Cognome, string Email, Dictionary<string, string> Autorizzazioni,
+        int Id, string Nome, string Cognome, string Email, bool SuperAdmin, Dictionary<string, string> Autorizzazioni,
         bool Attivo, DateTime CreatoIl, DateTime? UltimoAccesso, bool Bloccato);
 
     // Campi "string?": se mancano risponde il nostro controllo (in italiano), non quello automatico.
     // Autorizzazioni: modulo → livello; livello vuoto o null = nessun accesso.
+    // SuperAdmin null (in modifica) = invariato.
     public record NuovoUtenteRequest(string? Nome, string? Cognome, string? Email, string? Password,
-        Dictionary<string, string?>? Autorizzazioni);
+        Dictionary<string, string?>? Autorizzazioni, bool SuperAdmin = false);
 
     public record ModificaUtenteRequest(string? Nome, string? Cognome, bool Attivo, string? NuovaPassword,
-        Dictionary<string, string?>? Autorizzazioni);
+        Dictionary<string, string?>? Autorizzazioni, bool? SuperAdmin = null);
 
     private static UtenteDto ToDto(Utente u) => new(
-        u.Id, u.Nome, u.Cognome, u.Email, Accesso.Mappa(u.Autorizzazioni), u.Attivo, u.CreatoIl, u.UltimoAccesso,
+        u.Id, u.Nome, u.Cognome, u.Email, u.SuperAdmin, Accesso.Mappa(u.Autorizzazioni), u.Attivo, u.CreatoIl, u.UltimoAccesso,
         u.BloccatoFinoA > DateTime.UtcNow);
 
     // Nome e cognome: obbligatori, massimo 100 caratteri ciascuno.
@@ -67,9 +68,6 @@ public class UtentiController : ControllerBase
         }
         return null;
     }
-
-    private static bool EAmministratore(IEnumerable<Autorizzazione> autorizzazioni) =>
-        autorizzazioni.Any(a => a.Modulo == Moduli.Admin && a.Livello == Livelli.Amministratore);
 
     private int IdCorrente => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -112,6 +110,7 @@ public class UtentiController : ControllerBase
             Nome = richiesta.Nome!.Trim(),
             Cognome = richiesta.Cognome!.Trim(),
             Email = email,
+            SuperAdmin = richiesta.SuperAdmin,
             Autorizzazioni = autorizzazioni
         };
         _utenti.ImpostaPassword(utente, richiesta.Password!);
@@ -142,7 +141,8 @@ public class UtentiController : ControllerBase
                 return BadRequest(new { messaggio = erroreAut });
         }
 
-        var erroreAdmin = await ControllaPerditaAmministratore(utente, nuove, richiesta.Attivo);
+        var superAdmin = richiesta.SuperAdmin ?? utente.SuperAdmin;
+        var erroreAdmin = await ControllaPerditaSuperAdmin(utente, superAdmin, richiesta.Attivo);
         if (erroreAdmin != null)
             return BadRequest(new { messaggio = erroreAdmin });
 
@@ -160,6 +160,7 @@ public class UtentiController : ControllerBase
         utente.Nome = richiesta.Nome!.Trim();
         utente.Cognome = richiesta.Cognome!.Trim();
         utente.Attivo = richiesta.Attivo;
+        utente.SuperAdmin = superAdmin;
         SostituisciAutorizzazioni(utente, nuove);
 
         await _context.SaveChangesAsync();
@@ -178,10 +179,6 @@ public class UtentiController : ControllerBase
         if (erroreAut != null)
             return BadRequest(new { messaggio = erroreAut });
 
-        var erroreAdmin = await ControllaPerditaAmministratore(utente, nuove, utente.Attivo);
-        if (erroreAdmin != null)
-            return BadRequest(new { messaggio = erroreAdmin });
-
         SostituisciAutorizzazioni(utente, nuove);
         await _context.SaveChangesAsync();
         return Ok(ToDto(utente));
@@ -197,26 +194,27 @@ public class UtentiController : ControllerBase
         if (utente == null)
             return NotFound();
 
-        if (EAmministratore(utente.Autorizzazioni) && utente.Attivo && !await AltriAmministratoriAttivi(id))
-            return BadRequest(new { messaggio = "Deve restare almeno un amministratore attivo del modulo Admin." });
+        if (utente.SuperAdmin && utente.Attivo && !await AltriSuperAdminAttivi(id))
+            return BadRequest(new { messaggio = "Deve restare almeno un Super admin attivo." });
 
         _context.Utenti.Remove(utente);
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
-    // Nessuno può togliere a se stesso l'amministrazione o disattivarsi,
-    // e deve restare almeno un amministratore attivo del modulo Admin.
-    private async Task<string?> ControllaPerditaAmministratore(Utente utente, List<Autorizzazione> nuove, bool attivo)
+    // Nessuno può togliere a se stesso il Super admin o disattivarsi,
+    // e deve restare almeno un Super admin attivo.
+    private async Task<string?> ControllaPerditaSuperAdmin(Utente utente, bool superAdmin, bool attivo)
     {
-        var perde = EAmministratore(utente.Autorizzazioni) && utente.Attivo &&
-                    (!EAmministratore(nuove) || !attivo);
+        if (utente.Id == IdCorrente && !attivo)
+            return "Non puoi disattivare te stesso.";
+        var perde = utente.SuperAdmin && utente.Attivo && (!superAdmin || !attivo);
         if (!perde)
             return null;
         if (utente.Id == IdCorrente)
-            return "Non puoi togliere a te stesso l'amministrazione del modulo Admin o disattivarti.";
-        if (!await AltriAmministratoriAttivi(utente.Id))
-            return "Deve restare almeno un amministratore attivo del modulo Admin.";
+            return "Non puoi togliere a te stesso il Super admin.";
+        if (!await AltriSuperAdminAttivi(utente.Id))
+            return "Deve restare almeno un Super admin attivo.";
         return null;
     }
 
@@ -229,7 +227,6 @@ public class UtentiController : ControllerBase
         _context.Autorizzazioni.AddRange(nuove);
     }
 
-    private Task<bool> AltriAmministratoriAttivi(int escludiId) =>
-        _context.Utenti.AnyAsync(u => u.Id != escludiId && u.Attivo &&
-            u.Autorizzazioni.Any(a => a.Modulo == Moduli.Admin && a.Livello == Livelli.Amministratore));
+    private Task<bool> AltriSuperAdminAttivi(int escludiId) =>
+        _context.Utenti.AnyAsync(u => u.Id != escludiId && u.Attivo && u.SuperAdmin);
 }

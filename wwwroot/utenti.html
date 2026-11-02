@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utenti - Gestionale Uscite</title>
+    <title>Utenti - Gestionale</title>
     <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="componenti.css">
 </head>
 <body class="in-attesa">
 
 <header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
-    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale Uscite</a>
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale</a>
     <div class="barra-utente" id="barraUtente"></div>
 </header>
 
@@ -101,11 +101,16 @@
             </div>
 
             <div class="col-12">
-                <div class="form-check" id="rigaAttivo">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="superAdmin" aria-describedby="aiutoSuperAdmin">
+                    <label class="form-check-label" for="superAdmin">Super admin</label>
+                    <div class="form-text mt-0" id="aiutoSuperAdmin">Vede tutti i moduli e gestisce utenti e autorizzazioni (Admin).</div>
+                </div>
+                <div class="form-check mt-2" id="rigaAttivo">
                     <input class="form-check-input" type="checkbox" id="attivo">
                     <label class="form-check-label" for="attivo">Attivo (può accedere)</label>
                 </div>
-                <div class="form-text" id="aiutoSeStesso" hidden>Non puoi disattivare te stesso.</div>
+                <div class="form-text" id="aiutoSeStesso" hidden>Non puoi togliere a te stesso il Super admin né disattivarti.</div>
             </div>
         </div>
 

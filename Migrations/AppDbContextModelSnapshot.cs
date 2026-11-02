@@ -206,6 +206,9 @@ namespace GestionalePersone.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("SuperAdmin")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("TentativiFalliti")
                         .HasColumnType("integer");
 

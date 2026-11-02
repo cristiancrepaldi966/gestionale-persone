@@ -29,8 +29,9 @@ public class AuthController : ControllerBase
 
     public record CambioPasswordRequest(string PasswordAttuale, string NuovaPassword);
 
-    // Moduli: codice del modulo → livello (solo i moduli a cui ha accesso).
-    public record UtenteCorrente(int Id, string Nome, string Cognome, string Email, Dictionary<string, string> Moduli);
+    // Moduli: codice del modulo → livello (solo i moduli disponibili; il Super admin li ha tutti).
+    public record UtenteCorrente(int Id, string Nome, string Cognome, string Email, bool SuperAdmin,
+        Dictionary<string, string> Moduli);
 
     [HttpPost("login")]
     [AllowAnonymous]
@@ -54,9 +55,9 @@ public class AuthController : ControllerBase
             new(ClaimTypes.Name, utente.Email),
             new(ClaimVersione, utente.VersioneSessione.ToString()),
         };
-        var autorizzazioni = await _context.Autorizzazioni.AsNoTracking()
+        utente.Autorizzazioni = await _context.Autorizzazioni.AsNoTracking()
             .Where(a => a.UtenteId == utente.Id).ToListAsync();
-        claims.AddRange(Accesso.Claims(autorizzazioni));
+        claims.AddRange(Accesso.Claims(utente));
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
@@ -64,7 +65,8 @@ public class AuthController : ControllerBase
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identity));
 
-        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, Accesso.Mappa(autorizzazioni));
+        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, utente.SuperAdmin,
+            Accesso.ModuliEffettivi(utente));
     }
 
     [HttpPost("logout")]
@@ -85,7 +87,8 @@ public class AuthController : ControllerBase
             .SingleOrDefaultAsync(u => u.Id == id);
         if (utente == null)
             return Unauthorized();
-        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, Accesso.Mappa(utente.Autorizzazioni));
+        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, utente.SuperAdmin,
+            Accesso.ModuliEffettivi(utente));
     }
 
     [HttpPost("password")]

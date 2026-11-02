@@ -71,14 +71,14 @@ builder.Services
             }
 
             // Autorizzazioni cambiate dall'amministratore: valgono subito.
-            var attuali = ctx.Principal!.FindAll(Accesso.TipoClaim).Select(c => c.Value).Order().ToList();
-            var nuove = Accesso.Claims(utente.Autorizzazioni).Select(c => c.Value).Order().ToList();
+            var attuali = ctx.Principal!.Claims.Where(Accesso.EAutorizzazione).Select(c => c.Type + "=" + c.Value).Order().ToList();
+            var nuove = Accesso.Claims(utente).Select(c => c.Type + "=" + c.Value).Order().ToList();
             if (!attuali.SequenceEqual(nuove))
             {
                 var identity = (ClaimsIdentity)ctx.Principal.Identity!;
-                foreach (var c in identity.FindAll(Accesso.TipoClaim).ToList())
+                foreach (var c in identity.Claims.Where(Accesso.EAutorizzazione).ToList())
                     identity.RemoveClaim(c);
-                identity.AddClaims(Accesso.Claims(utente.Autorizzazioni));
+                identity.AddClaims(Accesso.Claims(utente));
                 ctx.ShouldRenew = true;
             }
         };

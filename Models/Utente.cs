@@ -13,6 +13,9 @@ public class Utente
     // Hash PBKDF2 generato da PasswordHasher di ASP.NET Core: la password non è mai salvata in chiaro.
     public string PasswordHash { get; set; } = string.Empty;
 
+    // Super admin: vede tutti i moduli (come Amministratore) e il modulo Admin.
+    public bool SuperAdmin { get; set; }
+
     // Livello di accesso a ciascun modulo (vedi Moduli).
     public List<Autorizzazione> Autorizzazioni { get; set; } = [];
 

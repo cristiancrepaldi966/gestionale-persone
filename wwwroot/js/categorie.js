@@ -1,4 +1,4 @@
-// Scheda Categorie del modulo Uscite (categorie.html; Admin → Moduli → Uscite). Componenti e funzioni comuni: componenti.js.
+// Pagina Categorie del modulo Gestione finanze (categorie.html; per l'Amministratore del modulo). Componenti e funzioni comuni: componenti.js.
 
 const API = "/api/categorie";
 let categorie = [];
@@ -171,10 +171,9 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formCategoria"), salva);
 
-avviaPagina({ modulo: MODULI.admin, amministratore: true })
+// Modulo Gestione finanze, livello Amministratore (o Super admin).
+avviaPagina({ modulo: MODULI.finanze, amministratore: true })
     .then(async () => {
-        // Le categorie appartengono al modulo Uscite: Admin → Moduli → Uscite → Categorie.
-        intestazioneModulo($("intestazioneModulo"), MODULI.uscite, "categorie");
         aspetto = await (await api(`${API}/aspetto`)).json();
         preparaScelte();
     })

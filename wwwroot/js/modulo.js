@@ -25,8 +25,6 @@ const ricerca = pannelloRicerca({
 
 const modulo = moduloFinestra($("finestra"), { primoCampo: $("utente") });
 
-// Il proprio accesso da amministratore del modulo Admin non si può togliere o ridurre.
-const protetto = a => codice === MODULI.admin && a.utenteId === idCorrente;
 
 async function carica() {
     try {
@@ -72,14 +70,10 @@ function riga(a) {
     info.appendChild(el("div", null, a.email));
 
     const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-sm-center");
-    if (protetto(a)) {
-        azioni.appendChild(el("span", "small text-body-secondary", "Il tuo accesso da amministratore"));
-    } else {
-        if (definizione.livelli.length > 1) {
-            azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apri(a)));
-        }
-        azioni.appendChild(pulsante("Togli accesso", "btn btn-sm btn-danger", () => togli(a)));
+    if (definizione.livelli.length > 1) {
+        azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apri(a)));
     }
+    azioni.appendChild(pulsante("Togli accesso", "btn btn-sm btn-danger", () => togli(a)));
 
     div.append(info, azioni);
     return div;
@@ -155,14 +149,14 @@ avviaPagina({ modulo: MODULI.admin, amministratore: true }).then(async u => {
 
     const [rm, ru] = await Promise.all([api("/api/moduli"), api("/api/utenti")]);
     definizione = (await rm.json()).find(m => m.codice === codice);
-    if (!definizione) {
+    if (!definizione || definizione.livelli.length === 0) {
         location.href = "/moduli.html";
         return;
     }
     utenti = await ru.json();
 
-    document.title = `Modulo ${definizione.nome} - Gestionale Uscite`;
-    intestazioneModulo($("intestazioneModulo"), codice, "autorizzazioni");
+    document.title = `Modulo ${definizione.nome} - Gestionale`;
+    intestazioneModulo($("intestazioneModulo"), codice);
     $("filtroLivello").replaceChildren(new Option("Livello", ""), ...definizione.livelli.map(l => new Option(l, l)));
     if (definizione.livelli.length < 2) $("filtroLivello").closest(".col-6").hidden = true;
 
