@@ -39,14 +39,16 @@
         .then(r => { if (r.ok) location.href = paginaRitorno(); })
         .catch(() => { });
 
-    document.getElementById("form").addEventListener("submit", async e => {
-
-        e.preventDefault();
+    alInvio(document.getElementById("form"), async () => {
 
         const messaggio = document.getElementById("messaggio");
-        const bottone = document.getElementById("entra");
         messaggio.textContent = "";
-        bottone.disabled = true;
+
+        // Su Render il server si "addormenta": il primo accesso può richiedere fino a un minuto.
+        const avviso = setTimeout(() => {
+            messaggio.className = "nota";
+            messaggio.textContent = "Il server si sta avviando, può volerci fino a un minuto...";
+        }, 4000);
 
         try {
 
@@ -58,6 +60,9 @@
                 })
             });
 
+            clearTimeout(avviso);
+            messaggio.className = "errore";
+
             if (!response.ok) {
                 messaggio.textContent = await messaggioErrore(response, "Accesso non riuscito.");
                 document.getElementById("password").value = "";
@@ -65,11 +70,13 @@
             }
 
             location.href = paginaRitorno();
+            // Il cerchietto continua a girare finché la nuova pagina non si apre.
+            return new Promise(() => { });
 
         } catch {
+            clearTimeout(avviso);
+            messaggio.className = "errore";
             messaggio.textContent = "Errore nel collegamento al server.";
-        } finally {
-            bottone.disabled = false;
         }
     });
 

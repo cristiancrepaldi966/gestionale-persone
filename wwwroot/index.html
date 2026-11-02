@@ -54,7 +54,7 @@
     <div class="riepilogo" id="riepilogo"></div>
 
     <div class="card">
-        <div id="listaUscite">Caricamento...</div>
+        <div id="listaUscite"><div class="caricamento-elenco"><span class="cerchietto"></span><span>Caricamento...</span></div></div>
     </div>
 
 </main>
@@ -151,6 +151,8 @@
         const riepilogo = document.getElementById("riepilogo");
         const numeroRichiesta = ++richiestaCorrente;
 
+        lista.classList.add("in-aggiornamento");
+
         try {
             const response = await api(`${API}?${parametriRicerca()}`);
             if (!response.ok) throw new Error();
@@ -182,6 +184,8 @@
             if (numeroRichiesta === richiestaCorrente) {
                 lista.replaceChildren(el("p", "errore", "Errore nel caricamento delle uscite."));
             }
+        } finally {
+            if (numeroRichiesta === richiestaCorrente) lista.classList.remove("in-aggiornamento");
         }
     }
 
@@ -231,9 +235,7 @@
         document.getElementById("finestra").close();
     }
 
-    async function salvaUscita(e) {
-
-        e.preventDefault();
+    async function salvaUscita() {
 
         const errore = document.getElementById("erroreFinestra");
         const importo = leggiImporto(document.getElementById("importo").value);
@@ -261,9 +263,6 @@
             return;
         }
 
-        const bottone = document.getElementById("salva");
-        bottone.disabled = true;
-
         try {
             const response = inModifica
                 ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", dati))
@@ -279,8 +278,6 @@
 
         } catch {
             errore.textContent = "Errore nel collegamento al server.";
-        } finally {
-            bottone.disabled = false;
         }
     }
 
@@ -339,7 +336,7 @@
 
     document.getElementById("nuova").addEventListener("click", () => apriFinestra(null));
     document.getElementById("annulla").addEventListener("click", chiudiFinestra);
-    document.getElementById("formUscita").addEventListener("submit", salvaUscita);
+    alInvio(document.getElementById("formUscita"), salvaUscita);
 
     avviaPagina()
         .then(caricaCategorie)

@@ -35,7 +35,7 @@
 
     <div class="card">
         <h2>Utenti</h2>
-        <div id="listaUtenti">Caricamento...</div>
+        <div id="listaUtenti"><div class="caricamento-elenco"><span class="cerchietto"></span><span>Caricamento...</span></div></div>
     </div>
 
 </main>
@@ -179,7 +179,7 @@
         }
     }
 
-    document.getElementById("formNuovo").addEventListener("submit", async e => {
+    alInvio(document.getElementById("formNuovo"), async e => {
 
         e.preventDefault();
 

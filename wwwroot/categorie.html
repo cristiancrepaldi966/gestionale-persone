@@ -28,7 +28,7 @@
 
     <div class="card">
         <h2>Categorie</h2>
-        <div id="listaCategorie">Caricamento...</div>
+        <div id="listaCategorie"><div class="caricamento-elenco"><span class="cerchietto"></span><span>Caricamento...</span></div></div>
     </div>
 
 </main>
@@ -141,7 +141,7 @@
         }
     }
 
-    document.getElementById("formNuova").addEventListener("submit", async e => {
+    alInvio(document.getElementById("formNuova"), async e => {
 
         e.preventDefault();
         const input = document.getElementById("nome");
