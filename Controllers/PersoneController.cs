@@ -39,6 +39,10 @@ public class PersoneController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Persona>> CreatePersona(Persona persona)
     {
+        persona.Id = 0; // l'Id lo assegna il database
+        persona.Nome = persona.Nome.Trim();
+        persona.Cognome = persona.Cognome.Trim();
+
         _context.Persone.Add(persona);
         await _context.SaveChangesAsync();
 
@@ -61,8 +65,8 @@ public class PersoneController : ControllerBase
         if (esistente == null)
             return NotFound();
 
-        esistente.Nome = persona.Nome;
-        esistente.Cognome = persona.Cognome;
+        esistente.Nome = persona.Nome.Trim();
+        esistente.Cognome = persona.Cognome.Trim();
 
         await _context.SaveChangesAsync();
 

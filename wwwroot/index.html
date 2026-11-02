@@ -76,6 +76,27 @@
             color: white;
         }
 
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #111;
+        }
+
+        .errore {
+            color: #dc2626;
+        }
+
+        .successo {
+            color: #16a34a;
+        }
+
+        .modifica {
+            flex: 1;
+        }
+
+        .modifica .errore {
+            margin-top: 8px;
+        }
+
         .persona {
             display: flex;
             justify-content: space-between;
@@ -110,7 +131,8 @@
                 align-items: flex-start;
             }
 
-            .azioni {
+            .azioni,
+            .modifica {
                 width: 100%;
             }
 
@@ -145,16 +167,19 @@
             <input
                 type="text"
                 id="nome"
+                maxlength="100"
                 placeholder="Nome">
 
             <input
                 type="text"
                 id="cognome"
+                maxlength="100"
                 placeholder="Cognome">
 
             <button
+                type="button"
                 class="btn-primary"
-                onclick="aggiungiPersona()">
+                id="aggiungi">
                 Aggiungi
             </button>
         </div>
@@ -176,7 +201,41 @@
 
     const API_URL = "/api/persone";
 
+    // Crea un elemento con classe e testo (il testo NON viene interpretato come HTML).
+    function el(tag, className, text) {
+        const e = document.createElement(tag);
+        if (className) e.className = className;
+        if (text !== undefined) e.textContent = text;
+        return e;
+    }
+
+    function pulsante(testo, className, onClick) {
+        const b = el("button", className, testo);
+        b.type = "button";
+        b.addEventListener("click", onClick);
+        return b;
+    }
+
+    // Estrae un messaggio leggibile dalla risposta di errore dell'API.
+    async function messaggioErrore(response, predefinito) {
+        try {
+            const dati = await response.json();
+            if (dati && dati.errors) {
+                return Object.values(dati.errors).flat().join(" ");
+            }
+        } catch { }
+        return predefinito;
+    }
+
+    function mostraMessaggio(testo, errore) {
+        const messaggio = document.getElementById("messaggio");
+        messaggio.textContent = testo;
+        messaggio.className = errore ? "errore" : "successo";
+    }
+
     async function caricaPersone() {
+
+        const lista = document.getElementById("listaPersone");
 
         try {
 
@@ -188,49 +247,100 @@
 
             const persone = await response.json();
 
-            const lista = document.getElementById("listaPersone");
+            lista.replaceChildren();
 
             if (persone.length === 0) {
-
-                lista.innerHTML =
-                    "<p>Nessuna persona presente.</p>";
-
+                lista.appendChild(el("p", null, "Nessuna persona presente."));
                 return;
             }
 
-            lista.innerHTML = "";
-
-            persone.forEach(persona => {
-
-                const div = document.createElement("div");
-
-                div.className = "persona";
-
-                div.innerHTML = `
-                    <div>
-                        <div class="nome">
-                            ${persona.nome} ${persona.cognome}
-                        </div>
-                        <small>ID: ${persona.id}</small>
-                    </div>
-
-                    <div class="azioni">
-                        <button
-                            class="btn-danger"
-                            onclick="eliminaPersona(${persona.id})">
-                            Elimina
-                        </button>
-                    </div>
-                `;
-
-                lista.appendChild(div);
-            });
+            persone.forEach(persona => lista.appendChild(rigaPersona(persona)));
 
         } catch (error) {
 
-            document.getElementById("listaPersone").innerHTML =
-                "<p>Errore nel collegamento al server.</p>";
+            lista.replaceChildren(el("p", "errore", "Errore nel collegamento al server."));
         }
+    }
+
+    function rigaPersona(persona) {
+
+        const div = el("div", "persona");
+
+        const info = el("div");
+        info.appendChild(el("div", "nome", `${persona.nome} ${persona.cognome}`));
+        info.appendChild(el("small", null, `ID: ${persona.id}`));
+
+        const azioni = el("div", "azioni");
+        azioni.appendChild(pulsante("Modifica", "btn-secondary", () => modificaPersona(div, persona)));
+        azioni.appendChild(pulsante("Elimina", "btn-danger", () => eliminaPersona(persona.id)));
+
+        div.append(info, azioni);
+        return div;
+    }
+
+    function modificaPersona(div, persona) {
+
+        const inputNome = el("input");
+        inputNome.value = persona.nome;
+        inputNome.placeholder = "Nome";
+        inputNome.maxLength = 100;
+
+        const inputCognome = el("input");
+        inputCognome.value = persona.cognome;
+        inputCognome.placeholder = "Cognome";
+        inputCognome.maxLength = 100;
+
+        const errore = el("div", "errore");
+
+        const form = el("div", "form-row");
+        form.append(inputNome, inputCognome);
+
+        const salva = async () => {
+
+            const nome = inputNome.value.trim();
+            const cognome = inputCognome.value.trim();
+
+            if (!nome || !cognome) {
+                errore.textContent = "Inserisci nome e cognome.";
+                return;
+            }
+
+            try {
+
+                const response = await fetch(`${API_URL}/${persona.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: persona.id, nome, cognome })
+                });
+
+                if (!response.ok) {
+                    errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
+                    return;
+                }
+
+                await caricaPersone();
+
+            } catch {
+                errore.textContent = "Errore nel collegamento al server.";
+            }
+        };
+
+        const tastiera = e => {
+            if (e.key === "Enter") salva();
+            if (e.key === "Escape") div.replaceWith(rigaPersona(persona));
+        };
+        inputNome.addEventListener("keydown", tastiera);
+        inputCognome.addEventListener("keydown", tastiera);
+
+        const azioni = el("div", "azioni");
+        azioni.appendChild(pulsante("Salva", "btn-primary", salva));
+        azioni.appendChild(pulsante("Annulla", "btn-secondary", () => div.replaceWith(rigaPersona(persona))));
+
+        const contenitore = el("div", "modifica");
+        contenitore.append(form, errore);
+
+        div.replaceChildren(contenitore, azioni);
+        inputNome.focus();
     }
 
 
@@ -242,49 +352,35 @@
         const cognome =
             document.getElementById("cognome").value.trim();
 
-        const messaggio =
-            document.getElementById("messaggio");
-
         if (!nome || !cognome) {
-
-            messaggio.textContent =
-                "Inserisci nome e cognome.";
-
+            mostraMessaggio("Inserisci nome e cognome.", true);
             return;
         }
 
         try {
 
             const response = await fetch(API_URL, {
-
                 method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    nome: nome,
-                    cognome: cognome
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, cognome })
             });
 
             if (!response.ok) {
-                throw new Error();
+                mostraMessaggio(await messaggioErrore(response, "Errore durante l'inserimento."), true);
+                return;
             }
 
             document.getElementById("nome").value = "";
             document.getElementById("cognome").value = "";
+            document.getElementById("nome").focus();
 
-            messaggio.textContent =
-                "Persona inserita correttamente.";
+            mostraMessaggio("Persona inserita correttamente.", false);
 
             await caricaPersone();
 
         } catch (error) {
 
-            messaggio.textContent =
-                "Errore durante l'inserimento.";
+            mostraMessaggio("Errore nel collegamento al server.", true);
         }
     }
 
@@ -297,12 +393,7 @@
 
         try {
 
-            const response = await fetch(
-                `${API_URL}/${id}`,
-                {
-                    method: "DELETE"
-                }
-            );
+            const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
 
             if (!response.ok) {
                 throw new Error();
@@ -316,6 +407,13 @@
         }
     }
 
+
+    document.getElementById("aggiungi").addEventListener("click", aggiungiPersona);
+
+    ["nome", "cognome"].forEach(id =>
+        document.getElementById(id).addEventListener("keydown", e => {
+            if (e.key === "Enter") aggiungiPersona();
+        }));
 
     caricaPersone();
 
