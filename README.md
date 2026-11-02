@@ -3,9 +3,10 @@
 Piccola applicazione ASP.NET Core 10 + PostgreSQL per registrare le uscite (spese)
 divise per categoria, con interfaccia web in `wwwroot/`.
 
-- **Dashboard** (`index.html`): ricerca per testo (note e nome della categoria), categoria e
-  intervallo di date, con numero e totale delle uscite trovate; pulsante **+** in alto a
-  destra per inserire un'uscita; elenco con modifica ed eliminazione.
+- **Dashboard** (`index.html`): in alto a destra il pulsante con la lente apre i filtri
+  (categoria, dal, al, sulla stessa riga) e il pulsante **+** inserisce un'uscita; sotto
+  numero e totale delle uscite trovate e l'elenco con modifica ed eliminazione. Un pallino
+  rosso sulla lente indica che ci sono filtri attivi.
 - **Categorie** (`categorie.html`): aggiungi, rinomina, elimina (solo se non usate).
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
   Svago, Altro.

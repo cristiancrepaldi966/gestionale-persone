@@ -18,18 +18,36 @@
 
     <div class="titolo-pagina">
         <h2>Uscite</h2>
-        <button type="button" class="btn-aggiungi" id="nuova" title="Nuova uscita" aria-label="Nuova uscita">+</button>
+        <div class="pulsanti-titolo">
+            <button type="button" class="btn-cerca" id="cerca" title="Cerca" aria-label="Cerca"
+                    aria-expanded="false" aria-controls="pannelloFiltri">
+                <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                    <line x1="15.5" y1="15.5" x2="21" y2="21"></line>
+                </svg>
+                <span class="pallino" id="pallinoFiltri" hidden></span>
+            </button>
+            <button type="button" class="btn-aggiungi" id="nuova" title="Nuova uscita" aria-label="Nuova uscita">+</button>
+        </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="pannelloFiltri" hidden>
         <div class="filtri">
-            <input type="search" id="q" placeholder="Cerca nelle note o per categoria" class="filtro-testo">
-            <select id="filtroCategoria" aria-label="Categoria">
-                <option value="">Tutte le categorie</option>
-            </select>
-            <label class="data">Dal <input type="date" id="dal"></label>
-            <label class="data">Al <input type="date" id="al"></label>
-            <button type="button" class="btn-secondary" id="azzera">Azzera</button>
+            <label>Categoria
+                <select id="filtroCategoria">
+                    <option value="">Tutte</option>
+                </select>
+            </label>
+            <label>Dal
+                <input type="date" id="dal">
+            </label>
+            <label>Al
+                <input type="date" id="al">
+            </label>
+        </div>
+        <div class="filtri-azioni">
+            <button type="button" class="link" id="azzera">Azzera filtri</button>
         </div>
     </div>
 
@@ -107,7 +125,7 @@
 
         const filtro = document.getElementById("filtroCategoria");
         const scelta = filtro.value;
-        filtro.replaceChildren(new Option("Tutte le categorie", ""),
+        filtro.replaceChildren(new Option("Tutte", ""),
             ...categorie.map(c => new Option(c.nome, c.id)));
         filtro.value = scelta;
 
@@ -119,7 +137,6 @@
     function parametriRicerca() {
         const p = new URLSearchParams();
         const valore = id => document.getElementById(id).value.trim();
-        if (valore("q")) p.set("q", valore("q"));
         if (valore("filtroCategoria")) p.set("categoriaId", valore("filtroCategoria"));
         if (valore("dal")) p.set("dal", valore("dal"));
         if (valore("al")) p.set("al", valore("al"));
@@ -280,18 +297,32 @@
         }
     }
 
-    // Ricerca mentre si scrive (con una breve attesa) e al cambio dei filtri.
-    let attesa;
-    document.getElementById("q").addEventListener("input", () => {
-        clearTimeout(attesa);
-        attesa = setTimeout(caricaUscite, 300);
-    });
+    // Il pallino sulla lente segnala che ci sono filtri attivi.
+    function aggiornaPallino() {
+        document.getElementById("pallinoFiltri").hidden = parametriRicerca().toString() === "";
+    }
+
+    function filtriCambiati() {
+        aggiornaPallino();
+        caricaUscite();
+    }
+
     ["filtroCategoria", "dal", "al"].forEach(id =>
-        document.getElementById(id).addEventListener("change", caricaUscite));
+        document.getElementById(id).addEventListener("change", filtriCambiati));
 
     document.getElementById("azzera").addEventListener("click", () => {
-        ["q", "filtroCategoria", "dal", "al"].forEach(id => document.getElementById(id).value = "");
-        caricaUscite();
+        ["filtroCategoria", "dal", "al"].forEach(id => document.getElementById(id).value = "");
+        filtriCambiati();
+    });
+
+    // La lente apre e chiude il pannello dei filtri.
+    document.getElementById("cerca").addEventListener("click", () => {
+        const pannello = document.getElementById("pannelloFiltri");
+        const cerca = document.getElementById("cerca");
+        pannello.hidden = !pannello.hidden;
+        cerca.setAttribute("aria-expanded", String(!pannello.hidden));
+        cerca.classList.toggle("attivo", !pannello.hidden);
+        if (!pannello.hidden) document.getElementById("filtroCategoria").focus();
     });
 
     document.getElementById("nuova").addEventListener("click", () => apriFinestra(null));

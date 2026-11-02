@@ -385,15 +385,91 @@ body.in-attesa main {
     background: #1d4ed8;
 }
 
-.filtri {
+.pulsanti-titolo {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
     align-items: center;
+    gap: 12px;
 }
 
-.filtri .filtro-testo {
-    flex: 1 1 100%;
+.btn-cerca {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    background: white;
+    color: #2563eb;
+    border: 2px solid #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-cerca:hover,
+.btn-cerca.attivo {
+    background: #eff6ff;
+}
+
+.btn-cerca.attivo {
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+}
+
+.pallino {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #dc2626;
+    border: 2px solid white;
+}
+
+.pallino[hidden] {
+    display: none;
+}
+
+#pannelloFiltri[hidden] {
+    display: none;
+}
+
+/* Categoria, Dal e Al sempre sulla stessa riga. */
+.filtri {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 12px;
+}
+
+.filtri label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 0;
+}
+
+.filtri select,
+.filtri input {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+    font-weight: normal;
+}
+
+.filtri-azioni {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+button.link {
+    background: none;
+    border: none;
+    padding: 4px 0;
+    color: #2563eb;
+    font-size: 15px;
+    text-decoration: underline;
 }
 
 select,
@@ -405,22 +481,6 @@ input[type="date"] {
     font-size: 16px;
     font-family: inherit;
     background: white;
-}
-
-.filtri select {
-    flex: 1 1 180px;
-}
-
-.filtri input[type="date"] {
-    flex: none;
-    min-width: 0;
-}
-
-label.data {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 15px;
 }
 
 .riepilogo {
@@ -545,20 +605,26 @@ dialog::backdrop {
 }
 
 @media (max-width: 600px) {
-    .filtri > * {
-        width: 100%;
-        flex: 1 1 100% !important;
+    /* Su telefono i tre filtri restano affiancati, con campi più compatti. */
+    .filtri {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
     }
 
-    .filtri label.data input {
-        flex: 1 1 auto;
-        width: auto;
-        min-width: 0;
+    .filtri select,
+    .filtri input {
+        padding: 8px 6px;
+        font-size: 14px;
     }
 
-    label.data {
-        display: grid;
-        grid-template-columns: 30px 1fr;
+    .filtri input[type="date"]::-webkit-calendar-picker-indicator {
+        width: 12px;
+        margin: 0;
+        padding: 0;
+    }
+
+    .pulsanti-titolo {
+        gap: 10px;
     }
 
     .uscita {
