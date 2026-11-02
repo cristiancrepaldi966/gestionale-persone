@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accesso - Gestionale Persone</title>
+    <link rel="stylesheet" href="stile.css">
+</head>
+<body>
+
+<header>
+    <h1>Gestionale Persone</h1>
+</header>
+
+<main>
+    <form class="card accesso" id="form">
+        <h2>Accedi</h2>
+
+        <input type="email" id="email" placeholder="Email" autocomplete="username" required autofocus>
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+
+        <button type="submit" class="btn-primary" id="entra">Entra</button>
+
+        <div id="messaggio" class="errore"></div>
+    </form>
+</main>
+
+<script src="app.js"></script>
+<script>
+
+    // Pagina a cui tornare dopo l'accesso (solo percorsi interni).
+    function paginaRitorno() {
+        const r = new URLSearchParams(location.search).get("ritorno") || "/";
+        return r.startsWith("/") && !r.startsWith("//") ? r : "/";
+    }
+
+    // Se l'accesso è già stato fatto, vai direttamente all'app.
+    fetch("/api/auth/me", { credentials: "same-origin" })
+        .then(r => { if (r.ok) location.href = paginaRitorno(); })
+        .catch(() => { });
+
+    document.getElementById("form").addEventListener("submit", async e => {
+
+        e.preventDefault();
+
+        const messaggio = document.getElementById("messaggio");
+        const bottone = document.getElementById("entra");
+        messaggio.textContent = "";
+        bottone.disabled = true;
+
+        try {
+
+            const response = await fetch("/api/auth/login", {
+                credentials: "same-origin",
+                ...jsonBody("POST", {
+                    email: document.getElementById("email").value.trim(),
+                    password: document.getElementById("password").value
+                })
+            });
+
+            if (!response.ok) {
+                messaggio.textContent = await messaggioErrore(response, "Accesso non riuscito.");
+                document.getElementById("password").value = "";
+                return;
+            }
+
+            location.href = paginaRitorno();
+
+        } catch {
+            messaggio.textContent = "Errore nel collegamento al server.";
+        } finally {
+            bottone.disabled = false;
+        }
+    });
+
+</script>
+
+</body>
+</html>

@@ -5,157 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Gestionale Persone</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            color: #222;
-        }
-
-        header {
-            background: #1f2937;
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-
-        main {
-            max-width: 900px;
-            margin: 30px auto;
-            padding: 0 15px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        h1, h2 {
-            margin-top: 0;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        input {
-            flex: 1;
-            min-width: 200px;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 12px 18px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-
-        .btn-danger {
-            background: #dc2626;
-            color: white;
-        }
-
-        .btn-secondary {
-            background: #e5e7eb;
-            color: #111;
-        }
-
-        .errore {
-            color: #dc2626;
-        }
-
-        .successo {
-            color: #16a34a;
-        }
-
-        .modifica {
-            flex: 1;
-        }
-
-        .modifica .errore {
-            margin-top: 8px;
-        }
-
-        .persona {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            padding: 15px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .persona:last-child {
-            border-bottom: none;
-        }
-
-        .nome {
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .azioni {
-            display: flex;
-            gap: 8px;
-        }
-
-        #messaggio {
-            margin-top: 15px;
-            font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            .persona {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .azioni,
-            .modifica {
-                width: 100%;
-            }
-
-            .azioni button {
-                flex: 1;
-            }
-
-            input {
-                width: 100%;
-                min-width: 100%;
-            }
-
-            .btn-primary {
-                width: 100%;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="stile.css">
 </head>
 
-<body>
+<body class="in-attesa">
 
 <header>
-    <h1>Gestionale Persone</h1>
+    <h1><a href="/" style="text-decoration:none">Gestionale Persone</a></h1>
+    <nav class="barra-utente" id="barraUtente"></nav>
 </header>
 
 <main>
@@ -197,35 +54,10 @@
 
 </main>
 
+<script src="app.js"></script>
 <script>
 
     const API_URL = "/api/persone";
-
-    // Crea un elemento con classe e testo (il testo NON viene interpretato come HTML).
-    function el(tag, className, text) {
-        const e = document.createElement(tag);
-        if (className) e.className = className;
-        if (text !== undefined) e.textContent = text;
-        return e;
-    }
-
-    function pulsante(testo, className, onClick) {
-        const b = el("button", className, testo);
-        b.type = "button";
-        b.addEventListener("click", onClick);
-        return b;
-    }
-
-    // Estrae un messaggio leggibile dalla risposta di errore dell'API.
-    async function messaggioErrore(response, predefinito) {
-        try {
-            const dati = await response.json();
-            if (dati && dati.errors) {
-                return Object.values(dati.errors).flat().join(" ");
-            }
-        } catch { }
-        return predefinito;
-    }
 
     function mostraMessaggio(testo, errore) {
         const messaggio = document.getElementById("messaggio");
@@ -239,7 +71,7 @@
 
         try {
 
-            const response = await fetch(API_URL);
+            const response = await api(API_URL);
 
             if (!response.ok) {
                 throw new Error("Errore nel caricamento");
@@ -307,7 +139,7 @@
 
             try {
 
-                const response = await fetch(`${API_URL}/${persona.id}`, {
+                const response = await api(`${API_URL}/${persona.id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ id: persona.id, nome, cognome })
@@ -359,7 +191,7 @@
 
         try {
 
-            const response = await fetch(API_URL, {
+            const response = await api(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ nome, cognome })
@@ -393,7 +225,7 @@
 
         try {
 
-            const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+            const response = await api(`${API_URL}/${id}`, { method: "DELETE" });
 
             if (!response.ok) {
                 throw new Error();
@@ -415,7 +247,7 @@
             if (e.key === "Enter") aggiungiPersona();
         }));
 
-    caricaPersone();
+    avviaPagina().then(caricaPersone);
 
 </script>
 

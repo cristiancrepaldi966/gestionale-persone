@@ -1,4 +1,14 @@
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+using GestionalePersone.Controllers;
 using GestionalePersone.Data;
+using GestionalePersone.Models;
+using GestionalePersone.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -9,17 +19,103 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(GetConnectionString(builder.Configuration)));
 
+builder.Services.AddScoped<IPasswordHasher<Utente>, PasswordHasher<Utente>>();
+builder.Services.AddScoped<ServizioUtenti>();
+
+// Chiavi dei cookie salvate nel database: l'accesso resta valido dopo riavvii e deploy.
+builder.Services.AddDataProtection()
+    .SetApplicationName("GestionalePersone")
+    .PersistKeysToDbContext<AppDbContext>();
+
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "gestionale_auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+
+        // È un'API: rispondi 401/403 invece di reindirizzare a una pagina.
+        options.Events.OnRedirectToLogin = ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
+
+        // A ogni richiesta controlla che l'utente esista ancora, sia attivo e non abbia
+        // cambiato password; aggiorna il ruolo se l'amministratore lo ha modificato.
+        options.Events.OnValidatePrincipal = async ctx =>
+        {
+            var id = ctx.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var versione = ctx.Principal?.FindFirstValue(AuthController.ClaimVersione);
+            var db = ctx.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+
+            var utente = int.TryParse(id, out var idUtente)
+                ? await db.Utenti.AsNoTracking().SingleOrDefaultAsync(u => u.Id == idUtente)
+                : null;
+
+            if (utente == null || !utente.Attivo || versione != utente.VersioneSessione.ToString())
+            {
+                ctx.RejectPrincipal();
+                await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
+            if (ctx.Principal!.IsInRole("Admin") != utente.IsAdmin)
+            {
+                var identity = (ClaimsIdentity)ctx.Principal.Identity!;
+                foreach (var ruolo in identity.FindAll(ClaimTypes.Role).ToList())
+                    identity.RemoveClaim(ruolo);
+                if (utente.IsAdmin)
+                    identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+                ctx.ShouldRenew = true;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Al massimo 10 tentativi di login al minuto per indirizzo IP.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("login", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "sconosciuto",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+});
+
+// Render (e altri hosting) mettono l'app dietro un proxy che gestisce HTTPS.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Crea o aggiorna lo schema del database all'avvio.
+// Crea o aggiorna lo schema del database e il primo amministratore all'avvio.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    await scope.ServiceProvider.GetRequiredService<ServizioUtenti>()
+        .CreaAdminIniziale(app.Configuration, app.Logger);
 }
+
+app.UseForwardedHeaders();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -29,6 +125,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

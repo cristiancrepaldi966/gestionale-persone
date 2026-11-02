@@ -18,6 +18,9 @@ services:
     build: .
     environment:
       ConnectionStrings__DefaultConnection: "Host=db;Database=gestionale;Username=postgres;Password=postgres"
+      # Primo amministratore (creato solo se non esiste ancora nessun utente)
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "cambiami123"
     ports:
       - "8080:10000"
     depends_on:
