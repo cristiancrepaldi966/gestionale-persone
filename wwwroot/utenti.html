@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utenti - Gestionale Persone</title>
+    <link rel="stylesheet" href="stile.css">
+</head>
+<body class="in-attesa">
+
+<header>
+    <h1><a href="/" style="text-decoration:none">Gestionale Persone</a></h1>
+    <nav class="barra-utente" id="barraUtente"></nav>
+</header>
+
+<main>
+
+    <div class="card">
+        <h2>Nuovo utente</h2>
+
+        <form id="formNuovo">
+            <div class="form-row">
+                <input type="email" id="email" placeholder="Email" autocomplete="off" required>
+                <input type="password" id="password" placeholder="Password (almeno 8 caratteri)" autocomplete="new-password" minlength="8" required>
+            </div>
+
+            <div class="form-row" style="margin-top:12px; align-items:center; justify-content:space-between">
+                <label class="check"><input type="checkbox" id="isAdmin"> Amministratore (può gestire gli utenti)</label>
+                <button type="submit" class="btn-primary">Crea utente</button>
+            </div>
+        </form>
+
+        <div id="messaggio"></div>
+    </div>
+
+    <div class="card">
+        <h2>Utenti</h2>
+        <div id="listaUtenti">Caricamento...</div>
+    </div>
+
+</main>
+
+<script src="app.js"></script>
+<script>
+
+    const API = "/api/utenti";
+    let idCorrente = null;
+
+    const formatoData = d => d
+        ? new Date(d).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })
+        : "mai";
+
+    function mostraMessaggio(testo, errore) {
+        const m = document.getElementById("messaggio");
+        m.textContent = testo;
+        m.className = errore ? "errore" : "successo";
+    }
+
+    async function caricaUtenti() {
+
+        const lista = document.getElementById("listaUtenti");
+
+        try {
+            const response = await api(API);
+            if (!response.ok) throw new Error();
+
+            const utenti = await response.json();
+            lista.replaceChildren(...utenti.map(rigaUtente));
+
+        } catch {
+            lista.replaceChildren(el("p", "errore", "Errore nel caricamento degli utenti."));
+        }
+    }
+
+    function rigaUtente(u) {
+
+        const div = el("div", "persona");
+
+        const info = el("div");
+        const nome = el("div", "nome", u.email);
+        if (u.id === idCorrente) nome.appendChild(el("span", "etichetta", "tu"));
+        if (u.isAdmin) nome.appendChild(el("span", "etichetta admin", "Amministratore"));
+        if (!u.attivo) nome.appendChild(el("span", "etichetta off", "Disattivato"));
+        if (u.bloccato) nome.appendChild(el("span", "etichetta off", "Bloccato per tentativi errati"));
+        info.appendChild(nome);
+        info.appendChild(el("small", null,
+            `Creato il ${formatoData(u.creatoIl)} · Ultimo accesso: ${formatoData(u.ultimoAccesso)}`));
+
+        const azioni = el("div", "azioni");
+        azioni.appendChild(pulsante("Modifica", "btn-secondary", () => modificaUtente(div, u)));
+        if (u.id !== idCorrente) {
+            azioni.appendChild(pulsante("Elimina", "btn-danger", () => eliminaUtente(u)));
+        }
+
+        div.append(info, azioni);
+        return div;
+    }
+
+    function modificaUtente(div, u) {
+
+        const casella = (testo, valore, disabilitata) => {
+            const label = el("label", "check");
+            const input = el("input");
+            input.type = "checkbox";
+            input.checked = valore;
+            input.disabled = disabilitata;
+            label.append(input, document.createTextNode(" " + testo));
+            return { label, input };
+        };
+
+        const stessoUtente = u.id === idCorrente;
+        const admin = casella("Amministratore", u.isAdmin, stessoUtente);
+        const attivo = casella("Attivo (può accedere)", u.attivo, stessoUtente);
+
+        const password = el("input", "campo-pieno");
+        password.type = "password";
+        password.placeholder = "Nuova password (lascia vuoto per non cambiarla)";
+        password.autocomplete = "new-password";
+
+        const errore = el("div", "errore");
+
+        const contenitore = el("div", "modifica");
+        contenitore.append(el("div", "nome", u.email), password, admin.label, attivo.label, errore);
+        contenitore.style.display = "grid";
+        contenitore.style.gap = "8px";
+
+        const salva = async () => {
+
+            if (password.value && password.value.length < 8) {
+                errore.textContent = "La password deve avere almeno 8 caratteri.";
+                return;
+            }
+
+            try {
+                const response = await api(`${API}/${u.id}`, jsonBody("PUT", {
+                    isAdmin: admin.input.checked,
+                    attivo: attivo.input.checked,
+                    nuovaPassword: password.value || null
+                }));
+
+                if (!response.ok) {
+                    errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
+                    return;
+                }
+
+                mostraMessaggio(`Utente ${u.email} aggiornato.`, false);
+                await caricaUtenti();
+
+            } catch {
+                errore.textContent = "Errore nel collegamento al server.";
+            }
+        };
+
+        const azioni = el("div", "azioni");
+        azioni.appendChild(pulsante("Salva", "btn-primary", salva));
+        azioni.appendChild(pulsante("Annulla", "btn-secondary", () => div.replaceWith(rigaUtente(u))));
+
+        div.replaceChildren(contenitore, azioni);
+        password.focus();
+    }
+
+    async function eliminaUtente(u) {
+
+        if (!confirm(`Eliminare l'utente ${u.email}?`)) return;
+
+        try {
+            const response = await api(`${API}/${u.id}`, { method: "DELETE" });
+
+            if (!response.ok) {
+                alert(await messaggioErrore(response, "Errore durante l'eliminazione."));
+                return;
+            }
+
+            mostraMessaggio(`Utente ${u.email} eliminato.`, false);
+            await caricaUtenti();
+
+        } catch {
+            alert("Errore nel collegamento al server.");
+        }
+    }
+
+    document.getElementById("formNuovo").addEventListener("submit", async e => {
+
+        e.preventDefault();
+
+        try {
+            const response = await api(API, jsonBody("POST", {
+                email: document.getElementById("email").value.trim(),
+                password: document.getElementById("password").value,
+                isAdmin: document.getElementById("isAdmin").checked
+            }));
+
+            if (!response.ok) {
+                mostraMessaggio(await messaggioErrore(response, "Errore durante la creazione."), true);
+                return;
+            }
+
+            const creato = await response.json();
+            e.target.reset();
+            mostraMessaggio(`Utente ${creato.email} creato.`, false);
+            await caricaUtenti();
+
+        } catch {
+            mostraMessaggio("Errore nel collegamento al server.", true);
+        }
+    });
+
+    avviaPagina({ soloAdmin: true }).then(u => {
+        idCorrente = u.id;
+        return caricaUtenti();
+    });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,246 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+header {
+    background: #1f2937;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+main {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 0 15px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+h1, h2 {
+    margin-top: 0;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+button {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-danger {
+    background: #dc2626;
+    color: white;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #111;
+}
+
+.errore {
+    color: #dc2626;
+}
+
+.successo {
+    color: #16a34a;
+}
+
+.modifica {
+    flex: 1;
+}
+
+.modifica .errore {
+    margin-top: 8px;
+}
+
+.persona {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.persona:last-child {
+    border-bottom: none;
+}
+
+.nome {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.azioni {
+    display: flex;
+    gap: 8px;
+}
+
+#messaggio {
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+    .persona {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .azioni,
+    .modifica {
+        width: 100%;
+    }
+
+    .azioni button {
+        flex: 1;
+    }
+
+    input {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .btn-primary {
+        width: 100%;
+    }
+}
+
+/* --- Barra utente, pagine di accesso e gestione utenti --- */
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    text-align: left;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+header a {
+    color: white;
+}
+
+.barra-utente {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 15px;
+}
+
+.barra-utente a,
+.barra-utente button {
+    color: white;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    text-decoration: none;
+}
+
+.accesso {
+    max-width: 420px;
+    margin: 60px auto;
+}
+
+.accesso input,
+.campo-pieno {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.accesso .btn-primary {
+    width: 100%;
+}
+
+label.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+}
+
+label.check input {
+    flex: none;
+    min-width: 0;
+    width: auto;
+    margin: 0;
+}
+
+.etichetta {
+    display: inline-block;
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    margin-left: 6px;
+    font-weight: normal;
+}
+
+.etichetta.admin {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.etichetta.off {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .accesso {
+        margin: 20px auto;
+    }
+}
+
+/* Nasconde il contenuto finché non è verificato l'accesso. */
+body.in-attesa main {
+    visibility: hidden;
+}
