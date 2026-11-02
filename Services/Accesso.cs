@@ -64,6 +64,12 @@ public static class Politiche
     // Gestione finanze, livello Amministratore: gestisce le categorie.
     public const string FinanzeAmministratore = "FinanzeAmministratore";
 
+    // Modulo Fantapolitica: qualsiasi livello.
+    public const string Fantapolitica = "Fantapolitica";
+
+    // Fantapolitica, livello Amministratore: gestisce politici ed eventi.
+    public const string FantapoliticaAmministratore = "FantapoliticaAmministratore";
+
     // Modulo Admin: solo Super admin.
     public const string Admin = "Admin";
 
@@ -74,6 +80,8 @@ public static class Politiche
     {
         o.AddPolicy(Finanze, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Finanze)));
         o.AddPolicy(FinanzeAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Finanze, Livelli.Amministratore)));
+        o.AddPolicy(Fantapolitica, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Fantapolitica)));
+        o.AddPolicy(FantapoliticaAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Fantapolitica, Livelli.Amministratore)));
         o.AddPolicy(Admin, p => p.RequireAssertion(c => c.User.SuperAdmin()));
         o.AddPolicy(LetturaCategorie, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Finanze)));
     }

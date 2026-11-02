@@ -1,7 +1,7 @@
 // Pagina di ingresso (index.html), per tutti: i moduli abilitati per l'utente,
 // ognuno con le sue pagine. Componenti e funzioni comuni: componenti.js.
 
-const COLORI_MODULI = { finanze: "#2a78d6", admin: "#212529" };
+const COLORI_MODULI = { finanze: "#2a78d6", fantapolitica: "#6250d6", admin: "#212529" };
 
 function riquadroModulo(utente, codice) {
     const def = DEFINIZIONE_MODULI[codice];
