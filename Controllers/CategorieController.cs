@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using GestionalePersone.Data;
 using GestionalePersone.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,14 @@ public class CategorieController : ControllerBase
 
     public record CategoriaDto(int Id, string Nome, int NumeroUscite);
 
+    // Dal client si accetta solo il nome (nessun altro campo può essere impostato).
+    public class CategoriaRequest
+    {
+        [Required(ErrorMessage = "Il nome della categoria è obbligatorio.")]
+        [StringLength(50, ErrorMessage = "Il nome della categoria deve avere al massimo 50 caratteri.")]
+        public string Nome { get; set; } = string.Empty;
+    }
+
     [HttpGet]
     public async Task<IEnumerable<CategoriaDto>> GetCategorie() =>
         await _context.Categorie
@@ -28,7 +37,7 @@ public class CategorieController : ControllerBase
             .ToListAsync();
 
     [HttpPost]
-    public async Task<ActionResult<CategoriaDto>> CreaCategoria(Categoria categoria)
+    public async Task<ActionResult<CategoriaDto>> CreaCategoria(CategoriaRequest categoria)
     {
         var nome = categoria.Nome.Trim();
 
@@ -43,7 +52,7 @@ public class CategorieController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> RinominaCategoria(int id, Categoria categoria)
+    public async Task<IActionResult> RinominaCategoria(int id, CategoriaRequest categoria)
     {
         var esistente = await _context.Categorie.FindAsync(id);
         if (esistente == null)

@@ -117,6 +117,29 @@ using (var scope = app.Services.CreateScope())
 
 app.UseForwardedHeaders();
 
+// Intestazioni di sicurezza: il browser esegue solo script e stili caricati
+// da file di questo sito (niente script iniettati), la pagina non può essere
+// inserita in siti altrui e i tipi di file non vengono "indovinati".
+app.Use(async (context, next) =>
+{
+    var h = context.Response.Headers;
+    h["X-Content-Type-Options"] = "nosniff";
+    h["X-Frame-Options"] = "DENY";
+    h["Referrer-Policy"] = "same-origin";
+    h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+
+    // Swagger (solo in sviluppo) usa script interni: lì niente CSP.
+    if (!context.Request.Path.StartsWithSegments("/swagger"))
+    {
+        h["Content-Security-Policy"] =
+            "default-src 'self'; script-src 'self'; style-src 'self'; " +
+            "img-src 'self' data:; font-src 'self'; connect-src 'self'; " +
+            "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+    }
+
+    await next();
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 

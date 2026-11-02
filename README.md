@@ -21,6 +21,7 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   segnaposto delle date, modulo a schermata su telefono).
 - **`componenti.js`**: funzioni comuni (pulsanti con cerchietto di attesa, invio dei moduli,
   messaggi, etichette, chiamate al server, barra in alto e menu utente).
+- **`js/`**: lo script di ogni pagina, in un file separato (nessuno script dentro l'HTML).
 - **`componenti.html`**: pagina di riferimento con un esempio di ogni componente e le classi
   da usare. Le pagine nuove vanno costruite con questi componenti.
 
@@ -87,6 +88,21 @@ tabella `Utenti`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Cor
 - **Protezioni**: dopo 5 password errate l'account si blocca per 5 minuti; massimo 10
   tentativi di accesso al minuto per indirizzo IP. La sessione dura 7 giorni e resta valida
   anche dopo riavvii e deploy (le chiavi dei cookie sono salvate nel database).
+
+## Sicurezza contro le injection
+
+- **SQL**: tutte le query passano da Entity Framework (parametri, mai testo concatenato);
+  nella ricerca i caratteri speciali `%` e `_` vengono neutralizzati.
+- **HTML/JavaScript (XSS)**: i dati vengono sempre inseriti nella pagina come testo
+  (`textContent`), mai come HTML. In più la **Content-Security-Policy** permette solo script e
+  stili caricati da file del sito: un eventuale script iniettato non viene eseguito. Per questo
+  nessuna pagina contiene script o stili scritti dentro l'HTML.
+- **Campi non previsti**: le API ricevono oggetti dedicati (solo i campi ammessi), quindi non
+  si possono impostare id, autore o altri campi interni.
+- **Redirect dopo l'accesso**: il parametro `ritorno` è accettato solo se porta a una pagina
+  di questo sito.
+- **Altre intestazioni**: `X-Frame-Options: DENY` (la pagina non può essere inserita in siti
+  altrui), `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`.
 
 ## API
 

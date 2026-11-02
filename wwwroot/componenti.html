@@ -6,10 +6,6 @@
     <title>Componenti - Gestionale Uscite</title>
     <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="componenti.css">
-    <style>
-        /* Solo per questa pagina di esempi. */
-        code.classi { font-size: 0.8rem; }
-    </style>
 </head>
 <body>
 
@@ -43,7 +39,7 @@
             <button type="button" class="btn btn-sm btn-danger">Elimina</button>
             <button type="button" class="btn btn-link btn-sm p-0">Azzera filtri</button>
         </div>
-        <code class="classi mt-2">btn btn-primary · btn btn-light border · btn btn-danger · btn btn-sm … · btn btn-link btn-sm p-0</code>
+        <code class="small classi mt-2">btn btn-primary · btn btn-light border · btn btn-danger · btn btn-sm … · btn btn-link btn-sm p-0</code>
 
         <h3 class="h6 fw-bold mt-4">Pulsanti rotondi</h3>
         <div class="d-flex gap-2 align-items-center">
@@ -57,11 +53,11 @@
             </button>
             <button type="button" class="btn btn-primary btn-tondo" aria-label="Nuovo">+</button>
         </div>
-        <code class="classi mt-2">btn btn-primary btn-tondo · btn btn-outline-primary bg-white btn-tondo · pallino: position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-2 border-white rounded-circle</code>
+        <code class="small classi mt-2">btn btn-primary btn-tondo · btn btn-outline-primary bg-white btn-tondo · pallino: position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-2 border-white rounded-circle</code>
 
         <h3 class="h6 fw-bold mt-4">Pulsante con cerchietto di attesa</h3>
         <div class="d-flex gap-2" id="esempioAttesa"></div>
-        <code class="classi mt-2">JS: pulsante("Salva", "btn btn-primary", async () => …) · moduli: alInvio(form, async () => …)</code>
+        <code class="small classi mt-2">JS: pulsante("Salva", "btn btn-primary", async () => …) · moduli: alInvio(form, async () => …)</code>
     </section>
 
     <!-- Campi -->
@@ -93,7 +89,7 @@
                 </div>
             </div>
         </div>
-        <code class="classi mt-2">form-label fw-semibold · form-control · form-select · form-check / form-check-input / form-check-label · griglia: row g-3 + col-6 / col-12</code>
+        <code class="small classi mt-2">form-label fw-semibold · form-control · form-select · form-check / form-check-input / form-check-label · griglia: row g-3 + col-6 / col-12</code>
 
         <h3 class="h6 fw-bold mt-4">Filtri con segnaposto (sempre sulla stessa riga)</h3>
         <div class="row g-2 filtri">
@@ -109,12 +105,12 @@
                 <span class="segnaposto" aria-hidden="true">Al</span>
             </div>
         </div>
-        <code class="classi mt-2">row g-2 filtri · form-select vuoto · col-4 campo-data + input.form-control.vuoto + span.segnaposto</code>
+        <code class="small classi mt-2">row g-2 filtri · form-select vuoto · col-4 campo-data + input.form-control.vuoto + span.segnaposto</code>
 
         <h3 class="h6 fw-bold mt-4">Messaggi</h3>
         <div class="small text-danger">Scegli una categoria.</div>
         <div class="small text-success">Categoria "Regali" aggiunta.</div>
-        <code class="classi mt-2">JS: mostraMessaggio(elemento, testo) · mostraMessaggio(elemento, testo, "successo")</code>
+        <code class="small classi mt-2">JS: mostraMessaggio(elemento, testo) · mostraMessaggio(elemento, testo, "successo")</code>
     </section>
 
     <!-- Elenchi -->
@@ -145,14 +141,14 @@
                 </div>
             </div>
         </div>
-        <code class="classi d-block mt-2">card shadow-sm border-0 · list-group list-group-flush · list-group-item … · caricamento: JS caricamentoElenco()</code>
+        <code class="small classi d-block mt-2">card shadow-sm border-0 · list-group list-group-flush · list-group-item … · caricamento: JS caricamentoElenco()</code>
     </section>
 
     <!-- Etichette -->
     <section class="card card-body shadow-sm border-0 mb-3">
         <h2 class="h5 fw-bold">Etichette</h2>
         <div class="d-flex flex-wrap gap-2" id="esempioEtichette"></div>
-        <code class="classi mt-2">JS: etichetta("Amministratore", "primary") · classi: badge rounded-pill text-bg-primary fw-normal</code>
+        <code class="small classi mt-2">JS: etichetta("Amministratore", "primary") · classi: badge rounded-pill text-bg-primary fw-normal</code>
     </section>
 
     <!-- Tendina utente -->
@@ -166,20 +162,7 @@
 </main>
 
 <script src="componenti.js"></script>
-<script>
-    // Esempi interattivi (nessun dato reale).
-    const utenteEsempio = { id: 0, email: "admin@example.com", isAdmin: true };
-    document.getElementById("barraEsempio").append(menuPagine(utenteEsempio), menuProfilo(utenteEsempio));
-
-    const attesa = ms => new Promise(r => setTimeout(r, ms));
-    document.getElementById("esempioAttesa").append(
-        pulsante("Salva (prova)", "btn btn-primary", () => attesa(1500)),
-        pulsante("Elimina (prova)", "btn btn-sm btn-danger align-self-center", () => attesa(1500)));
-
-    document.getElementById("esempioEtichette").append(
-        etichetta("tu"), etichetta("Amministratore", "primary"),
-        etichetta("Disattivato", "danger"), etichetta("Trasporti", "light"));
-</script>
+<script src="js/componenti-esempi.js"></script>
 
 </body>
 </html>

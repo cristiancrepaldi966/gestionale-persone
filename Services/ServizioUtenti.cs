@@ -22,6 +22,15 @@ public class ServizioUtenti
 
     public static string NormalizzaEmail(string email) => email.Trim().ToLowerInvariant();
 
+    // Email valida: formato standard, senza spazi né caratteri come < > " ' ( ) ; ,
+    private static readonly System.Text.RegularExpressions.Regex FormatoEmail = new(
+        @"^[a-z0-9.!#$%&*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100));
+
+    public static bool EmailValida(string emailNormalizzata) =>
+        emailNormalizzata.Length <= 256 && FormatoEmail.IsMatch(emailNormalizzata);
+
     public static string? ErrorePassword(string? password) =>
         string.IsNullOrEmpty(password) || password.Length < LunghezzaMinimaPassword
             ? $"La password deve avere almeno {LunghezzaMinimaPassword} caratteri."
@@ -99,6 +108,12 @@ public class ServizioUtenti
         if (errore != null)
         {
             logger.LogError("ADMIN_PASSWORD non valida: {Errore}", errore);
+            return;
+        }
+
+        if (!EmailValida(NormalizzaEmail(email)))
+        {
+            logger.LogError("ADMIN_EMAIL non è un indirizzo email valido.");
             return;
         }
 
