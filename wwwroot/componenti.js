@@ -167,7 +167,7 @@ const DEFINIZIONE_MODULI = {
     },
 };
 
-const ORDINE_MODULI = [MODULI.finanze, MODULI.admin];
+const ORDINE_MODULI = [MODULI.admin, MODULI.finanze];   // ordine nella barra e nella pagina di ingresso
 
 // Livello dell'utente in un modulo ("Utente", "Amministratore") o undefined se non ha accesso.
 // Il server dà al Super admin tutti i moduli come Amministratore.
