@@ -133,6 +133,13 @@ namespace GestionalePersone.Migrations
                     b.Property<DateTime?>("BloccatoFinoA")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Cognome")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("");
+
                     b.Property<DateTime>("CreatoIl")
                         .HasColumnType("timestamp with time zone");
 
@@ -143,6 +150,13 @@ namespace GestionalePersone.Migrations
 
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

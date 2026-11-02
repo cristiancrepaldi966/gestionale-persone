@@ -29,7 +29,7 @@ public class AuthController : ControllerBase
 
     public record CambioPasswordRequest(string PasswordAttuale, string NuovaPassword);
 
-    public record UtenteCorrente(int Id, string Email, bool IsAdmin);
+    public record UtenteCorrente(int Id, string Nome, string Cognome, string Email, bool IsAdmin);
 
     [HttpPost("login")]
     [AllowAnonymous]
@@ -62,7 +62,7 @@ public class AuthController : ControllerBase
             CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(identity));
 
-        return new UtenteCorrente(utente.Id, utente.Email, utente.IsAdmin);
+        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, utente.IsAdmin);
     }
 
     [HttpPost("logout")]
@@ -75,11 +75,15 @@ public class AuthController : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public ActionResult<UtenteCorrente> Me() =>
-        new UtenteCorrente(
-            int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
-            User.Identity!.Name!,
-            User.IsInRole("Admin"));
+    public async Task<ActionResult<UtenteCorrente>> Me()
+    {
+        // Letto dal database: nome e cognome possono essere cambiati dall'amministratore.
+        var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var utente = await _context.Utenti.AsNoTracking().SingleOrDefaultAsync(u => u.Id == id);
+        if (utente == null)
+            return Unauthorized();
+        return new UtenteCorrente(utente.Id, utente.Nome, utente.Cognome, utente.Email, utente.IsAdmin);
+    }
 
     [HttpPost("password")]
     [Authorize]

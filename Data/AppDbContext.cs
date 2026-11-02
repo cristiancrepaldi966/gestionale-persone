@@ -26,6 +26,8 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Utente>(u =>
         {
             u.Property(x => x.Email).HasMaxLength(256).IsRequired();
+            u.Property(x => x.Nome).HasMaxLength(100).IsRequired().HasDefaultValue("");
+            u.Property(x => x.Cognome).HasMaxLength(100).IsRequired().HasDefaultValue("");
             u.HasIndex(x => x.Email).IsUnique();
             u.Property(x => x.PasswordHash).IsRequired();
         });
