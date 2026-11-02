@@ -190,8 +190,9 @@ async function avviaPagina({ modulo = null, amministratore = false } = {}) {
 }
 
 // Link alle pagine (nav-pills di Bootstrap); quella aperta è evidenziata.
-// Dashboard e Uscite per chi ha il modulo Uscite; "Admin" (Utenti, Autorizzazioni,
-// Categorie) per chi è Amministratore del modulo Admin.
+// Dashboard e Uscite per chi ha il modulo Uscite; "Admin" (Utenti, Moduli) per chi è
+// Amministratore del modulo Admin. Da Moduli si sceglie un modulo e se ne gestiscono
+// autorizzazioni (e, per Uscite, categorie).
 function menuPagine(utente) {
     const menu = el("nav", "menu-pagine nav nav-pills gap-1");
     const corrente = location.pathname === "/index.html" ? "/" : location.pathname;
@@ -211,8 +212,10 @@ function menuPagine(utente) {
     }
 
     if (eAmministratoreAdmin(utente)) {
-        const pagineAdmin = [["Utenti", "/utenti.html"], ["Autorizzazioni", "/autorizzazioni.html"], ["Categorie", "/categorie.html"]];
-        const inAdmin = pagineAdmin.some(([, href]) => href === corrente);
+        const pagineAdmin = [["Utenti", "/utenti.html"], ["Moduli", "/moduli.html"]];
+        // Le pagine di un modulo (autorizzazioni, categorie) fanno parte di "Moduli".
+        const inModuli = ["/modulo.html", "/categorie.html"].includes(corrente);
+        const inAdmin = inModuli || pagineAdmin.some(([, href]) => href === corrente);
 
         const contenitore = el("div", "dropdown");
         const bottone = el("button", "nav-link py-1 px-3 dropdown-toggle " +
@@ -222,7 +225,7 @@ function menuPagine(utente) {
         const tendina = el("div", "dropdown-menu shadow");
         tendina.setAttribute("data-bs-theme", "light");
         for (const [testo, href] of pagineAdmin) {
-            const attiva = href === corrente;
+            const attiva = href === corrente || (href === "/moduli.html" && inModuli);
             tendina.appendChild(voce(testo, href, "dropdown-item py-2" + (attiva ? " active" : ""), attiva));
         }
 
@@ -570,6 +573,36 @@ function carosello(contenitore) {
 // ---------------------------------------------------------------------------
 
 const NOMI_MODULI = { uscite: "Uscite", admin: "Admin" };
+const ICONE_MODULI = { uscite: "wallet2", admin: "shield-lock" };
+
+// Intestazione delle pagine di un modulo (Admin → Moduli → modulo): percorso e schede.
+// scheda: "autorizzazioni" o "categorie".
+function intestazioneModulo(contenitore, codice, scheda) {
+    const nome = NOMI_MODULI[codice] || codice;
+
+    const percorso = el("nav", "small mb-2");
+    percorso.setAttribute("aria-label", "Percorso");
+    const moduli = el("a", "link-secondary", "Moduli");
+    moduli.href = "/moduli.html";
+    percorso.append(moduli, el("span", "text-body-secondary mx-1", "›"), el("span", "fw-semibold", nome));
+
+    const titolo = el("div", "d-flex align-items-center gap-2 mb-3");
+    titolo.append(iconaCategoria(ICONE_MODULI[codice] || "grid", "#212529"), el("h2", "h3 fw-bold mb-0", "Modulo " + nome));
+
+    const schede = el("ul", "nav nav-tabs mb-3");
+    const voci = [["autorizzazioni", "Autorizzazioni", `/modulo.html?codice=${codice}`]];
+    if (codice === MODULI.uscite) voci.push(["categorie", "Categorie", "/categorie.html"]);
+    for (const [chiave, testo, href] of voci) {
+        const li = el("li", "nav-item");
+        const a = el("a", "nav-link" + (chiave === scheda ? " active" : ""), testo);
+        a.href = href;
+        if (chiave === scheda) a.setAttribute("aria-current", "page");
+        li.appendChild(a);
+        schede.appendChild(li);
+    }
+
+    contenitore.replaceChildren(percorso, titolo, schede);
+}
 
 // Etichette "Modulo · Livello" (es. "Admin · Amministratore", "Uscite · Utente").
 function etichetteModuli(moduli) {

@@ -26,28 +26,12 @@ const nomeCompleto = u => `${u.nome} ${u.cognome}`.trim();
 
 let moduli = [];   // da /api/moduli: { codice, nome, descrizione, livelli }
 
-// Una tendina per modulo (Nessun accesso / livelli) nella finestra dell'utente.
+// Filtro "Modulo": utenti con accesso a quel modulo. Le autorizzazioni si gestiscono
+// in Admin → Moduli; qui l'elenco le mostra soltanto.
 function preparaModuli() {
-    riempiTendina($("filtroModulo"), "Modulo", moduli.map(m => [m.codice, "Con accesso a " + m.nome]));
-    $("autorizzazioniModulo").replaceChildren(...moduli.map(m => {
-        const col = el("div", "col-6");
-        const label = el("label", "form-label small mb-1", m.nome);
-        label.htmlFor = "mod-" + m.codice;
-        const select = el("select", "form-select");
-        select.id = "mod-" + m.codice;
-        select.dataset.modulo = m.codice;
-        select.append(new Option("Nessuno", ""), ...m.livelli.map(l => new Option(l, l)));
-        col.append(label, select);
-        return col;
-    }));
+    $("filtroModulo").replaceChildren(new Option("Modulo", ""),
+        ...moduli.map(m => new Option("Con accesso a " + m.nome, m.codice)));
 }
-
-function riempiTendina(select, primaVoce, voci) {
-    select.replaceChildren(new Option(primaVoce, ""), ...voci.map(([v, t]) => new Option(t, v)));
-}
-
-const autorizzazioniScelte = () => Object.fromEntries(
-    [...document.querySelectorAll("#autorizzazioniModulo select")].map(s => [s.dataset.modulo, s.value || null]));
 
 async function caricaUtenti() {
     try {
@@ -130,12 +114,6 @@ function apri(u) {
     inModifica = u || null;
     const stessoUtente = !!u && u.id === idCorrente;
 
-    // Nuovo utente: per comodità Utente nel primo modulo con quel livello (es. Uscite).
-    document.querySelectorAll("#autorizzazioniModulo select").forEach(s => {
-        const m = moduli.find(x => x.codice === s.dataset.modulo);
-        s.value = u ? (u.autorizzazioni[s.dataset.modulo] || "") : (m.livelli.includes("Utente") ? "Utente" : "");
-        s.disabled = stessoUtente && s.dataset.modulo === MODULI.admin;
-    });
     $("nome").value = u ? u.nome : "";
     $("cognome").value = u ? u.cognome : "";
     $("email").value = u ? u.email : "";
@@ -182,7 +160,6 @@ async function salva() {
             ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", {
                 nome,
                 cognome,
-                autorizzazioni: autorizzazioniScelte(),
                 attivo: $("attivo").checked,
                 nuovaPassword: password || null
             }))
@@ -190,8 +167,7 @@ async function salva() {
                 nome,
                 cognome,
                 email: $("email").value.trim(),
-                password,
-                autorizzazioni: autorizzazioniScelte()
+                password
             }));
 
         if (!response.ok) {
@@ -199,8 +175,13 @@ async function salva() {
             return;
         }
 
+        const nuovo = !inModifica;
         modulo.chiudi();
         await caricaUtenti();
+        if (nuovo) {
+            mostraMessaggio($("messaggio"),
+                "Utente creato. Per dargli accesso ai moduli vai in Admin → Moduli.", "successo");
+        }
 
     } catch {
         errore.textContent = "Errore nel collegamento al server.";
