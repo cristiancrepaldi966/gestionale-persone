@@ -16,11 +16,13 @@ const ricerca = pannelloRicerca({
     pannello: $("pannelloFiltri"),
     pallino: $("pallinoFiltri"),
     azzera: $("azzera"),
-    campi: [$("filtroEmail"), $("filtroRuolo"), $("filtroStato")],
+    campi: [$("filtroRuolo"), $("filtroTesto"), $("filtroStato")],
     applica: () => mostraUtenti()
 });
 
-const modulo = moduloFinestra($("finestra"), { primoCampo: $("email") });
+const modulo = moduloFinestra($("finestra"), { primoCampo: $("nome") });
+
+const nomeCompleto = u => `${u.nome} ${u.cognome}`.trim();
 
 async function caricaUtenti() {
     try {
@@ -33,14 +35,14 @@ async function caricaUtenti() {
     }
 }
 
-// Elenco filtrato per email, ruolo e stato (la ricerca avviene qui, gli utenti sono pochi).
+// Elenco filtrato per ruolo, nome/cognome/email e stato (la ricerca avviene qui, gli utenti sono pochi).
 function mostraUtenti() {
 
-    const { filtroEmail, filtroRuolo, filtroStato } = ricerca.valori();
-    const testo = filtroEmail.toLowerCase();
+    const { filtroRuolo, filtroTesto, filtroStato } = ricerca.valori();
+    const testo = filtroTesto.toLocaleLowerCase("it-IT");
 
     const trovati = utenti.filter(u =>
-        u.email.includes(testo) &&
+        `${u.nome} ${u.cognome} ${u.cognome} ${u.nome} ${u.email}`.toLocaleLowerCase("it-IT").includes(testo) &&
         (filtroRuolo === "" || (filtroRuolo === "admin") === u.isAdmin) &&
         (filtroStato === "" ||
             (filtroStato === "attivi" && u.attivo) ||
@@ -65,15 +67,28 @@ function rigaUtente(u) {
     const riga = el("div", "list-group-item riga d-flex flex-column flex-sm-row justify-content-between gap-2 py-3");
 
     const info = el("div", "text-break");
-    const nome = el("div", "fw-bold fs-5 d-flex flex-wrap align-items-center gap-1");
-    nome.appendChild(el("span", "me-1", u.email));
-    if (u.id === idCorrente) nome.appendChild(etichetta("tu"));
-    if (u.isAdmin) nome.appendChild(etichetta("Amministratore", "primary"));
-    if (!u.attivo) nome.appendChild(etichetta("Disattivato", "danger"));
-    if (u.bloccato) nome.appendChild(etichetta("Bloccato per tentativi errati", "danger"));
-    info.appendChild(nome);
-    info.appendChild(el("div", "small text-body-secondary",
+
+    // 1. Ruolo
+    const ruolo = el("div", "d-flex flex-wrap align-items-center gap-1 mb-1");
+    ruolo.appendChild(u.isAdmin ? etichetta("Amministratore", "primary") : etichetta("Utente", "secondary"));
+    if (u.id === idCorrente) ruolo.appendChild(etichetta("tu", "light"));
+    info.appendChild(ruolo);
+
+    // 2. Nome e cognome
+    info.appendChild(nomeCompleto(u)
+        ? el("div", "fw-bold fs-5", nomeCompleto(u))
+        : el("div", "fs-5 fst-italic text-body-secondary", "Nome non inserito"));
+
+    // 3. Email
+    info.appendChild(el("div", null, u.email));
+
+    // 4. Il resto: stato e date
+    const stato = el("div", "d-flex flex-wrap align-items-center gap-1 small text-body-secondary mt-1");
+    if (!u.attivo) stato.appendChild(etichetta("Disattivato", "danger"));
+    if (u.bloccato) stato.appendChild(etichetta("Bloccato per tentativi errati", "danger"));
+    stato.appendChild(el("span", null,
         `Creato il ${formatoDataOra(u.creatoIl)} · Ultimo accesso: ${formatoDataOra(u.ultimoAccesso)}`));
+    info.appendChild(stato);
 
     const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-sm-center");
     azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apri(u)));
@@ -89,6 +104,10 @@ function apri(u) {
     inModifica = u || null;
     const stessoUtente = !!u && u.id === idCorrente;
 
+    $("ruolo").value = u && u.isAdmin ? "admin" : "utente";
+    $("ruolo").disabled = stessoUtente;
+    $("nome").value = u ? u.nome : "";
+    $("cognome").value = u ? u.cognome : "";
     $("email").value = u ? u.email : "";
     $("email").readOnly = !!u;                 // l'email non si cambia
     $("email").classList.toggle("bg-body-tertiary", !!u);
@@ -97,8 +116,6 @@ function apri(u) {
     $("aiutoPassword").textContent = u
         ? "Lascia vuoto per non cambiarla. Almeno 8 caratteri."
         : "Almeno 8 caratteri.";
-    $("isAdmin").checked = u ? u.isAdmin : false;
-    $("isAdmin").disabled = stessoUtente;
     $("attivo").checked = u ? u.attivo : true;
     $("attivo").disabled = stessoUtente;
     $("rigaAttivo").hidden = !u;                // un utente nuovo è sempre attivo
@@ -106,13 +123,20 @@ function apri(u) {
     $("erroreFinestra").textContent = "";
 
     modulo.apri(u ? "Modifica utente" : "Nuovo utente");
-    if (u && !schermoTouch) $("password").focus();
 }
 
 async function salva() {
 
     const errore = $("erroreFinestra");
     const password = $("password").value;
+    const nome = $("nome").value.trim();
+    const cognome = $("cognome").value.trim();
+    const isAdmin = $("ruolo").value === "admin";
+
+    if (!nome || !cognome) {
+        errore.textContent = "Inserisci nome e cognome.";
+        return;
+    }
 
     if (!inModifica && !$("email").value.trim()) {
         errore.textContent = "Inserisci l'email.";
@@ -127,14 +151,18 @@ async function salva() {
     try {
         const response = inModifica
             ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", {
-                isAdmin: $("isAdmin").checked,
+                nome,
+                cognome,
+                isAdmin,
                 attivo: $("attivo").checked,
                 nuovaPassword: password || null
             }))
             : await api(API, jsonBody("POST", {
+                nome,
+                cognome,
                 email: $("email").value.trim(),
                 password,
-                isAdmin: $("isAdmin").checked
+                isAdmin
             }));
 
         if (!response.ok) {
@@ -152,7 +180,7 @@ async function salva() {
 
 async function elimina(u) {
 
-    if (!confirm(`Eliminare l'utente ${u.email}?`)) return;
+    if (!confirm(`Eliminare l'utente ${nomeCompleto(u) || u.email} (${u.email})?`)) return;
 
     try {
         const response = await api(`${API}/${u.id}`, { method: "DELETE" });

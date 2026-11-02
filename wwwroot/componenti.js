@@ -199,10 +199,12 @@ function menuPagine(utente) {
 function menuProfilo(utente) {
     const profilo = el("div", "dropdown ms-2");
 
+    const nome = `${utente.nome || ""} ${utente.cognome || ""}`.trim();
+
     const cerchio = el("button", "btn btn-primary btn-tondo btn-tondo-piccolo avatar fw-bold",
-        utente.email.charAt(0).toUpperCase());
+        (nome || utente.email).charAt(0).toUpperCase());
     cerchio.type = "button";
-    cerchio.title = utente.email;
+    cerchio.title = nome || utente.email;
     cerchio.setAttribute("aria-label", "Menu utente");
     cerchio.setAttribute("aria-haspopup", "true");
     cerchio.setAttribute("aria-expanded", "false");
@@ -212,7 +214,8 @@ function menuProfilo(utente) {
 
     const intestazione = el("div", "px-3 py-3 border-bottom");
     intestazione.appendChild(el("div", "small text-body-secondary", "Accesso effettuato come"));
-    intestazione.appendChild(el("div", "fw-bold text-break my-1", utente.email));
+    if (nome) intestazione.appendChild(el("div", "fw-bold text-break mt-1", nome));
+    intestazione.appendChild(el("div", (nome ? "small text-body-secondary" : "fw-bold mt-1") + " text-break mb-1", utente.email));
     if (utente.isAdmin) intestazione.appendChild(etichetta("Amministratore", "primary"));
 
     const cambio = el("a", "dropdown-item py-2", "Cambia password");

@@ -23,29 +23,47 @@ public class UtentiController : ControllerBase
     }
 
     public record UtenteDto(
-        int Id, string Email, bool IsAdmin, bool Attivo,
+        int Id, string Nome, string Cognome, string Email, bool IsAdmin, bool Attivo,
         DateTime CreatoIl, DateTime? UltimoAccesso, bool Bloccato);
 
-    public record NuovoUtenteRequest(string Email, string Password, bool IsAdmin);
+    // Campi "string?": se mancano risponde il nostro controllo (in italiano), non quello automatico.
+    public record NuovoUtenteRequest(string? Nome, string? Cognome, string? Email, string? Password, bool IsAdmin);
 
-    public record ModificaUtenteRequest(bool IsAdmin, bool Attivo, string? NuovaPassword);
+    public record ModificaUtenteRequest(string? Nome, string? Cognome, bool IsAdmin, bool Attivo, string? NuovaPassword);
 
     private static UtenteDto ToDto(Utente u) => new(
-        u.Id, u.Email, u.IsAdmin, u.Attivo, u.CreatoIl, u.UltimoAccesso,
+        u.Id, u.Nome, u.Cognome, u.Email, u.IsAdmin, u.Attivo, u.CreatoIl, u.UltimoAccesso,
         u.BloccatoFinoA > DateTime.UtcNow);
+
+    // Nome e cognome: obbligatori, massimo 100 caratteri ciascuno.
+    private static string? ErroreNome(string? nome, string? cognome)
+    {
+        if (string.IsNullOrWhiteSpace(nome)) return "Inserisci il nome.";
+        if (string.IsNullOrWhiteSpace(cognome)) return "Inserisci il cognome.";
+        if (nome.Trim().Length > 100 || cognome.Trim().Length > 100)
+            return "Nome e cognome devono avere al massimo 100 caratteri.";
+        return null;
+    }
 
     private int IdCorrente => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
     public async Task<IEnumerable<UtenteDto>> GetUtenti()
     {
-        var utenti = await _context.Utenti.OrderBy(u => u.Email).ToListAsync();
+        var utenti = await _context.Utenti
+            .OrderBy(u => u.Cognome == "")      // chi non ha ancora nome e cognome in fondo
+            .ThenBy(u => u.Cognome).ThenBy(u => u.Nome).ThenBy(u => u.Email)
+            .ToListAsync();
         return utenti.Select(ToDto);
     }
 
     [HttpPost]
     public async Task<ActionResult<UtenteDto>> CreaUtente(NuovoUtenteRequest richiesta)
     {
+        var erroreNome = ErroreNome(richiesta.Nome, richiesta.Cognome);
+        if (erroreNome != null)
+            return BadRequest(new { messaggio = erroreNome });
+
         var email = ServizioUtenti.NormalizzaEmail(richiesta.Email ?? "");
 
         if (!ServizioUtenti.EmailValida(email))
@@ -58,8 +76,14 @@ public class UtentiController : ControllerBase
         if (await _context.Utenti.AnyAsync(u => u.Email == email))
             return Conflict(new { messaggio = "Esiste già un utente con questa email." });
 
-        var utente = new Utente { Email = email, IsAdmin = richiesta.IsAdmin };
-        _utenti.ImpostaPassword(utente, richiesta.Password);
+        var utente = new Utente
+        {
+            Nome = richiesta.Nome!.Trim(),
+            Cognome = richiesta.Cognome!.Trim(),
+            Email = email,
+            IsAdmin = richiesta.IsAdmin
+        };
+        _utenti.ImpostaPassword(utente, richiesta.Password!);
 
         _context.Utenti.Add(utente);
         await _context.SaveChangesAsync();
@@ -73,6 +97,10 @@ public class UtentiController : ControllerBase
         var utente = await _context.Utenti.FindAsync(id);
         if (utente == null)
             return NotFound();
+
+        var erroreNome = ErroreNome(richiesta.Nome, richiesta.Cognome);
+        if (erroreNome != null)
+            return BadRequest(new { messaggio = erroreNome });
 
         var perdeAdmin = utente.IsAdmin && (!richiesta.IsAdmin || !richiesta.Attivo);
 
@@ -93,6 +121,8 @@ public class UtentiController : ControllerBase
             utente.BloccatoFinoA = null;
         }
 
+        utente.Nome = richiesta.Nome!.Trim();
+        utente.Cognome = richiesta.Cognome!.Trim();
         utente.IsAdmin = richiesta.IsAdmin;
         utente.Attivo = richiesta.Attivo;
 

@@ -79,12 +79,14 @@ dotnet ef migrations add NomeModifica
 
 ## Accesso e utenti
 
-Per usare l'app bisogna accedere con email e password. Gli utenti sono salvati nella
-tabella `Utenti`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Core Identity).
+Per usare l'app bisogna accedere con email e password. Gli utenti (ruolo, nome, cognome,
+email) sono salvati nella tabella `Utenti`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Core Identity).
 
 - **Primo amministratore**: all'avvio, se la tabella `Utenti` è vuota, viene creato con
   le variabili d'ambiente `ADMIN_EMAIL` e `ADMIN_PASSWORD` (almeno 8 caratteri).
   Dopo il primo avvio queste variabili non servono più e si possono togliere.
+- **Nome e cognome**: obbligatori per i nuovi utenti; gli utenti creati prima di questa
+  funzione compaiono come "Nome non inserito" finché non vengono completati con *Modifica*.
 - **Gestione utenti** (pagina *Utenti*, solo amministratori): creare utenti, renderli
   amministratori, disattivarli, reimpostare la password, eliminarli. Deve sempre restare
   almeno un amministratore attivo.
