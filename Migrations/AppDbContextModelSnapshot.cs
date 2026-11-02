@@ -100,11 +100,6 @@ namespace GestionalePersone.Migrations
                     b.Property<DateOnly>("Data")
                         .HasColumnType("date");
 
-                    b.Property<string>("Descrizione")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.Property<decimal>("Importo")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)");

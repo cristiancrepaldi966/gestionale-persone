@@ -31,10 +31,6 @@ public class UsciteController : ControllerBase
         [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "L'importo deve essere maggiore di zero.")]
         public decimal? Importo { get; set; }
 
-        [Required(ErrorMessage = "La descrizione è obbligatoria.")]
-        [StringLength(200, ErrorMessage = "La descrizione deve avere al massimo 200 caratteri.")]
-        public string Descrizione { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "La categoria è obbligatoria.")]
         public int? CategoriaId { get; set; }
 
@@ -43,12 +39,12 @@ public class UsciteController : ControllerBase
     }
 
     public record UscitaDto(
-        int Id, DateOnly Data, decimal Importo, string Descrizione, string? Note,
+        int Id, DateOnly Data, decimal Importo, string? Note,
         int CategoriaId, string Categoria, string? CreatoDa);
 
     public record RisultatoRicerca(IEnumerable<UscitaDto> Uscite, int Numero, decimal Totale, bool Troncato);
 
-    // Ricerca: testo (descrizione e note), categoria, intervallo di date.
+    // Ricerca: testo (note e nome della categoria), categoria, intervallo di date.
     [HttpGet]
     public async Task<RisultatoRicerca> Cerca(
         [FromQuery] string? q, [FromQuery] int? categoriaId,
@@ -60,8 +56,8 @@ public class UsciteController : ControllerBase
         {
             var testo = "%" + EscapeLike(q.Trim()) + "%";
             query = query.Where(u =>
-                EF.Functions.ILike(u.Descrizione, testo, "\\") ||
-                (u.Note != null && EF.Functions.ILike(u.Note, testo, "\\")));
+                (u.Note != null && EF.Functions.ILike(u.Note, testo, "\\")) ||
+                EF.Functions.ILike(u.Categoria.Nome, testo, "\\"));
         }
 
         if (categoriaId.HasValue)
@@ -80,7 +76,7 @@ public class UsciteController : ControllerBase
             .OrderByDescending(u => u.Data).ThenByDescending(u => u.Id)
             .Take(MaxRisultati)
             .Select(u => new UscitaDto(
-                u.Id, u.Data, u.Importo, u.Descrizione, u.Note,
+                u.Id, u.Data, u.Importo, u.Note,
                 u.CategoriaId, u.Categoria.Nome,
                 u.CreatoDa != null ? u.CreatoDa.Email : null))
             .ToListAsync();
@@ -94,7 +90,7 @@ public class UsciteController : ControllerBase
         var dto = await _context.Uscite.AsNoTracking()
             .Where(u => u.Id == id)
             .Select(u => new UscitaDto(
-                u.Id, u.Data, u.Importo, u.Descrizione, u.Note,
+                u.Id, u.Data, u.Importo, u.Note,
                 u.CategoriaId, u.Categoria.Nome,
                 u.CreatoDa != null ? u.CreatoDa.Email : null))
             .SingleOrDefaultAsync();
@@ -151,7 +147,6 @@ public class UsciteController : ControllerBase
     {
         uscita.Data = r.Data!.Value;
         uscita.Importo = Math.Round(r.Importo!.Value, 2);
-        uscita.Descrizione = r.Descrizione.Trim();
         uscita.Note = string.IsNullOrWhiteSpace(r.Note) ? null : r.Note.Trim();
         uscita.CategoriaId = r.CategoriaId!.Value;
     }

@@ -423,6 +423,7 @@ dialog::backdrop {
 .griglia-form textarea {
     width: 100%;
     min-width: 0;
+    flex: none;
     font-weight: normal;
 }
 
@@ -468,4 +469,33 @@ dialog::backdrop {
     .griglia-form {
         grid-template-columns: 1fr;
     }
+}
+
+/* Campi data: su iPhone/Safari hanno uno stile nativo con altezza e
+   larghezza diverse dagli altri campi. Li uniformiamo. */
+input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    box-sizing: border-box;
+    height: 46px;
+    min-height: 46px;
+    line-height: normal;
+    color: inherit;
+    text-align: left;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+    padding: 0;
+}
+
+/* Stessa altezza per tutti i campi su una riga. */
+input:not([type="checkbox"]),
+select {
+    height: 46px;
 }

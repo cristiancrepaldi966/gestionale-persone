@@ -8,8 +8,6 @@ public class Uscita
 
     public decimal Importo { get; set; }
 
-    public string Descrizione { get; set; } = string.Empty;
-
     public string? Note { get; set; }
 
     public int CategoriaId { get; set; }

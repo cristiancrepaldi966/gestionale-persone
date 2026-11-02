@@ -23,7 +23,7 @@
 
     <div class="card">
         <div class="filtri">
-            <input type="search" id="q" placeholder="Cerca nella descrizione o nelle note" class="filtro-testo">
+            <input type="search" id="q" placeholder="Cerca nelle note o per categoria" class="filtro-testo">
             <select id="filtroCategoria" aria-label="Categoria">
                 <option value="">Tutte le categorie</option>
             </select>
@@ -52,10 +52,6 @@
 
             <label>Importo (€)
                 <input type="text" id="importo" inputmode="decimal" placeholder="0,00" required>
-            </label>
-
-            <label class="intera">Descrizione
-                <input type="text" id="descrizione" maxlength="200" required>
             </label>
 
             <label class="intera">Categoria
@@ -177,13 +173,10 @@
         const riga = el("div", "uscita");
 
         const info = el("div", "uscita-info");
-        const titolo = el("div", "nome", u.descrizione);
-        info.appendChild(titolo);
+        info.appendChild(el("div", "nome", u.categoria));
 
         const dettagli = el("div", "uscita-dettagli");
-        dettagli.append(
-            el("span", null, formatoData(u.data)),
-            el("span", "etichetta", u.categoria));
+        dettagli.appendChild(el("span", null, formatoData(u.data)));
         if (u.creatoDa) dettagli.appendChild(el("span", "nota", u.creatoDa));
         info.appendChild(dettagli);
 
@@ -208,14 +201,13 @@
         document.getElementById("titoloFinestra").textContent = u ? "Modifica uscita" : "Nuova uscita";
         document.getElementById("data").value = u ? u.data : oggi();
         document.getElementById("importo").value = u ? u.importo.toFixed(2).replace(".", ",") : "";
-        document.getElementById("descrizione").value = u ? u.descrizione : "";
         document.getElementById("categoria").value = u ? u.categoriaId : "";
         document.getElementById("note").value = u && u.note ? u.note : "";
         document.getElementById("erroreFinestra").textContent = "";
 
         const finestra = document.getElementById("finestra");
         finestra.showModal();
-        document.getElementById(u ? "descrizione" : "importo").focus();
+        document.getElementById("importo").focus();
     }
 
     function chiudiFinestra() {
@@ -243,13 +235,12 @@
         const dati = {
             data: document.getElementById("data").value,
             importo,
-            descrizione: document.getElementById("descrizione").value.trim(),
             categoriaId,
             note: document.getElementById("note").value.trim() || null
         };
 
-        if (!dati.data || !dati.descrizione) {
-            errore.textContent = "Inserisci data e descrizione.";
+        if (!dati.data) {
+            errore.textContent = "Inserisci la data.";
             return;
         }
 
@@ -278,7 +269,7 @@
 
     async function eliminaUscita(u) {
 
-        if (!confirm(`Eliminare l'uscita "${u.descrizione}" di ${euro.format(u.importo)}?`)) return;
+        if (!confirm(`Eliminare l'uscita di ${euro.format(u.importo)} del ${formatoData(u.data)} (${u.categoria})?`)) return;
 
         try {
             const response = await api(`${API}/${u.id}`, { method: "DELETE" });
