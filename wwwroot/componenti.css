@@ -51,24 +51,10 @@ a {
         width: 100%;
     }
 
-    /* Quattro voci sulla stessa riga anche su telefono. */
-    /* Voci sempre su una riga: se lo schermo è molto stretto il menu scorre di lato. */
-    .menu-pagine {
-        gap: 0.1rem !important;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .menu-pagine::-webkit-scrollbar {
-        display: none;
-    }
-
+    /* Voci un po' più compatte su telefono. */
     .menu-pagine .nav-link {
-        padding-left: 0.42rem !important;
-        padding-right: 0.42rem !important;
-        font-size: 0.9rem;
-        white-space: nowrap;
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
     }
 }
 

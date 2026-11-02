@@ -171,27 +171,72 @@ async function avviaPagina({ soloAdmin = false } = {}) {
 }
 
 // Link alle pagine (nav-pills di Bootstrap); quella aperta è evidenziata.
+// Gli amministratori hanno in più la voce "Admin" con la tendina Utenti / Categorie.
 function menuPagine(utente) {
     const menu = el("nav", "menu-pagine nav nav-pills gap-1");
-
-    const pagine = [["Dashboard", "/dashboard.html"], ["Uscite", "/"], ["Categorie", "/categorie.html"]];
-    if (utente.isAdmin) pagine.push(["Utenti", "/utenti.html"]);
-
     const corrente = location.pathname === "/index.html" ? "/" : location.pathname;
 
-    for (const [testo, href] of pagine) {
-        const a = el("a", "nav-link py-1 px-3", testo);
+    const voce = (testo, href, classi, attiva) => {
+        const a = el("a", classi, testo);
         a.href = href;
-        if (href === corrente) {
-            a.classList.add("active");
-            a.setAttribute("aria-current", "page");
-        } else {
-            a.classList.add("link-light", "link-opacity-75", "link-opacity-100-hover");
+        if (attiva) a.setAttribute("aria-current", "page");
+        return a;
+    };
+
+    for (const [testo, href] of [["Dashboard", "/dashboard.html"], ["Uscite", "/"]]) {
+        const attiva = href === corrente;
+        menu.appendChild(voce(testo, href, "nav-link py-1 px-3 " +
+            (attiva ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), attiva));
+    }
+
+    if (utente.isAdmin) {
+        const pagineAdmin = [["Utenti", "/utenti.html"], ["Categorie", "/categorie.html"]];
+        const inAdmin = pagineAdmin.some(([, href]) => href === corrente);
+
+        const contenitore = el("div", "dropdown");
+        const bottone = el("button", "nav-link py-1 px-3 dropdown-toggle " +
+            (inAdmin ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), "Admin");
+        bottone.type = "button";
+
+        const tendina = el("div", "dropdown-menu shadow");
+        tendina.setAttribute("data-bs-theme", "light");
+        for (const [testo, href] of pagineAdmin) {
+            const attiva = href === corrente;
+            tendina.appendChild(voce(testo, href, "dropdown-item py-2" + (attiva ? " active" : ""), attiva));
         }
-        menu.appendChild(a);
+
+        contenitore.append(bottone, tendina);
+        collegaTendina(contenitore, bottone, tendina);
+        menu.appendChild(contenitore);
     }
 
     return menu;
+}
+
+// Apre e chiude una tendina (dropdown-menu di Bootstrap) senza il JavaScript di Bootstrap:
+// clic sul pulsante, chiusura cliccando fuori o con Esc.
+function collegaTendina(contenitore, bottone, tendina) {
+    bottone.setAttribute("aria-haspopup", "true");
+    bottone.setAttribute("aria-expanded", "false");
+
+    const apri = aperta => {
+        tendina.classList.toggle("show", aperta);
+        bottone.setAttribute("aria-expanded", String(aperta));
+    };
+
+    bottone.addEventListener("click", e => {
+        e.stopPropagation();
+        apri(!tendina.classList.contains("show"));
+    });
+    document.addEventListener("click", e => {
+        if (!contenitore.contains(e.target)) apri(false);
+    });
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && tendina.classList.contains("show")) {
+            apri(false);
+            bottone.focus();
+        }
+    });
 }
 
 // Cerchio con l'iniziale: al clic apre una tendina (dropdown-menu di Bootstrap)
@@ -206,8 +251,6 @@ function menuProfilo(utente) {
     cerchio.type = "button";
     cerchio.title = nome || utente.email;
     cerchio.setAttribute("aria-label", "Menu utente");
-    cerchio.setAttribute("aria-haspopup", "true");
-    cerchio.setAttribute("aria-expanded", "false");
 
     const tendina = el("div", "dropdown-menu menu-utente shadow py-0 overflow-hidden");
     tendina.setAttribute("data-bs-theme", "light");
@@ -226,26 +269,7 @@ function menuProfilo(utente) {
     tendina.append(intestazione, cambio, uscita);
     profilo.append(cerchio, tendina);
 
-    const apri = aperta => {
-        tendina.classList.toggle("show", aperta);
-        cerchio.setAttribute("aria-expanded", String(aperta));
-    };
-
-    cerchio.addEventListener("click", e => {
-        e.stopPropagation();
-        apri(!tendina.classList.contains("show"));
-    });
-
-    // Chiudi cliccando fuori o con Esc.
-    document.addEventListener("click", e => {
-        if (!profilo.contains(e.target)) apri(false);
-    });
-    document.addEventListener("keydown", e => {
-        if (e.key === "Escape" && tendina.classList.contains("show")) {
-            apri(false);
-            cerchio.focus();
-        }
-    });
+    collegaTendina(profilo, cerchio, tendina);
 
     return profilo;
 }
