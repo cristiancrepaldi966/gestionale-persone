@@ -479,3 +479,67 @@ function coloraRiga(riga, colore) {
     riga.style.setProperty("--colore", colore);
     return riga;
 }
+
+// ---------------------------------------------------------------------------
+// Carosello
+// ---------------------------------------------------------------------------
+
+// Carosello basato sullo scorrimento orizzontale "a scatti" del browser:
+// swipe su telefono; sopra, frecce ‹ › e pallini (anche frecce della tastiera).
+// Struttura: <div class="carosello"><div class="carosello-binario" tabindex="0">
+//              <section class="carosello-slide">…</section> …</div></div>
+function carosello(contenitore) {
+
+    const binario = contenitore.querySelector(".carosello-binario");
+    const slide = [...binario.querySelectorAll(".carosello-slide")];
+    if (slide.length < 2) return;
+
+    // Distanza tra una slide e la successiva (larghezza + spazio).
+    const passo = () => (slide[1].offsetLeft - slide[0].offsetLeft) || 1;
+    const indice = () => Math.max(0, Math.min(slide.length - 1, Math.round(binario.scrollLeft / passo())));
+    const vaiA = i => {
+        const n = Math.max(0, Math.min(slide.length - 1, i));
+        binario.scrollTo({ left: slide[n].offsetLeft - slide[0].offsetLeft, behavior: "smooth" });
+    };
+
+    const freccia = (icona, etichetta, passo) => {
+        const b = pulsante("", "btn btn-light border rounded-circle btn-tondo btn-tondo-piccolo", () => vaiA(indice() + passo));
+        b.setAttribute("aria-label", etichetta);
+        b.appendChild(el("i", "bi bi-" + icona));
+        return b;
+    };
+
+    const precedente = freccia("chevron-left", "Grafico precedente", -1);
+    const successivo = freccia("chevron-right", "Grafico successivo", 1);
+
+    const pallini = slide.map((s, i) => {
+        const area = el("button", "carosello-pallino-area");
+        area.type = "button";
+        area.setAttribute("aria-label", s.getAttribute("aria-label") || `Vai a ${i + 1}`);
+        area.appendChild(el("span", "carosello-pallino d-inline-block"));
+        area.addEventListener("click", () => vaiA(i));
+        return area;
+    });
+
+    const comandi = el("div", "carosello-comandi");
+    comandi.append(precedente, ...pallini, successivo);
+    contenitore.insertBefore(comandi, binario);   // sopra: sempre visibili, anche con grafici alti
+
+    const aggiorna = () => {
+        const i = indice();
+        pallini.forEach((p, n) => p.firstChild.setAttribute("aria-current", String(n === i)));
+        precedente.disabled = i === 0;
+        successivo.disabled = i === slide.length - 1;
+    };
+
+    let attesa;
+    binario.addEventListener("scroll", () => { clearTimeout(attesa); attesa = setTimeout(aggiorna, 60); });
+    window.addEventListener("resize", () => vaiA(indice()));
+
+    binario.addEventListener("keydown", e => {
+        if (e.key === "ArrowLeft") { e.preventDefault(); vaiA(indice() - 1); }
+        if (e.key === "ArrowRight") { e.preventDefault(); vaiA(indice() + 1); }
+    });
+
+    aggiorna();
+}

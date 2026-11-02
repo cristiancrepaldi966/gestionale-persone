@@ -7,7 +7,8 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   (categoria, dal, al, sulla stessa riga) e il pulsante **+** inserisce un'uscita; sotto
   numero e totale delle uscite trovate e l'elenco con modifica ed eliminazione. Un pallino
   rosso sulla lente indica che ci sono filtri attivi.
-- **Dashboard** (`dashboard.html`, prima voce del menu): stessi filtri delle uscite; grafico
+- **Dashboard** (`dashboard.html`, prima voce del menu): stessi filtri delle uscite; i grafici
+  sono in un **carosello** (swipe su telefono, frecce e pallini sopra, frecce della tastiera); grafico
   a barre delle spese per data (per giorno fino a 2 mesi, altrimenti per mese, con tabella dei
   dati) e grafico a torta per categoria (al massimo 6 fette, le minori in "Altre", con elenco
   di importi e percentuali; colore fisso per categoria). Grafici con **Chart.js** (in
