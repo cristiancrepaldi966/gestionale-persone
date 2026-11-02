@@ -4,57 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Utenti - Gestionale Uscite</title>
-    <link rel="stylesheet" href="stile.css">
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="componenti.css">
 </head>
 <body class="in-attesa">
 
-<header>
-    <h1><a href="/" style="text-decoration:none">Gestionale Uscite</a></h1>
-    <nav class="barra-utente" id="barraUtente"></nav>
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale Uscite</a>
+    <div class="barra-utente" id="barraUtente"></div>
 </header>
 
-<main>
+<main class="container contenuto py-4">
 
-    <div class="card">
-        <h2>Nuovo utente</h2>
+    <div class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Nuovo utente</h2>
 
-        <form id="formNuovo">
-            <div class="form-row">
-                <input type="email" id="email" placeholder="Email" autocomplete="off" required>
-                <input type="password" id="password" placeholder="Password (almeno 8 caratteri)" autocomplete="new-password" minlength="8" required>
+        <form id="formNuovo" novalidate>
+            <div class="row g-2">
+                <div class="col-sm-6">
+                    <input type="email" id="email" class="form-control" placeholder="Email"
+                           aria-label="Email" autocomplete="off">
+                </div>
+                <div class="col-sm-6">
+                    <input type="password" id="password" class="form-control"
+                           placeholder="Password (almeno 8 caratteri)" aria-label="Password"
+                           autocomplete="new-password">
+                </div>
             </div>
 
-            <div class="form-row" style="margin-top:12px; align-items:center; justify-content:space-between">
-                <label class="check"><input type="checkbox" id="isAdmin"> Amministratore (può gestire gli utenti)</label>
-                <button type="submit" class="btn-primary">Crea utente</button>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="isAdmin">
+                    <label class="form-check-label" for="isAdmin">Amministratore (può gestire gli utenti)</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Crea utente</button>
             </div>
         </form>
 
         <div id="messaggio"></div>
     </div>
 
-    <div class="card">
-        <h2>Utenti</h2>
-        <div id="listaUtenti"><div class="caricamento-elenco"><span class="cerchietto"></span><span>Caricamento...</span></div></div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body pb-0">
+            <h2 class="h5 fw-bold mb-0">Utenti</h2>
+        </div>
+        <div class="list-group list-group-flush rounded" id="listaUtenti">
+            <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                <span>Caricamento...</span>
+            </div>
+        </div>
     </div>
 
 </main>
 
-<script src="app.js"></script>
+<script src="componenti.js"></script>
 <script>
 
     const API = "/api/utenti";
     let idCorrente = null;
+    const messaggio = () => document.getElementById("messaggio");
 
     const formatoData = d => d
         ? new Date(d).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })
         : "mai";
-
-    function mostraMessaggio(testo, errore) {
-        const m = document.getElementById("messaggio");
-        m.textContent = testo;
-        m.className = errore ? "errore" : "successo";
-    }
 
     async function caricaUtenti() {
 
@@ -68,61 +81,64 @@
             lista.replaceChildren(...utenti.map(rigaUtente));
 
         } catch {
-            lista.replaceChildren(el("p", "errore", "Errore nel caricamento degli utenti."));
+            lista.replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel caricamento degli utenti."));
         }
     }
 
     function rigaUtente(u) {
 
-        const div = el("div", "riga");
+        const riga = el("div", "list-group-item riga d-flex flex-column flex-sm-row justify-content-between gap-2 py-3");
 
-        const info = el("div");
-        const nome = el("div", "nome", u.email);
-        if (u.id === idCorrente) nome.appendChild(el("span", "etichetta", "tu"));
-        if (u.isAdmin) nome.appendChild(el("span", "etichetta admin", "Amministratore"));
-        if (!u.attivo) nome.appendChild(el("span", "etichetta off", "Disattivato"));
-        if (u.bloccato) nome.appendChild(el("span", "etichetta off", "Bloccato per tentativi errati"));
+        const info = el("div", "text-break");
+        const nome = el("div", "fw-bold d-flex flex-wrap align-items-center gap-1");
+        nome.appendChild(el("span", "me-1", u.email));
+        if (u.id === idCorrente) nome.appendChild(etichetta("tu"));
+        if (u.isAdmin) nome.appendChild(etichetta("Amministratore", "primary"));
+        if (!u.attivo) nome.appendChild(etichetta("Disattivato", "danger"));
+        if (u.bloccato) nome.appendChild(etichetta("Bloccato per tentativi errati", "danger"));
         info.appendChild(nome);
-        info.appendChild(el("small", null,
+        info.appendChild(el("div", "small text-body-secondary",
             `Creato il ${formatoData(u.creatoIl)} · Ultimo accesso: ${formatoData(u.ultimoAccesso)}`));
 
-        const azioni = el("div", "azioni");
-        azioni.appendChild(pulsante("Modifica", "btn-secondary", () => modificaUtente(div, u)));
+        const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-sm-center");
+        azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => modificaUtente(riga, u)));
         if (u.id !== idCorrente) {
-            azioni.appendChild(pulsante("Elimina", "btn-danger", () => eliminaUtente(u)));
+            azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => eliminaUtente(u)));
         }
 
-        div.append(info, azioni);
-        return div;
+        riga.append(info, azioni);
+        return riga;
     }
 
-    function modificaUtente(div, u) {
+    function modificaUtente(riga, u) {
 
         const casella = (testo, valore, disabilitata) => {
-            const label = el("label", "check");
-            const input = el("input");
+            const div = el("div", "form-check mb-0");
+            const input = el("input", "form-check-input");
             input.type = "checkbox";
+            input.id = `c${u.id}-${testo.length}`;
             input.checked = valore;
             input.disabled = disabilitata;
-            label.append(input, document.createTextNode(" " + testo));
-            return { label, input };
+            const label = el("label", "form-check-label", testo);
+            label.htmlFor = input.id;
+            div.append(input, label);
+            return { div, input };
         };
 
         const stessoUtente = u.id === idCorrente;
         const admin = casella("Amministratore", u.isAdmin, stessoUtente);
         const attivo = casella("Attivo (può accedere)", u.attivo, stessoUtente);
 
-        const password = el("input", "campo-pieno");
+        const password = el("input", "form-control");
         password.type = "password";
         password.placeholder = "Nuova password (lascia vuoto per non cambiarla)";
         password.autocomplete = "new-password";
+        password.setAttribute("aria-label", "Nuova password");
 
-        const errore = el("div", "errore");
+        const errore = el("div", "small text-danger");
 
-        const contenitore = el("div", "modifica");
-        contenitore.append(el("div", "nome", u.email), password, admin.label, attivo.label, errore);
-        contenitore.style.display = "grid";
-        contenitore.style.gap = "8px";
+        const contenitore = el("div", "d-grid gap-2 flex-grow-1");
+        contenitore.append(el("div", "fw-bold text-break", u.email), password, admin.div, attivo.div, errore);
 
         const salva = async () => {
 
@@ -143,7 +159,7 @@
                     return;
                 }
 
-                mostraMessaggio(`Utente ${u.email} aggiornato.`, false);
+                mostraMessaggio(messaggio(), `Utente ${u.email} aggiornato.`, "successo");
                 await caricaUtenti();
 
             } catch {
@@ -151,11 +167,11 @@
             }
         };
 
-        const azioni = el("div", "azioni");
-        azioni.appendChild(pulsante("Salva", "btn-primary", salva));
-        azioni.appendChild(pulsante("Annulla", "btn-secondary", () => div.replaceWith(rigaUtente(u))));
+        const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-sm-start");
+        azioni.appendChild(pulsante("Salva", "btn btn-sm btn-primary", salva));
+        azioni.appendChild(pulsante("Annulla", "btn btn-sm btn-light border", () => riga.replaceWith(rigaUtente(u))));
 
-        div.replaceChildren(contenitore, azioni);
+        riga.replaceChildren(contenitore, azioni);
         password.focus();
     }
 
@@ -171,7 +187,7 @@
                 return;
             }
 
-            mostraMessaggio(`Utente ${u.email} eliminato.`, false);
+            mostraMessaggio(messaggio(), `Utente ${u.email} eliminato.`, "successo");
             await caricaUtenti();
 
         } catch {
@@ -181,8 +197,6 @@
 
     alInvio(document.getElementById("formNuovo"), async e => {
 
-        e.preventDefault();
-
         try {
             const response = await api(API, jsonBody("POST", {
                 email: document.getElementById("email").value.trim(),
@@ -191,17 +205,17 @@
             }));
 
             if (!response.ok) {
-                mostraMessaggio(await messaggioErrore(response, "Errore durante la creazione."), true);
+                mostraMessaggio(messaggio(), await messaggioErrore(response, "Errore durante la creazione."));
                 return;
             }
 
             const creato = await response.json();
             e.target.reset();
-            mostraMessaggio(`Utente ${creato.email} creato.`, false);
+            mostraMessaggio(messaggio(), `Utente ${creato.email} creato.`, "successo");
             await caricaUtenti();
 
         } catch {
-            mostraMessaggio("Errore nel collegamento al server.", true);
+            mostraMessaggio(messaggio(), "Errore nel collegamento al server.");
         }
     });
 

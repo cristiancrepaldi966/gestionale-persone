@@ -1,0 +1,209 @@
+/*
+ * Componenti dell'app.
+ * La base è Bootstrap 5 (lib/bootstrap/bootstrap.min.css): pulsanti, campi,
+ * card, elenchi, etichette, spaziature, colori e cerchietti di caricamento.
+ * Qui ci sono SOLO le aggiunte che Bootstrap non ha.
+ * Esempi di tutti i componenti: componenti.html
+ */
+
+/* --- Tema --- */
+
+:root {
+    --app-larghezza: 900px;
+}
+
+body {
+    background: var(--bs-tertiary-bg);
+}
+
+/* Contenuto centrato con larghezza massima. */
+.contenuto {
+    max-width: var(--app-larghezza);
+}
+
+/* Contenuto stretto (accesso, cambio password). */
+.contenuto-stretto {
+    max-width: 440px;
+}
+
+/* Nasconde il contenuto finché non è verificato l'accesso. */
+body.in-attesa main {
+    visibility: hidden;
+}
+
+/* Niente riquadro azzurro al tocco (iPhone/Android). */
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* --- Barra in alto --- */
+
+.barra-utente {
+    /* I link e il cerchio utente diventano elementi diretti della barra. */
+    display: contents;
+}
+
+@media (max-width: 575.98px) {
+    /* Telefono: titolo e cerchio sulla prima riga, link sotto. */
+    .menu-pagine {
+        order: 3;
+        width: 100%;
+    }
+}
+
+/* --- Pulsanti rotondi (+, lente, cerchio utente) --- */
+
+.btn-tondo {
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.9rem;
+    line-height: 1;
+    position: relative;
+}
+
+.btn-tondo.btn-primary {
+    box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.35);
+}
+
+.btn-tondo-piccolo {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+}
+
+/* Cerchio utente sulla barra scura. */
+.avatar {
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.avatar:hover,
+.avatar[aria-expanded="true"] {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+}
+
+/* Tendina del cerchio utente (stile di Bootstrap, aperta dal nostro JS). */
+.menu-utente {
+    right: 0;
+    left: auto;
+    top: calc(100% + 8px);
+    width: 270px;
+}
+
+/* --- Pulsante in attesa: larghezza fissata, cerchietto al posto del testo --- */
+
+.btn[aria-busy="true"] {
+    cursor: wait;
+}
+
+/* --- Testi --- */
+
+.testo-note {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+/* --- Campi data con segnaposto ("Dal", "Al") --- */
+
+.campo-data {
+    position: relative;
+}
+
+.campo-data .segnaposto {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--bs-secondary-color);
+    pointer-events: none;
+    display: none;
+}
+
+/* Campo vuoto e non selezionato: nascondi gg/mm/aaaa e mostra il segnaposto. */
+.campo-data input.vuoto:not(:focus) + .segnaposto {
+    display: block;
+}
+
+.campo-data input.vuoto:not(:focus),
+.campo-data input.vuoto:not(:focus)::-webkit-datetime-edit {
+    color: transparent;
+}
+
+/* Tendina con il segnaposto selezionato: testo grigio. */
+.form-select.vuoto {
+    color: var(--bs-secondary-color);
+}
+
+.form-select option {
+    color: var(--bs-body-color);
+}
+
+@media (max-width: 575.98px) {
+    /* Tre filtri sulla stessa riga anche su telefono: campi più compatti
+       (testo a 16px, altrimenti iPhone fa lo zoom toccando il campo). */
+    .filtri .form-control,
+    .filtri .form-select {
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+    }
+
+    .filtri .form-select {
+        padding-right: 1.6rem;
+        background-position: right 0.4rem center;
+    }
+
+    .filtri .campo-data .segnaposto {
+        left: 0.45rem;
+    }
+
+    .filtri input[type="date"]::-webkit-calendar-picker-indicator {
+        width: 12px;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* --- Finestra di inserimento/modifica --- */
+
+dialog.finestra {
+    border: none;
+    border-radius: var(--bs-border-radius-lg);
+    padding: 1.5rem;
+    width: min(520px, calc(100vw - 32px));
+    box-shadow: var(--bs-box-shadow-lg);
+}
+
+dialog.finestra::backdrop {
+    background: rgba(17, 24, 39, 0.5);
+}
+
+dialog.finestra h2:focus {
+    outline: none;
+}
+
+/* Telefono: il modulo è una schermata normale al posto dell'elenco
+   (una finestra sospesa, su iPhone con la tastiera, sposta i tocchi). */
+body.modulo-a-pagina main {
+    display: none;
+}
+
+body.modulo-a-pagina dialog.finestra[open] {
+    position: static;
+    display: block;
+    width: auto;
+    max-width: 520px;
+    margin: 1rem;
+    box-shadow: var(--bs-box-shadow-sm);
+}
+
+@media (min-width: 552px) {
+    body.modulo-a-pagina dialog.finestra[open] {
+        margin: 2rem auto;
+    }
+}

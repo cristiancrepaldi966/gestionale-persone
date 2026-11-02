@@ -4,45 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categorie - Gestionale Uscite</title>
-    <link rel="stylesheet" href="stile.css">
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="componenti.css">
 </head>
 <body class="in-attesa">
 
-<header>
-    <h1><a href="/" style="text-decoration:none">Gestionale Uscite</a></h1>
-    <nav class="barra-utente" id="barraUtente"></nav>
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale Uscite</a>
+    <div class="barra-utente" id="barraUtente"></div>
 </header>
 
-<main>
+<main class="container contenuto py-4">
 
-    <div class="card">
-        <h2>Nuova categoria</h2>
+    <div class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Nuova categoria</h2>
 
-        <form class="form-row" id="formNuova">
-            <input type="text" id="nome" maxlength="50" placeholder="Nome della categoria" required>
-            <button type="submit" class="btn-primary">Aggiungi</button>
+        <form class="d-flex gap-2" id="formNuova" novalidate>
+            <input type="text" id="nome" class="form-control" maxlength="50"
+                   placeholder="Nome della categoria" aria-label="Nome della categoria">
+            <button type="submit" class="btn btn-primary text-nowrap">Aggiungi</button>
         </form>
 
         <div id="messaggio"></div>
     </div>
 
-    <div class="card">
-        <h2>Categorie</h2>
-        <div id="listaCategorie"><div class="caricamento-elenco"><span class="cerchietto"></span><span>Caricamento...</span></div></div>
+    <div class="card shadow-sm border-0">
+        <div class="card-body pb-0">
+            <h2 class="h5 fw-bold mb-0">Categorie</h2>
+        </div>
+        <div class="list-group list-group-flush rounded" id="listaCategorie">
+            <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                <span>Caricamento...</span>
+            </div>
+        </div>
     </div>
 
 </main>
 
-<script src="app.js"></script>
+<script src="componenti.js"></script>
 <script>
 
     const API = "/api/categorie";
-
-    function mostraMessaggio(testo, errore) {
-        const m = document.getElementById("messaggio");
-        m.textContent = testo;
-        m.className = errore ? "errore" : "successo";
-    }
+    const messaggio = () => document.getElementById("messaggio");
 
     async function caricaCategorie() {
 
@@ -54,44 +58,47 @@
             const categorie = await response.json();
 
             if (categorie.length === 0) {
-                lista.replaceChildren(el("p", null, "Nessuna categoria."));
+                lista.replaceChildren(el("p", "p-3 mb-0 text-body-secondary", "Nessuna categoria."));
                 return;
             }
 
             lista.replaceChildren(...categorie.map(rigaCategoria));
 
         } catch {
-            lista.replaceChildren(el("p", "errore", "Errore nel caricamento delle categorie."));
+            lista.replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel caricamento delle categorie."));
         }
     }
 
     function rigaCategoria(c) {
 
-        const div = el("div", "riga");
+        const riga = el("div", "list-group-item riga d-flex justify-content-between align-items-center gap-3 py-3");
 
-        const info = el("div");
-        info.appendChild(el("div", "nome", c.nome));
-        info.appendChild(el("small", null,
+        const info = el("div", "text-break");
+        info.appendChild(el("div", "fw-bold", c.nome));
+        info.appendChild(el("div", "small text-body-secondary",
             c.numeroUscite === 0 ? "Nessuna uscita" :
             c.numeroUscite === 1 ? "1 uscita" : `${c.numeroUscite} uscite`));
 
-        const azioni = el("div", "azioni");
-        azioni.appendChild(pulsante("Rinomina", "btn-secondary", () => rinomina(div, c)));
-        azioni.appendChild(pulsante("Elimina", "btn-danger", () => elimina(c)));
+        const azioni = el("div", "d-flex gap-2 flex-shrink-0");
+        azioni.appendChild(pulsante("Rinomina", "btn btn-sm btn-light border", () => rinomina(riga, c)));
+        azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => elimina(c)));
 
-        div.append(info, azioni);
-        return div;
+        riga.append(info, azioni);
+        return riga;
     }
 
-    function rinomina(div, c) {
+    function rinomina(riga, c) {
 
-        const input = el("input");
+        const input = el("input", "form-control");
         input.value = c.nome;
         input.maxLength = 50;
+        input.setAttribute("aria-label", "Nuovo nome");
 
-        const errore = el("div", "errore");
-        const contenitore = el("div", "modifica");
+        const errore = el("div", "small mt-1 text-danger");
+        const contenitore = el("div", "flex-grow-1");
         contenitore.append(input, errore);
+
+        const annulla = () => riga.replaceWith(rigaCategoria(c));
 
         const salva = async () => {
             const nome = input.value.trim();
@@ -111,16 +118,18 @@
             }
         };
 
+        const bottoneSalva = pulsante("Salva", "btn btn-sm btn-primary", salva);
+
         input.addEventListener("keydown", e => {
-            if (e.key === "Enter") salva();
-            if (e.key === "Escape") div.replaceWith(rigaCategoria(c));
+            if (e.key === "Enter") bottoneSalva.click();
+            if (e.key === "Escape") annulla();
         });
 
-        const azioni = el("div", "azioni");
-        azioni.appendChild(pulsante("Salva", "btn-primary", salva));
-        azioni.appendChild(pulsante("Annulla", "btn-secondary", () => div.replaceWith(rigaCategoria(c))));
+        const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-start");
+        azioni.append(bottoneSalva, pulsante("Annulla", "btn btn-sm btn-light border", annulla));
 
-        div.replaceChildren(contenitore, azioni);
+        riga.replaceChildren(contenitore, azioni);
+        riga.classList.remove("align-items-center");
         input.focus();
     }
 
@@ -134,30 +143,35 @@
                 alert(await messaggioErrore(response, "Errore durante l'eliminazione."));
                 return;
             }
-            mostraMessaggio(`Categoria "${c.nome}" eliminata.`, false);
+            mostraMessaggio(messaggio(), `Categoria "${c.nome}" eliminata.`, "successo");
             await caricaCategorie();
         } catch {
             alert("Errore nel collegamento al server.");
         }
     }
 
-    alInvio(document.getElementById("formNuova"), async e => {
+    alInvio(document.getElementById("formNuova"), async () => {
 
-        e.preventDefault();
         const input = document.getElementById("nome");
+        const nome = input.value.trim();
+
+        if (!nome) {
+            mostraMessaggio(messaggio(), "Inserisci il nome della categoria.");
+            return;
+        }
 
         try {
-            const response = await api(API, jsonBody("POST", { nome: input.value.trim() }));
+            const response = await api(API, jsonBody("POST", { nome }));
             if (!response.ok) {
-                mostraMessaggio(await messaggioErrore(response, "Errore durante l'inserimento."), true);
+                mostraMessaggio(messaggio(), await messaggioErrore(response, "Errore durante l'inserimento."));
                 return;
             }
             const nuova = await response.json();
             input.value = "";
-            mostraMessaggio(`Categoria "${nuova.nome}" aggiunta.`, false);
+            mostraMessaggio(messaggio(), `Categoria "${nuova.nome}" aggiunta.`, "successo");
             await caricaCategorie();
         } catch {
-            mostraMessaggio("Errore nel collegamento al server.", true);
+            mostraMessaggio(messaggio(), "Errore nel collegamento al server.");
         }
     });
 

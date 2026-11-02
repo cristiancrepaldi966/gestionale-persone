@@ -11,6 +11,19 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
   Svago, Altro.
 
+## Interfaccia (wwwroot)
+
+- **Bootstrap 5** (solo CSS, salvato in `wwwroot/lib/bootstrap`, nessun CDN esterno) per
+  pulsanti, campi, card, elenchi, etichette, griglia e cerchietti di caricamento.
+  Il JavaScript di Bootstrap non è usato: finestra e tendina sono gestite da `componenti.js`
+  (le versioni di Bootstrap su iPhone spostano i tocchi quando si apre la tastiera).
+- **`componenti.css`**: solo le aggiunte a Bootstrap (pulsanti rotondi, cerchio utente,
+  segnaposto delle date, modulo a schermata su telefono).
+- **`componenti.js`**: funzioni comuni (pulsanti con cerchietto di attesa, invio dei moduli,
+  messaggi, etichette, chiamate al server, barra in alto e menu utente).
+- **`componenti.html`**: pagina di riferimento con un esempio di ogni componente e le classi
+  da usare. Le pagine nuove vanno costruite con questi componenti.
+
 ## Avvio rapido con Docker (consigliato)
 
 Serve solo [Docker Desktop](https://www.docker.com/products/docker-desktop/).
