@@ -151,7 +151,13 @@ app.Use(async (context, next) =>
 });
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+
+// Il browser può tenere in cache pagine, script e stili, ma deve sempre chiedere al server
+// se sono cambiati (risposta 304 se uguali): dopo un aggiornamento vede subito la nuova versione.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+});
 
 if (app.Environment.IsDevelopment())
 {
