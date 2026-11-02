@@ -1,4 +1,4 @@
-// Pagina Categorie (categorie.html, solo amministratori: menu Admin). Componenti e funzioni comuni: componenti.js.
+// Scheda Categorie del modulo Uscite (categorie.html; Admin → Moduli → Uscite). Componenti e funzioni comuni: componenti.js.
 
 const API = "/api/categorie";
 let categorie = [];
@@ -173,6 +173,8 @@ alInvio($("formCategoria"), salva);
 
 avviaPagina({ modulo: MODULI.admin, amministratore: true })
     .then(async () => {
+        // Le categorie appartengono al modulo Uscite: Admin → Moduli → Uscite → Categorie.
+        intestazioneModulo($("intestazioneModulo"), MODULI.uscite, "categorie");
         aspetto = await (await api(`${API}/aspetto`)).json();
         preparaScelte();
     })

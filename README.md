@@ -14,12 +14,12 @@ divise per categoria, con interfaccia web in `wwwroot/`.
   di importi e percentuali; colore fisso per categoria). Grafici con **Chart.js** (in
   `wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
 - **Menu**: mostra solo i moduli a cui la persona ha accesso: Dashboard e Uscite (modulo
-  Uscite) e **Admin** con la tendina Utenti / Autorizzazioni / Categorie (modulo Admin).
+  Uscite) e **Admin** con la tendina Utenti / Moduli (modulo Admin).
 - **Icona e colore delle categorie**: ogni categoria ha un'icona (Bootstrap Icons, in
   `wwwroot/lib/bootstrap-icons`) e un colore scelti dall'amministratore tra quelli ammessi
   (`Models/AspettoCategoria.cs`). Nell'elenco delle uscite ogni riga ha la striscia del colore
   e l'icona della categoria; la dashboard usa gli stessi colori e icone.
-- **Categorie**, **Utenti** e **Autorizzazioni** (modulo Admin): stesso layout delle uscite (lente per cercare, + per inserire,
+- **Admin → Utenti** (solo anagrafica) e **Admin → Moduli → Uscite → Categorie**: stesso layout delle uscite (lente per cercare, + per inserire,
   modifica nella stessa finestra). Categorie: aggiungi, rinomina, elimina (solo se non usate).
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
   Svago, Altro.
@@ -91,11 +91,19 @@ livello: *Nessuno*, *Utente* o *Amministratore* (tabella `Autorizzazioni`).
 
 | Modulo | Contiene | Livelli |
 |---|---|---|
-| **Uscite** | Dashboard, elenco e inserimento delle uscite | Utente, Amministratore (per ora con gli stessi permessi) |
-| **Admin** | Utenti, Autorizzazioni, Categorie | Amministratore |
+| **Uscite** | Dashboard, elenco e inserimento delle uscite, categorie | Utente, Amministratore (per ora con gli stessi permessi) |
+| **Admin** | Utenti, autorizzazioni ai moduli | Amministratore |
 
-- Le autorizzazioni si gestiscono dal modulo Admin: nella pagina **Autorizzazioni**
-  (persone × moduli, ogni modifica si salva subito) o nella finestra di ogni utente.
+Tutto si gestisce dal modulo **Admin**:
+
+- **Admin → Utenti**: l'anagrafica delle persone (nome, cognome, email, password, attivo).
+  Un utente appena creato non ha accesso a nessun modulo.
+- **Admin → Moduli**: l'elenco dei moduli. Scegliendo un modulo (es. **Uscite**) si apre la
+  sua pagina:
+  - scheda **Autorizzazioni**: gli utenti che accedono al modulo e il loro livello; con **+**
+    si aggiunge un utente al modulo scegliendo il livello; da ogni riga si cambia il livello
+    o si toglie l'accesso;
+  - scheda **Categorie** (solo Uscite): le categorie del modulo.
 - Valgono subito: alla richiesta successiva la persona ha (o perde) l'accesso.
 - Il server controlla ogni API con una regola per modulo (`Services/Accesso.cs`,
   classe `Politiche`); le pagine mostrano solo i moduli consentiti e chi apre una pagina
@@ -107,6 +115,7 @@ livello: *Nessuno*, *Utente* o *Amministratore* (tabella `Autorizzazioni`).
 **Aggiungere un modulo**: una riga in `Moduli.Tutti` (codice, nome, descrizione, livelli),
 una regola in `Politiche`, `[Authorize(Policy = ...)]` sui suoi controller, la voce di menu
 in `menuPagine` (`componenti.js`) e `avviaPagina({ modulo: "codice" })` nelle sue pagine.
+Comparirà da solo in Admin → Moduli, pronto per assegnare le autorizzazioni.
 
 ## Accesso e utenti
 
@@ -119,8 +128,8 @@ autorizzazioni ai moduli) sono salvati nelle tabelle `Utenti` e `Autorizzazioni`
   Dopo il primo avvio queste variabili non servono più e si possono togliere.
 - **Nome e cognome**: obbligatori per i nuovi utenti; gli utenti creati prima di questa
   funzione compaiono come "Nome non inserito" finché non vengono completati con *Modifica*.
-- **Gestione utenti** (pagina *Utenti*, modulo Admin): creare utenti con le loro
-  autorizzazioni, disattivarli, reimpostare la password, eliminarli.
+- **Gestione utenti** (Admin → Utenti): creare utenti, disattivarli, reimpostare la
+  password, eliminarli. Le autorizzazioni si danno da Admin → Moduli.
 - **Password dimenticata / account bloccato**: imposta `RESET_EMAIL` (l'email dell'utente)
   e `RESET_PASSWORD` (la nuova password, almeno 8 caratteri) e riavvia: all'avvio l'utente
   riceve la nuova password e viene sbloccato e riattivato. Dopo l'accesso **togli le due
@@ -168,7 +177,10 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |
 | POST   | `/api/auth/password`| Cambio della propria password |
-| GET    | `/api/moduli`       | Moduli dell'app e loro livelli |
+| GET    | `/api/moduli`       | Moduli dell'app e loro livelli (con il numero di utenti per Admin) |
+| GET    | `/api/moduli/{codice}/autorizzazioni` | Utenti con accesso al modulo e livello (modulo Admin) |
+| PUT    | `/api/moduli/{codice}/autorizzazioni/{utenteId}` | Dà accesso / cambia livello, es. `{"livello":"Utente"}` (modulo Admin) |
+| DELETE | `/api/moduli/{codice}/autorizzazioni/{utenteId}` | Toglie l'accesso al modulo (modulo Admin) |
 | GET/POST | `/api/utenti`     | Elenco / crea utenti con autorizzazioni (modulo Admin) |
 | PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (modulo Admin) |
 | PUT    | `/api/utenti/{id}/autorizzazioni` | Solo le autorizzazioni, es. `{"uscite":"Utente","admin":null}` (modulo Admin) |
