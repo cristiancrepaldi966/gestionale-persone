@@ -1,7 +1,8 @@
 # Gestionale
 
 Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia web in
-`wwwroot/`. Oggi i moduli sono **Gestione finanze** (uscite per categoria) e **Admin**.
+`wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria) e
+**Fantapolitica** (in costruzione).
 
 - **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
   modulo abilitato con le sue pagine. In alto, la barra mostra un menu per ogni modulo
@@ -98,6 +99,7 @@ c'è il **Super admin** (`Utenti.SuperAdmin`).
 | Modulo | Contiene | Livelli assegnabili |
 |---|---|---|
 | **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
+| **Fantapolitica** (`fantapolitica`) | Panoramica; Politici ed eventi (solo Amministratore). Pagine in costruzione | Utente, Amministratore |
 | **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |
 
 Dal modulo **Admin** (Super admin):

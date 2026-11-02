@@ -147,7 +147,7 @@ async function esci() {
 // Moduli dell'app (codici come in Models/Moduli.cs) con nome, icona e pagine.
 // Menu in alto, pagina di ingresso e controllo delle pagine leggono tutti da qui.
 // amministratore: true = pagina riservata al livello Amministratore del modulo.
-const MODULI = { finanze: "finanze", admin: "admin" };
+const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", admin: "admin" };
 
 const DEFINIZIONE_MODULI = {
     finanze: {
@@ -156,6 +156,13 @@ const DEFINIZIONE_MODULI = {
             { testo: "Dashboard", href: "/dashboard.html", icona: "bar-chart" },
             { testo: "Uscite", href: "/uscite.html", icona: "list-ul" },
             { testo: "Categorie", href: "/categorie.html", icona: "tags", amministratore: true },
+        ]
+    },
+    fantapolitica: {
+        nome: "Fantapolitica", icona: "bank", descrizione: "Squadre di politici, eventi e classifica",
+        pagine: [
+            { testo: "Panoramica", href: "/fantapolitica.html", icona: "trophy" },
+            { testo: "Politici ed eventi", href: "/fantapolitica-gestione.html", icona: "person-badge", amministratore: true },
         ]
     },
     admin: {
@@ -167,7 +174,7 @@ const DEFINIZIONE_MODULI = {
     },
 };
 
-const ORDINE_MODULI = [MODULI.admin, MODULI.finanze];   // ordine nella barra e nella pagina di ingresso
+const ORDINE_MODULI = [MODULI.admin, MODULI.finanze, MODULI.fantapolitica];   // ordine nella barra e nella pagina di ingresso
 
 // Livello dell'utente in un modulo ("Utente", "Amministratore") o undefined se non ha accesso.
 // Il server dà al Super admin tutti i moduli come Amministratore.

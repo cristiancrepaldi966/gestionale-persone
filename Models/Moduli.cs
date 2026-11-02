@@ -18,12 +18,15 @@ public record DefinizioneModulo(string Codice, string Nome, string Descrizione, 
 public static class Moduli
 {
     public const string Finanze = "finanze";
+    public const string Fantapolitica = "fantapolitica";
     public const string Admin = "admin";
 
     public static readonly DefinizioneModulo[] Tutti =
     [
         new(Admin, "Admin", "Utenti e autorizzazioni ai moduli (solo Super admin)", []),
         new(Finanze, "Gestione finanze", "Dashboard, uscite e categorie",
+            [Livelli.Utente, Livelli.Amministratore]),
+        new(Fantapolitica, "Fantapolitica", "Squadre di politici, eventi e classifica",
             [Livelli.Utente, Livelli.Amministratore]),
     ];
 
