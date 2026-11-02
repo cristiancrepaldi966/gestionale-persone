@@ -50,6 +50,26 @@ a {
         order: 3;
         width: 100%;
     }
+
+    /* Quattro voci sulla stessa riga anche su telefono. */
+    /* Voci sempre su una riga: se lo schermo è molto stretto il menu scorre di lato. */
+    .menu-pagine {
+        gap: 0.1rem !important;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .menu-pagine::-webkit-scrollbar {
+        display: none;
+    }
+
+    .menu-pagine .nav-link {
+        padding-left: 0.42rem !important;
+        padding-right: 0.42rem !important;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
 }
 
 /* --- Pulsanti rotondi (+, lente, cerchio utente) --- */
@@ -206,4 +226,30 @@ body.modulo-a-pagina dialog.finestra[open] {
     body.modulo-a-pagina dialog.finestra[open] {
         margin: 2rem auto;
     }
+}
+
+/* --- Dashboard: grafici --- */
+
+.grafico-barre {
+    position: relative;
+    height: 260px;
+}
+
+.grafico-torta {
+    position: relative;
+    max-width: 260px;
+    aspect-ratio: 1;
+}
+
+/* Quadratino del colore della categoria nell'elenco accanto alla torta. */
+.campione-colore {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex: none;
+}
+
+.grafico-cerchietto {
+    z-index: 2;
 }

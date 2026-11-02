@@ -1,22 +1,9 @@
-// Script della pagina index.html (separato dall'HTML: la Content-Security-Policy
-// permette solo script caricati da file del sito).
+// Pagina Uscite (index.html). Componenti e funzioni comuni: componenti.js.
 
 const API = "/api/uscite";
-let categorie = [];
 let inModifica = null; // uscita in modifica, null se è nuova
 
-const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", useGrouping: "always" });
-
-const formatoData = iso => {
-    const [a, m, g] = iso.split("-");
-    return `${g}/${m}/${a}`;
-};
-
-const oggi = () => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 10);
-};
+const $ = id => document.getElementById(id);
 
 // Accetta "12,50", "12.50", "1.234,56", "€ 12".
 function leggiImporto(testo) {
@@ -27,63 +14,48 @@ function leggiImporto(testo) {
     return n > 0 ? n : null;
 }
 
+const ricerca = pannelloRicerca({
+    bottone: $("cerca"),
+    pannello: $("pannelloFiltri"),
+    pallino: $("pallinoFiltri"),
+    azzera: $("azzera"),
+    campi: [$("filtroCategoria"), $("dal"), $("al")],
+    applica: () => caricaUscite()
+});
+
+const modulo = moduloFinestra($("finestra"), { primoCampo: $("importo") });
+
 async function caricaCategorie() {
     const response = await api("/api/categorie");
-    categorie = await response.json();
-
-    const filtro = document.getElementById("filtroCategoria");
-    const scelta = filtro.value;
-    filtro.replaceChildren(new Option("Categoria", ""),
-        ...categorie.map(c => new Option(c.nome, c.id)));
-    filtro.value = scelta;
-
-    document.getElementById("categoria").replaceChildren(
-        new Option("Scegli una categoria", ""),
-        ...categorie.map(c => new Option(c.nome, c.id)));
-}
-
-function parametriRicerca() {
-    const p = new URLSearchParams();
-    const valore = id => document.getElementById(id).value.trim();
-    if (valore("filtroCategoria")) p.set("categoriaId", valore("filtroCategoria"));
-    if (valore("dal")) p.set("dal", valore("dal"));
-    if (valore("al")) p.set("al", valore("al"));
-    return p;
+    const categorie = await response.json();
+    riempiCategorie($("filtroCategoria"), categorie, "Categoria");
+    riempiCategorie($("categoria"), categorie, "Scegli una categoria");
 }
 
 let richiestaCorrente = 0;
 
 async function caricaUscite() {
 
-    const lista = document.getElementById("listaUscite");
-    const riepilogo = document.getElementById("riepilogo");
+    const lista = $("listaUscite");
     const numeroRichiesta = ++richiestaCorrente;
+    const parametri = parametriUscite(ricerca.valori());
 
-    // Un solo cerchietto: al primo caricamento c'è già "Caricamento...",
-    // l'effetto di aggiornamento serve solo quando l'elenco è già mostrato.
-    const aggiornamento = !lista.querySelector(".caricamento-elenco");
-    if (aggiornamento) {
-        lista.classList.add("opacity-50");
-        document.getElementById("cerchiettoAggiornamento").hidden = false;
-        // Mantieni l'altezza mentre si carica, così la pagina non "salta".
-        if (lista.offsetHeight) lista.style.minHeight = lista.offsetHeight + "px";
-    }
+    elencoInAggiornamento(lista, $("cerchiettoAggiornamento"), true);
 
     try {
-        const response = await api(`${API}?${parametriRicerca()}`);
+        const response = await api(`${API}?${parametri}`);
         if (!response.ok) throw new Error();
         const r = await response.json();
 
         // Ignora risposte arrivate in ritardo rispetto a una ricerca più recente.
         if (numeroRichiesta !== richiestaCorrente) return;
 
-        riepilogo.replaceChildren(
+        $("riepilogo").replaceChildren(
             el("span", "text-body-secondary", `${r.numero} ${r.numero === 1 ? "uscita" : "uscite"}`),
             el("strong", "fs-5", `Totale ${euro.format(r.totale)}`));
 
         if (r.uscite.length === 0) {
-            const filtrato = parametriRicerca().toString() !== "";
-            lista.replaceChildren(el("p", "p-3 mb-0 text-body-secondary", filtrato
+            lista.replaceChildren(el("p", "p-3 mb-0 text-body-secondary", ricerca.attivi()
                 ? "Nessuna uscita corrisponde alla ricerca."
                 : "Nessuna uscita inserita. Usa il pulsante + in alto a destra."));
             return;
@@ -102,9 +74,7 @@ async function caricaUscite() {
         }
     } finally {
         if (numeroRichiesta === richiestaCorrente) {
-            lista.classList.remove("opacity-50");
-            document.getElementById("cerchiettoAggiornamento").hidden = true;
-            lista.style.minHeight = "";
+            elencoInAggiornamento(lista, $("cerchiettoAggiornamento"), false);
         }
     }
 }
@@ -127,7 +97,7 @@ function rigaUscita(u) {
     destra.appendChild(el("div", "fw-bold fs-5 text-nowrap", euro.format(u.importo)));
 
     const azioni = el("div", "d-flex gap-2");
-    azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apriFinestra(u)));
+    azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apri(u)));
     azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => eliminaUscita(u)));
     destra.appendChild(azioni);
 
@@ -135,69 +105,37 @@ function rigaUscita(u) {
     return riga;
 }
 
-function apriFinestra(u) {
-
+function apri(u) {
     inModifica = u || null;
-
-    document.getElementById("titoloFinestra").textContent = u ? "Modifica uscita" : "Nuova uscita";
-    document.getElementById("data").value = u ? u.data : oggi();
-    document.getElementById("importo").value = u ? u.importo.toFixed(2).replace(".", ",") : "";
-    document.getElementById("categoria").value = u ? u.categoriaId : "";
-    document.getElementById("note").value = u && u.note ? u.note : "";
-    document.getElementById("erroreFinestra").textContent = "";
-
-    const finestra = document.getElementById("finestra");
-    scrollSalvato = window.scrollY;
-
-    if (moduloAPagina()) {
-        // Telefono: il modulo è una schermata normale al posto dell'elenco
-        // (niente finestra sospesa, che su iPhone con la tastiera sposta i tocchi).
-        document.body.classList.add("modulo-a-pagina");
-        finestra.show();
-        window.scrollTo(0, 0);
-    } else {
-        finestra.showModal();
-        document.getElementById("importo").focus();
-    }
+    $("data").value = u ? u.data : oggi();
+    $("importo").value = u ? u.importo.toFixed(2).replace(".", ",") : "";
+    $("categoria").value = u ? u.categoriaId : "";
+    $("note").value = u && u.note ? u.note : "";
+    $("erroreFinestra").textContent = "";
+    modulo.apri(u ? "Modifica uscita" : "Nuova uscita");
 }
-
-function chiudiFinestra() {
-    document.getElementById("finestra").close();
-}
-
-const moduloAPagina = () => matchMedia("(max-width: 600px), (pointer: coarse)").matches;
-
-let scrollSalvato = 0;
-
-// "close" scatta anche chiudendo con Esc: torna all'elenco dov'eri.
-document.getElementById("finestra").addEventListener("close", () => {
-    if (document.body.classList.contains("modulo-a-pagina")) {
-        document.body.classList.remove("modulo-a-pagina");
-        window.scrollTo(0, scrollSalvato);
-    }
-});
 
 async function salvaUscita() {
 
-    const errore = document.getElementById("erroreFinestra");
-    const importo = leggiImporto(document.getElementById("importo").value);
+    const errore = $("erroreFinestra");
+    const importo = leggiImporto($("importo").value);
 
     if (importo === null) {
         errore.textContent = "Inserisci un importo valido maggiore di zero (es. 12,50).";
         return;
     }
 
-    const categoriaId = Number(document.getElementById("categoria").value);
+    const categoriaId = Number($("categoria").value);
     if (!categoriaId) {
         errore.textContent = "Scegli una categoria.";
         return;
     }
 
     const dati = {
-        data: document.getElementById("data").value,
+        data: $("data").value,
         importo,
         categoriaId,
-        note: document.getElementById("note").value.trim() || null
+        note: $("note").value.trim() || null
     };
 
     if (!dati.data) {
@@ -215,7 +153,7 @@ async function salvaUscita() {
             return;
         }
 
-        chiudiFinestra();
+        modulo.chiudi();
         await caricaUscite();
 
     } catch {
@@ -236,77 +174,13 @@ async function eliminaUscita(u) {
     }
 }
 
-// Il pallino sulla lente segnala che ci sono filtri attivi.
-function aggiornaPallino() {
-    document.getElementById("pallinoFiltri").hidden = parametriRicerca().toString() === "";
-}
-
-// Classe "vuoto": mostra il segnaposto (Categoria, Dal, Al) in grigio.
-function aggiornaSegnaposti() {
-    ["filtroCategoria", "dal", "al"].forEach(id => {
-        const campo = document.getElementById(id);
-        campo.classList.toggle("vuoto", campo.value === "");
-    });
-}
-
-function filtriCambiati() {
-    aggiornaSegnaposti();
-    aggiornaPallino();
-    caricaUscite();
-}
-
-["dal", "al"].forEach(id =>
-    document.getElementById(id).addEventListener("input", aggiornaSegnaposti));
-
-// Su telefono il filtro si applica quando il selettore (categoria o data) si
-// chiude: se l'elenco si accorciasse mentre è aperto, su iPhone i tocchi
-// resterebbero spostati rispetto a quello che si vede. Su computer è immediato.
-const touch = matchMedia("(pointer: coarse)").matches;
-
-["filtroCategoria", "dal", "al"].forEach(id => {
-    const campo = document.getElementById(id);
-
-    campo.addEventListener("change", () => {
-        aggiornaSegnaposti();
-        if (touch && document.activeElement === campo) {
-            campo.dataset.daApplicare = "1";
-        } else {
-            filtriCambiati();
-        }
-    });
-
-    campo.addEventListener("blur", () => {
-        if (campo.dataset.daApplicare) {
-            delete campo.dataset.daApplicare;
-            filtriCambiati();
-        }
-    });
-});
-
-document.getElementById("azzera").addEventListener("click", () => {
-    ["filtroCategoria", "dal", "al"].forEach(id => document.getElementById(id).value = "");
-    filtriCambiati();
-});
-
-// La lente apre e chiude il pannello dei filtri.
-document.getElementById("cerca").addEventListener("click", () => {
-    const pannello = document.getElementById("pannelloFiltri");
-    const cerca = document.getElementById("cerca");
-    pannello.hidden = !pannello.hidden;
-    cerca.setAttribute("aria-expanded", String(!pannello.hidden));
-    cerca.classList.toggle("active", !pannello.hidden);
-    cerca.classList.toggle("bg-white", pannello.hidden);
-    if (!pannello.hidden && !touch) document.getElementById("filtroCategoria").focus();
-});
-
-document.getElementById("nuova").addEventListener("click", () => apriFinestra(null));
-document.getElementById("annulla").addEventListener("click", chiudiFinestra);
-alInvio(document.getElementById("formUscita"), salvaUscita);
+$("nuova").addEventListener("click", () => apri(null));
+$("annulla").addEventListener("click", () => modulo.chiudi());
+alInvio($("formUscita"), salvaUscita);
 
 avviaPagina()
     .then(caricaCategorie)
     .then(caricaUscite)
     .catch(() => {
-        document.getElementById("listaUscite").replaceChildren(
-            el("p", "p-3 mb-0 text-danger", "Errore nel collegamento al server."));
+        $("listaUscite").replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel collegamento al server."));
     });

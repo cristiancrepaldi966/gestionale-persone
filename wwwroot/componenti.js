@@ -174,7 +174,7 @@ async function avviaPagina({ soloAdmin = false } = {}) {
 function menuPagine(utente) {
     const menu = el("nav", "menu-pagine nav nav-pills gap-1");
 
-    const pagine = [["Uscite", "/"], ["Categorie", "/categorie.html"]];
+    const pagine = [["Dashboard", "/dashboard.html"], ["Uscite", "/"], ["Categorie", "/categorie.html"]];
     if (utente.isAdmin) pagine.push(["Utenti", "/utenti.html"]);
 
     const corrente = location.pathname === "/index.html" ? "/" : location.pathname;
@@ -245,4 +245,179 @@ function menuProfilo(utente) {
     });
 
     return profilo;
+}
+
+// ---------------------------------------------------------------------------
+// Formati
+// ---------------------------------------------------------------------------
+
+const euro = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", useGrouping: "always" });
+
+// "2026-11-02" → "02/11/2026"
+const formatoData = iso => {
+    const [a, m, g] = iso.split("-");
+    return `${g}/${m}/${a}`;
+};
+
+// Data di oggi come "aaaa-mm-gg" (ora locale).
+const oggi = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 10);
+};
+
+// Telefono/tablet (schermo touch).
+const schermoTouch = matchMedia("(pointer: coarse)").matches;
+
+// ---------------------------------------------------------------------------
+// Pannello di ricerca (lente in alto a destra)
+// ---------------------------------------------------------------------------
+
+// Collega lente, pannello, pallino "filtri attivi", pulsante Azzera e campi.
+// "applica" viene chiamata quando i filtri cambiano.
+// Su telefono il filtro si applica quando il selettore (categoria, data) o la
+// tastiera si chiudono: se l'elenco si accorciasse mentre sono aperti, su iPhone
+// i tocchi resterebbero spostati rispetto a quello che si vede.
+function pannelloRicerca({ bottone, pannello, pallino, azzera, campi, applica }) {
+
+    const attivi = () => campi.some(c => c.value.trim() !== "");
+
+    const aggiornaSegnaposti = () => {
+        campi.forEach(c => c.classList.toggle("vuoto", c.value === ""));
+    };
+
+    const aggiorna = () => {
+        aggiornaSegnaposti();
+        pallino.hidden = !attivi();
+        applica();
+    };
+
+    let attesa;
+
+    campi.forEach(campo => {
+        const testuale = campo.tagName === "INPUT" && (campo.type === "text" || campo.type === "search");
+
+        if (testuale) {
+            if (schermoTouch) {
+                // "change" scatta quando la tastiera si chiude (Fine / Invio).
+                campo.addEventListener("change", aggiorna);
+            } else {
+                campo.addEventListener("input", () => {
+                    clearTimeout(attesa);
+                    attesa = setTimeout(aggiorna, 250);
+                });
+            }
+            return;
+        }
+
+        campo.addEventListener("input", aggiornaSegnaposti);
+
+        campo.addEventListener("change", () => {
+            aggiornaSegnaposti();
+            if (schermoTouch && document.activeElement === campo) {
+                campo.dataset.daApplicare = "1";
+            } else {
+                aggiorna();
+            }
+        });
+
+        campo.addEventListener("blur", () => {
+            if (campo.dataset.daApplicare) {
+                delete campo.dataset.daApplicare;
+                aggiorna();
+            }
+        });
+    });
+
+    azzera.addEventListener("click", () => {
+        campi.forEach(c => c.value = "");
+        aggiorna();
+    });
+
+    bottone.addEventListener("click", () => {
+        pannello.hidden = !pannello.hidden;
+        bottone.setAttribute("aria-expanded", String(!pannello.hidden));
+        bottone.classList.toggle("active", !pannello.hidden);
+        bottone.classList.toggle("bg-white", pannello.hidden);
+        if (!pannello.hidden && !schermoTouch) campi[0].focus();
+    });
+
+    aggiornaSegnaposti();
+
+    return {
+        // Valori dei campi per id, es. { filtroCategoria: "3", dal: "", al: "" }
+        valori: () => Object.fromEntries(campi.map(c => [c.id, c.value.trim()])),
+        attivi
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Modulo di inserimento/modifica (pulsante + e "Modifica")
+// ---------------------------------------------------------------------------
+
+// Su computer è una finestra sospesa; su telefono una schermata normale al posto
+// del contenuto (una finestra sospesa, su iPhone con la tastiera, sposta i tocchi).
+// Il <dialog> deve contenere un <h2> (titolo) con tabindex="-1" autofocus.
+function moduloFinestra(dialog, { primoCampo } = {}) {
+
+    let scrollSalvato = 0;
+    const aPagina = () => matchMedia("(max-width: 600px), (pointer: coarse)").matches;
+
+    // "close" scatta anche chiudendo con Esc: torna dov'eri.
+    dialog.addEventListener("close", () => {
+        if (document.body.classList.contains("modulo-a-pagina")) {
+            document.body.classList.remove("modulo-a-pagina");
+            window.scrollTo(0, scrollSalvato);
+        }
+    });
+
+    return {
+        apri(titolo) {
+            if (titolo) dialog.querySelector("h2").textContent = titolo;
+            scrollSalvato = window.scrollY;
+
+            if (aPagina()) {
+                document.body.classList.add("modulo-a-pagina");
+                dialog.show();
+                window.scrollTo(0, 0);
+            } else {
+                dialog.showModal();
+                if (primoCampo && !primoCampo.disabled && !primoCampo.readOnly) primoCampo.focus();
+            }
+        },
+        chiudi() {
+            dialog.close();
+        }
+    };
+}
+
+// ---------------------------------------------------------------------------
+// Elenchi
+// ---------------------------------------------------------------------------
+
+// Elenco che si aggiorna (es. dopo un filtro): sbiadito con il cerchietto sopra,
+// altezza mantenuta così la pagina non "salta". Al primo caricamento non serve:
+// c'è già la riga "Caricamento...".
+function elencoInAggiornamento(lista, cerchiettoSopra, attivo) {
+    if (attivo && lista.querySelector(".caricamento-elenco")) return;
+    lista.classList.toggle("opacity-50", attivo);
+    cerchiettoSopra.hidden = !attivo;
+    lista.style.minHeight = attivo && lista.offsetHeight ? lista.offsetHeight + "px" : "";
+}
+
+// Riempie una tendina con le categorie, mantenendo la scelta corrente.
+function riempiCategorie(select, categorie, primaVoce) {
+    const scelta = select.value;
+    select.replaceChildren(new Option(primaVoce, ""),
+        ...categorie.map(c => new Option(c.nome, c.id)));
+    select.value = scelta;
+}
+
+// Parametri di ricerca delle uscite dai filtri (categoria, dal, al).
+function parametriUscite({ filtroCategoria, dal, al }) {
+    const p = new URLSearchParams();
+    if (filtroCategoria) p.set("categoriaId", filtroCategoria);
+    if (dal) p.set("dal", dal);
+    if (al) p.set("al", al);
+    return p;
 }
