@@ -28,6 +28,34 @@
         <code>componenti.js</code>. Sotto ogni esempio ci sono le classi da usare.
     </p>
 
+    <!-- Intestazione di sezione -->
+    <section class="card card-body shadow-sm border-0 mb-3">
+        <h2 class="h5 fw-bold">Intestazione di sezione (Uscite, Categorie, Utenti, Dashboard)</h2>
+        <div class="d-flex justify-content-between align-items-center">
+            <h3 class="h3 fw-bold mb-0">Titolo</h3>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary bg-white btn-tondo" aria-label="Cerca">
+                    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none"
+                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                        <line x1="15.5" y1="15.5" x2="21" y2="21"></line>
+                    </svg>
+                </button>
+                <button type="button" class="btn btn-primary btn-tondo" aria-label="Nuovo">+</button>
+            </div>
+        </div>
+        <p class="small text-body-secondary mt-3 mb-1">
+            Lente: apre il pannello di ricerca (<code>card card-body … id="pannelloFiltri" hidden</code>),
+            collegato con <code>pannelloRicerca({ bottone, pannello, pallino, azzera, campi, applica })</code>.
+            Su telefono i filtri si applicano alla chiusura del selettore o della tastiera.
+        </p>
+        <p class="small text-body-secondary mb-0">
+            +: apre il modulo (<code>&lt;dialog class="finestra"&gt;</code> con un <code>&lt;h2 tabindex="-1" autofocus&gt;</code>),
+            gestito da <code>moduloFinestra(dialog, { primoCampo })</code> → <code>apri(titolo)</code> / <code>chiudi()</code>:
+            finestra su computer, schermata normale su telefono. Invio con <code>alInvio(form, async () =&gt; …)</code>.
+        </p>
+    </section>
+
     <!-- Pulsanti -->
     <section class="card card-body shadow-sm border-0 mb-3">
         <h2 class="h5 fw-bold">Pulsanti</h2>

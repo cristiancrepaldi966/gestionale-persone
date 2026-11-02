@@ -3,11 +3,17 @@
 Piccola applicazione ASP.NET Core 10 + PostgreSQL per registrare le uscite (spese)
 divise per categoria, con interfaccia web in `wwwroot/`.
 
-- **Dashboard** (`index.html`): in alto a destra il pulsante con la lente apre i filtri
+- **Uscite** (`index.html`): in alto a destra il pulsante con la lente apre i filtri
   (categoria, dal, al, sulla stessa riga) e il pulsante **+** inserisce un'uscita; sotto
   numero e totale delle uscite trovate e l'elenco con modifica ed eliminazione. Un pallino
   rosso sulla lente indica che ci sono filtri attivi.
-- **Categorie** (`categorie.html`): aggiungi, rinomina, elimina (solo se non usate).
+- **Dashboard** (`dashboard.html`, prima voce del menu): stessi filtri delle uscite; grafico
+  a barre delle spese per data (per giorno fino a 2 mesi, altrimenti per mese, con tabella dei
+  dati) e grafico a torta per categoria (al massimo 6 fette, le minori in "Altre", con elenco
+  di importi e percentuali; colore fisso per categoria). Grafici con **Chart.js** (in
+  `wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
+- **Categorie** e **Utenti**: stesso layout delle uscite (lente per cercare, + per inserire,
+  modifica nella stessa finestra). Categorie: aggiungi, rinomina, elimina (solo se non usate).
   Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
   Svago, Altro.
 
@@ -20,7 +26,8 @@ divise per categoria, con interfaccia web in `wwwroot/`.
 - **`componenti.css`**: solo le aggiunte a Bootstrap (pulsanti rotondi, cerchio utente,
   segnaposto delle date, modulo a schermata su telefono).
 - **`componenti.js`**: funzioni comuni (pulsanti con cerchietto di attesa, invio dei moduli,
-  messaggi, etichette, chiamate al server, barra in alto e menu utente).
+  pannello di ricerca, modulo di inserimento, messaggi, etichette, formati, chiamate al
+  server, barra in alto e menu utente).
 - **`js/`**: lo script di ogni pagina, in un file separato (nessuno script dentro l'HTML).
 - **`componenti.html`**: pagina di riferimento con un esempio di ogni componente e le classi
   da usare. Le pagine nuove vanno costruite con questi componenti.
@@ -115,6 +122,7 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | Metodo | URL                 | Descrizione          |
 |--------|---------------------|----------------------|
 | GET    | `/api/uscite?q=&categoriaId=&dal=&al=` | Ricerca uscite (con numero e totale) |
+| GET    | `/api/uscite/riepilogo?categoriaId=&dal=&al=` | Totali per giorno e per categoria (dashboard) |
 | GET    | `/api/uscite/{id}`  | Dettaglio uscita     |
 | POST   | `/api/uscite`       | Crea uscita          |
 | PUT    | `/api/uscite/{id}`  | Modifica uscita      |

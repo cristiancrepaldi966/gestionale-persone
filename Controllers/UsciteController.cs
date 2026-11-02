@@ -44,11 +44,9 @@ public class UsciteController : ControllerBase
 
     public record RisultatoRicerca(IEnumerable<UscitaDto> Uscite, int Numero, decimal Totale, bool Troncato);
 
-    // Ricerca: testo (note e nome della categoria), categoria, intervallo di date.
-    [HttpGet]
-    public async Task<RisultatoRicerca> Cerca(
-        [FromQuery] string? q, [FromQuery] int? categoriaId,
-        [FromQuery] DateOnly? dal, [FromQuery] DateOnly? al)
+    // Filtri comuni a ricerca e riepilogo: testo (note e nome della categoria),
+    // categoria, intervallo di date.
+    private IQueryable<Uscita> Filtra(string? q, int? categoriaId, DateOnly? dal, DateOnly? al)
     {
         var query = _context.Uscite.AsNoTracking().AsQueryable();
 
@@ -69,6 +67,16 @@ public class UsciteController : ControllerBase
         if (al.HasValue)
             query = query.Where(u => u.Data <= al);
 
+        return query;
+    }
+
+    [HttpGet]
+    public async Task<RisultatoRicerca> Cerca(
+        [FromQuery] string? q, [FromQuery] int? categoriaId,
+        [FromQuery] DateOnly? dal, [FromQuery] DateOnly? al)
+    {
+        var query = Filtra(q, categoriaId, dal, al);
+
         var numero = await query.CountAsync();
         var totale = await query.SumAsync(u => (decimal?)u.Importo) ?? 0;
 
@@ -82,6 +90,43 @@ public class UsciteController : ControllerBase
             .ToListAsync();
 
         return new RisultatoRicerca(uscite, numero, totale, numero > MaxRisultati);
+    }
+
+    public record TotaleGiorno(DateOnly Data, decimal Totale);
+
+    public record TotaleCategoria(int CategoriaId, string Categoria, decimal Totale, int Numero);
+
+    public record Riepilogo(int Numero, decimal Totale,
+        IEnumerable<TotaleGiorno> PerGiorno, IEnumerable<TotaleCategoria> PerCategoria);
+
+    // Dati della dashboard: totali per giorno e per categoria, con gli stessi filtri.
+    [HttpGet("riepilogo")]
+    public async Task<Riepilogo> GetRiepilogo(
+        [FromQuery] int? categoriaId, [FromQuery] DateOnly? dal, [FromQuery] DateOnly? al)
+    {
+        var query = Filtra(null, categoriaId, dal, al);
+
+        var giorni = await query
+            .GroupBy(u => u.Data)
+            .Select(g => new { Data = g.Key, Totale = g.Sum(u => u.Importo) })
+            .OrderBy(t => t.Data)
+            .ToListAsync();
+
+        var categorie = await query
+            .GroupBy(u => new { u.CategoriaId, u.Categoria.Nome })
+            .Select(g => new { g.Key.CategoriaId, g.Key.Nome, Totale = g.Sum(u => u.Importo), Numero = g.Count() })
+            .OrderByDescending(t => t.Totale)
+            .ToListAsync();
+
+        var perGiorno = giorni.Select(g => new TotaleGiorno(g.Data, g.Totale)).ToList();
+        var perCategoria = categorie
+            .Select(c => new TotaleCategoria(c.CategoriaId, c.Nome, c.Totale, c.Numero))
+            .ToList();
+
+        return new Riepilogo(
+            perCategoria.Sum(c => c.Numero),
+            perCategoria.Sum(c => c.Totale),
+            perGiorno, perCategoria);
     }
 
     [HttpGet("{id}")]

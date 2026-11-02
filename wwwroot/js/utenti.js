@@ -1,28 +1,63 @@
-// Script della pagina utenti.html (separato dall'HTML: la Content-Security-Policy
-// permette solo script caricati da file del sito).
+// Pagina Utenti (utenti.html, solo amministratori). Componenti e funzioni comuni: componenti.js.
 
 const API = "/api/utenti";
+let utenti = [];
 let idCorrente = null;
-const messaggio = () => document.getElementById("messaggio");
+let inModifica = null; // utente in modifica, null se è nuovo
 
-const formatoData = d => d
+const $ = id => document.getElementById(id);
+
+const formatoDataOra = d => d
     ? new Date(d).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })
     : "mai";
 
+const ricerca = pannelloRicerca({
+    bottone: $("cerca"),
+    pannello: $("pannelloFiltri"),
+    pallino: $("pallinoFiltri"),
+    azzera: $("azzera"),
+    campi: [$("filtroEmail"), $("filtroRuolo"), $("filtroStato")],
+    applica: () => mostraUtenti()
+});
+
+const modulo = moduloFinestra($("finestra"), { primoCampo: $("email") });
+
 async function caricaUtenti() {
-
-    const lista = document.getElementById("listaUtenti");
-
     try {
         const response = await api(API);
         if (!response.ok) throw new Error();
-
-        const utenti = await response.json();
-        lista.replaceChildren(...utenti.map(rigaUtente));
-
+        utenti = await response.json();
+        mostraUtenti();
     } catch {
-        lista.replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel caricamento degli utenti."));
+        $("listaUtenti").replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel caricamento degli utenti."));
     }
+}
+
+// Elenco filtrato per email, ruolo e stato (la ricerca avviene qui, gli utenti sono pochi).
+function mostraUtenti() {
+
+    const { filtroEmail, filtroRuolo, filtroStato } = ricerca.valori();
+    const testo = filtroEmail.toLowerCase();
+
+    const trovati = utenti.filter(u =>
+        u.email.includes(testo) &&
+        (filtroRuolo === "" || (filtroRuolo === "admin") === u.isAdmin) &&
+        (filtroStato === "" ||
+            (filtroStato === "attivi" && u.attivo) ||
+            (filtroStato === "disattivati" && !u.attivo) ||
+            (filtroStato === "bloccati" && u.bloccato)));
+
+    const lista = $("listaUtenti");
+
+    $("riepilogo").replaceChildren(
+        el("span", "text-body-secondary", `${trovati.length} ${trovati.length === 1 ? "utente" : "utenti"}`));
+
+    if (trovati.length === 0) {
+        lista.replaceChildren(el("p", "p-3 mb-0 text-body-secondary", "Nessun utente corrisponde alla ricerca."));
+        return;
+    }
+
+    lista.replaceChildren(...trovati.map(rigaUtente));
 }
 
 function rigaUtente(u) {
@@ -30,7 +65,7 @@ function rigaUtente(u) {
     const riga = el("div", "list-group-item riga d-flex flex-column flex-sm-row justify-content-between gap-2 py-3");
 
     const info = el("div", "text-break");
-    const nome = el("div", "fw-bold d-flex flex-wrap align-items-center gap-1");
+    const nome = el("div", "fw-bold fs-5 d-flex flex-wrap align-items-center gap-1");
     nome.appendChild(el("span", "me-1", u.email));
     if (u.id === idCorrente) nome.appendChild(etichetta("tu"));
     if (u.isAdmin) nome.appendChild(etichetta("Amministratore", "primary"));
@@ -38,126 +73,102 @@ function rigaUtente(u) {
     if (u.bloccato) nome.appendChild(etichetta("Bloccato per tentativi errati", "danger"));
     info.appendChild(nome);
     info.appendChild(el("div", "small text-body-secondary",
-        `Creato il ${formatoData(u.creatoIl)} · Ultimo accesso: ${formatoData(u.ultimoAccesso)}`));
+        `Creato il ${formatoDataOra(u.creatoIl)} · Ultimo accesso: ${formatoDataOra(u.ultimoAccesso)}`));
 
     const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-sm-center");
-    azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => modificaUtente(riga, u)));
+    azioni.appendChild(pulsante("Modifica", "btn btn-sm btn-light border", () => apri(u)));
     if (u.id !== idCorrente) {
-        azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => eliminaUtente(u)));
+        azioni.appendChild(pulsante("Elimina", "btn btn-sm btn-danger", () => elimina(u)));
     }
 
     riga.append(info, azioni);
     return riga;
 }
 
-function modificaUtente(riga, u) {
+function apri(u) {
+    inModifica = u || null;
+    const stessoUtente = !!u && u.id === idCorrente;
 
-    const casella = (testo, valore, disabilitata) => {
-        const div = el("div", "form-check mb-0");
-        const input = el("input", "form-check-input");
-        input.type = "checkbox";
-        input.id = `c${u.id}-${testo.length}`;
-        input.checked = valore;
-        input.disabled = disabilitata;
-        const label = el("label", "form-check-label", testo);
-        label.htmlFor = input.id;
-        div.append(input, label);
-        return { div, input };
-    };
+    $("email").value = u ? u.email : "";
+    $("email").readOnly = !!u;                 // l'email non si cambia
+    $("email").classList.toggle("bg-body-tertiary", !!u);
+    $("password").value = "";
+    $("etichettaPassword").textContent = u ? "Nuova password" : "Password";
+    $("aiutoPassword").textContent = u
+        ? "Lascia vuoto per non cambiarla. Almeno 8 caratteri."
+        : "Almeno 8 caratteri.";
+    $("isAdmin").checked = u ? u.isAdmin : false;
+    $("isAdmin").disabled = stessoUtente;
+    $("attivo").checked = u ? u.attivo : true;
+    $("attivo").disabled = stessoUtente;
+    $("rigaAttivo").hidden = !u;                // un utente nuovo è sempre attivo
+    $("aiutoSeStesso").hidden = !stessoUtente;
+    $("erroreFinestra").textContent = "";
 
-    const stessoUtente = u.id === idCorrente;
-    const admin = casella("Amministratore", u.isAdmin, stessoUtente);
-    const attivo = casella("Attivo (può accedere)", u.attivo, stessoUtente);
+    modulo.apri(u ? "Modifica utente" : "Nuovo utente");
+    if (u && !schermoTouch) $("password").focus();
+}
 
-    const password = el("input", "form-control");
-    password.type = "password";
-    password.placeholder = "Nuova password (lascia vuoto per non cambiarla)";
-    password.autocomplete = "new-password";
-    password.setAttribute("aria-label", "Nuova password");
+async function salva() {
 
-    const errore = el("div", "small text-danger");
+    const errore = $("erroreFinestra");
+    const password = $("password").value;
 
-    const contenitore = el("div", "d-grid gap-2 flex-grow-1");
-    contenitore.append(el("div", "fw-bold text-break", u.email), password, admin.div, attivo.div, errore);
+    if (!inModifica && !$("email").value.trim()) {
+        errore.textContent = "Inserisci l'email.";
+        return;
+    }
 
-    const salva = async () => {
+    if ((!inModifica || password) && password.length < 8) {
+        errore.textContent = "La password deve avere almeno 8 caratteri.";
+        return;
+    }
 
-        if (password.value && password.value.length < 8) {
-            errore.textContent = "La password deve avere almeno 8 caratteri.";
+    try {
+        const response = inModifica
+            ? await api(`${API}/${inModifica.id}`, jsonBody("PUT", {
+                isAdmin: $("isAdmin").checked,
+                attivo: $("attivo").checked,
+                nuovaPassword: password || null
+            }))
+            : await api(API, jsonBody("POST", {
+                email: $("email").value.trim(),
+                password,
+                isAdmin: $("isAdmin").checked
+            }));
+
+        if (!response.ok) {
+            errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
             return;
         }
 
-        try {
-            const response = await api(`${API}/${u.id}`, jsonBody("PUT", {
-                isAdmin: admin.input.checked,
-                attivo: attivo.input.checked,
-                nuovaPassword: password.value || null
-            }));
+        modulo.chiudi();
+        await caricaUtenti();
 
-            if (!response.ok) {
-                errore.textContent = await messaggioErrore(response, "Errore durante il salvataggio.");
-                return;
-            }
-
-            mostraMessaggio(messaggio(), `Utente ${u.email} aggiornato.`, "successo");
-            await caricaUtenti();
-
-        } catch {
-            errore.textContent = "Errore nel collegamento al server.";
-        }
-    };
-
-    const azioni = el("div", "d-flex gap-2 flex-shrink-0 align-self-sm-start");
-    azioni.appendChild(pulsante("Salva", "btn btn-sm btn-primary", salva));
-    azioni.appendChild(pulsante("Annulla", "btn btn-sm btn-light border", () => riga.replaceWith(rigaUtente(u))));
-
-    riga.replaceChildren(contenitore, azioni);
-    password.focus();
+    } catch {
+        errore.textContent = "Errore nel collegamento al server.";
+    }
 }
 
-async function eliminaUtente(u) {
+async function elimina(u) {
 
     if (!confirm(`Eliminare l'utente ${u.email}?`)) return;
 
     try {
         const response = await api(`${API}/${u.id}`, { method: "DELETE" });
-
         if (!response.ok) {
             alert(await messaggioErrore(response, "Errore durante l'eliminazione."));
             return;
         }
-
-        mostraMessaggio(messaggio(), `Utente ${u.email} eliminato.`, "successo");
         await caricaUtenti();
-
     } catch {
         alert("Errore nel collegamento al server.");
     }
 }
 
-alInvio(document.getElementById("formNuovo"), async e => {
-
-    try {
-        const response = await api(API, jsonBody("POST", {
-            email: document.getElementById("email").value.trim(),
-            password: document.getElementById("password").value,
-            isAdmin: document.getElementById("isAdmin").checked
-        }));
-
-        if (!response.ok) {
-            mostraMessaggio(messaggio(), await messaggioErrore(response, "Errore durante la creazione."));
-            return;
-        }
-
-        const creato = await response.json();
-        e.target.reset();
-        mostraMessaggio(messaggio(), `Utente ${creato.email} creato.`, "successo");
-        await caricaUtenti();
-
-    } catch {
-        mostraMessaggio(messaggio(), "Errore nel collegamento al server.");
-    }
-});
+$("nuova").addEventListener("click", () => apri(null));
+$("annulla").addEventListener("click", () => modulo.chiudi());
+alInvio($("formUtente"), salva);
 
 avviaPagina({ soloAdmin: true }).then(u => {
     idCorrente = u.id;
