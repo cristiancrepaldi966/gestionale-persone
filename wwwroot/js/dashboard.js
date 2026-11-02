@@ -3,18 +3,15 @@
 
 const $ = id => document.getElementById(id);
 
-// Colori delle categorie (tavolozza verificata per il daltonismo, in ordine fisso).
-// Il colore segue la categoria, non la sua posizione: filtrando non cambia.
-const COLORI = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"];
+// Ogni categoria ha il suo colore e la sua icona (scelti in Admin → Categorie):
+// il colore segue la categoria, non la sua posizione, quindi filtrando non cambia.
 const COLORE_ALTRE = "#a3a29b";     // fetta "Altre" (categorie minori)
-const COLORE_OLTRE = "#6f6e69";     // categorie oltre l'ottava
-const COLORE_BARRE = COLORI[0];
+const COLORE_BARRE = "#2a78d6";
 const SUPERFICIE = "#ffffff";
 const TESTO_SECONDARIO = "#6c757d";
 const GRIGLIA = "#e9ecef";
 const MAX_FETTE = 6;                // oltre: le minori finiscono in "Altre"
 
-let coloreCategoria = new Map();    // id categoria → colore
 let graficoDate = null;
 let graficoCategorie = null;
 
@@ -34,10 +31,6 @@ async function caricaCategorie() {
     const response = await api("/api/categorie");
     const categorie = await response.json();
     riempiCategorie($("filtroCategoria"), categorie, "Categoria");
-
-    // Colore stabile per categoria: in ordine di creazione (id).
-    [...categorie].sort((a, b) => a.id - b.id).forEach((c, i) =>
-        coloreCategoria.set(c.id, i < COLORI.length ? COLORI[i] : COLORE_OLTRE));
 }
 
 // ---------------------------------------------------------------------------
@@ -146,14 +139,12 @@ function disegnaDate(perGiorno, filtri) {
 // ---------------------------------------------------------------------------
 
 function fetteCategorie(perCategoria) {
-    if (perCategoria.length <= MAX_FETTE) {
-        return perCategoria.map(c => ({ nome: c.categoria, totale: c.totale, colore: coloreCategoria.get(c.categoriaId) || COLORE_OLTRE }));
-    }
-    const principali = perCategoria.slice(0, MAX_FETTE - 1);
+    const fetta = c => ({ nome: c.categoria, totale: c.totale, colore: c.colore, icona: c.icona });
+    if (perCategoria.length <= MAX_FETTE) return perCategoria.map(fetta);
     const altre = perCategoria.slice(MAX_FETTE - 1);
     return [
-        ...principali.map(c => ({ nome: c.categoria, totale: c.totale, colore: coloreCategoria.get(c.categoriaId) || COLORE_OLTRE })),
-        { nome: `Altre (${altre.length})`, totale: altre.reduce((s, c) => s + c.totale, 0), colore: COLORE_ALTRE }
+        ...perCategoria.slice(0, MAX_FETTE - 1).map(fetta),
+        { nome: `Altre (${altre.length})`, totale: altre.reduce((s, c) => s + c.totale, 0), colore: COLORE_ALTRE, icona: "three-dots" }
     ];
 }
 
@@ -166,9 +157,7 @@ function disegnaCategorie(perCategoria, totale) {
     // Elenco accanto alla torta: nome, importo, percentuale (non solo il colore).
     $("legendaCategorie").replaceChildren(...fette.map(f => {
         const li = el("li", "list-group-item d-flex align-items-center gap-2 px-0");
-        const campione = el("span", "campione-colore");
-        campione.style.background = f.colore;
-        li.append(campione,
+        li.append(iconaCategoria(f.icona, f.colore, true),
             el("span", "me-auto text-break", f.nome),
             el("span", "fw-semibold text-nowrap", euro.format(f.totale)),
             el("span", "text-body-secondary small text-nowrap text-end", formatoPerc(f.totale)));

@@ -40,7 +40,7 @@ public class UsciteController : ControllerBase
 
     public record UscitaDto(
         int Id, DateOnly Data, decimal Importo, string? Note,
-        int CategoriaId, string Categoria, string? CreatoDa);
+        int CategoriaId, string Categoria, string CategoriaIcona, string CategoriaColore, string? CreatoDa);
 
     public record RisultatoRicerca(IEnumerable<UscitaDto> Uscite, int Numero, decimal Totale, bool Troncato);
 
@@ -85,7 +85,7 @@ public class UsciteController : ControllerBase
             .Take(MaxRisultati)
             .Select(u => new UscitaDto(
                 u.Id, u.Data, u.Importo, u.Note,
-                u.CategoriaId, u.Categoria.Nome,
+                u.CategoriaId, u.Categoria.Nome, u.Categoria.Icona, u.Categoria.Colore,
                 u.CreatoDa != null ? u.CreatoDa.Email : null))
             .ToListAsync();
 
@@ -94,7 +94,7 @@ public class UsciteController : ControllerBase
 
     public record TotaleGiorno(DateOnly Data, decimal Totale);
 
-    public record TotaleCategoria(int CategoriaId, string Categoria, decimal Totale, int Numero);
+    public record TotaleCategoria(int CategoriaId, string Categoria, string Icona, string Colore, decimal Totale, int Numero);
 
     public record Riepilogo(int Numero, decimal Totale,
         IEnumerable<TotaleGiorno> PerGiorno, IEnumerable<TotaleCategoria> PerCategoria);
@@ -113,14 +113,14 @@ public class UsciteController : ControllerBase
             .ToListAsync();
 
         var categorie = await query
-            .GroupBy(u => new { u.CategoriaId, u.Categoria.Nome })
-            .Select(g => new { g.Key.CategoriaId, g.Key.Nome, Totale = g.Sum(u => u.Importo), Numero = g.Count() })
+            .GroupBy(u => new { u.CategoriaId, u.Categoria.Nome, u.Categoria.Icona, u.Categoria.Colore })
+            .Select(g => new { g.Key.CategoriaId, g.Key.Nome, g.Key.Icona, g.Key.Colore, Totale = g.Sum(u => u.Importo), Numero = g.Count() })
             .OrderByDescending(t => t.Totale)
             .ToListAsync();
 
         var perGiorno = giorni.Select(g => new TotaleGiorno(g.Data, g.Totale)).ToList();
         var perCategoria = categorie
-            .Select(c => new TotaleCategoria(c.CategoriaId, c.Nome, c.Totale, c.Numero))
+            .Select(c => new TotaleCategoria(c.CategoriaId, c.Nome, c.Icona, c.Colore, c.Totale, c.Numero))
             .ToList();
 
         return new Riepilogo(
@@ -136,7 +136,7 @@ public class UsciteController : ControllerBase
             .Where(u => u.Id == id)
             .Select(u => new UscitaDto(
                 u.Id, u.Data, u.Importo, u.Note,
-                u.CategoriaId, u.Categoria.Nome,
+                u.CategoriaId, u.Categoria.Nome, u.Categoria.Icona, u.Categoria.Colore,
                 u.CreatoDa != null ? u.CreatoDa.Email : null))
             .SingleOrDefaultAsync();
 

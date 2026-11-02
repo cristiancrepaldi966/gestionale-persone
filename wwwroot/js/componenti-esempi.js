@@ -13,3 +13,8 @@ document.getElementById("esempioAttesa").append(
 document.getElementById("esempioEtichette").append(
     etichetta("tu"), etichetta("Amministratore", "primary"),
     etichetta("Disattivato", "danger"), etichetta("Trasporti", "light"));
+
+document.getElementById("esempioIcone").append(
+    iconaCategoria("house-door", "#2a78d6"), iconaCategoria("cart3", "#eb6834"),
+    iconaCategoria("lightning-charge", "#eda100"), iconaCategoria("car-front", "#1baf7a"),
+    iconaCategoria("heart-pulse", "#e34948", true));

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categorie - Gestionale Uscite</title>
     <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="componenti.css">
 </head>
 <body class="in-attesa">
@@ -64,7 +65,16 @@
         <h2 class="h4 fw-bold mb-3" tabindex="-1" autofocus>Nuova categoria</h2>
 
         <label for="nome" class="form-label fw-semibold">Nome</label>
-        <input type="text" id="nome" class="form-control" maxlength="50">
+        <div class="d-flex align-items-center gap-2">
+            <span id="anteprima"></span>
+            <input type="text" id="nome" class="form-control" maxlength="50">
+        </div>
+
+        <div class="fw-semibold mt-3 mb-2" id="etichettaIcona">Icona</div>
+        <div class="scelta-icone" id="sceltaIcone" role="radiogroup" aria-labelledby="etichettaIcona"></div>
+
+        <div class="fw-semibold mt-3 mb-2" id="etichettaColore">Colore</div>
+        <div class="scelta-colori" id="sceltaColori" role="radiogroup" aria-labelledby="etichettaColore"></div>
 
         <div id="erroreFinestra" class="small mt-2 text-danger"></div>
 

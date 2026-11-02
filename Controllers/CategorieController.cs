@@ -19,7 +19,7 @@ public class CategorieController : ControllerBase
         _context = context;
     }
 
-    public record CategoriaDto(int Id, string Nome, int NumeroUscite);
+    public record CategoriaDto(int Id, string Nome, string Icona, string Colore, int NumeroUscite);
 
     // Dal client si accetta solo il nome (nessun altro campo può essere impostato).
     public class CategoriaRequest
@@ -27,13 +27,35 @@ public class CategorieController : ControllerBase
         [Required(ErrorMessage = "Il nome della categoria è obbligatorio.")]
         [StringLength(50, ErrorMessage = "Il nome della categoria deve avere al massimo 50 caratteri.")]
         public string Nome { get; set; } = string.Empty;
+
+        // Facoltativi: se mancano si usano l'icona e il colore predefiniti.
+        public string? Icona { get; set; }
+
+        public string? Colore { get; set; }
+    }
+
+    // Icone e colori che si possono scegliere.
+    public record Aspetto(IEnumerable<string> Icone, IEnumerable<string> Colori);
+
+    [HttpGet("aspetto")]
+    public Aspetto GetAspetto() => new(AspettoCategoria.Icone, AspettoCategoria.Colori);
+
+    // Controlla icona e colore (solo valori dell'elenco ammesso).
+    private static string? ErroreAspetto(CategoriaRequest r, out string icona, out string colore)
+    {
+        icona = string.IsNullOrWhiteSpace(r.Icona) ? AspettoCategoria.IconaPredefinita : r.Icona.Trim();
+        colore = string.IsNullOrWhiteSpace(r.Colore) ? AspettoCategoria.ColorePredefinito : r.Colore.Trim().ToLowerInvariant();
+
+        if (!AspettoCategoria.Icone.Contains(icona)) return "Icona non valida.";
+        if (!AspettoCategoria.Colori.Contains(colore)) return "Colore non valido.";
+        return null;
     }
 
     [HttpGet]
     public async Task<IEnumerable<CategoriaDto>> GetCategorie() =>
         await _context.Categorie
             .OrderBy(c => c.Nome)
-            .Select(c => new CategoriaDto(c.Id, c.Nome, _context.Uscite.Count(u => u.CategoriaId == c.Id)))
+            .Select(c => new CategoriaDto(c.Id, c.Nome, c.Icona, c.Colore, _context.Uscite.Count(u => u.CategoriaId == c.Id)))
             .ToListAsync();
 
     // Tutti possono leggere le categorie (servono per inserire le uscite);
@@ -44,14 +66,19 @@ public class CategorieController : ControllerBase
     {
         var nome = categoria.Nome.Trim();
 
+        var errore = ErroreAspetto(categoria, out var icona, out var colore);
+        if (errore != null)
+            return BadRequest(new { messaggio = errore });
+
         if (await NomeEsistente(nome, null))
             return Conflict(new { messaggio = "Esiste già una categoria con questo nome." });
 
-        var nuova = new Categoria { Nome = nome };
+        var nuova = new Categoria { Nome = nome, Icona = icona, Colore = colore };
         _context.Categorie.Add(nuova);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetCategorie), null, new CategoriaDto(nuova.Id, nuova.Nome, 0));
+        return CreatedAtAction(nameof(GetCategorie), null,
+            new CategoriaDto(nuova.Id, nuova.Nome, nuova.Icona, nuova.Colore, 0));
     }
 
     [HttpPut("{id}")]
@@ -64,10 +91,16 @@ public class CategorieController : ControllerBase
 
         var nome = categoria.Nome.Trim();
 
+        var errore = ErroreAspetto(categoria, out var icona, out var colore);
+        if (errore != null)
+            return BadRequest(new { messaggio = errore });
+
         if (await NomeEsistente(nome, id))
             return Conflict(new { messaggio = "Esiste già una categoria con questo nome." });
 
         esistente.Nome = nome;
+        esistente.Icona = icona;
+        esistente.Colore = colore;
         await _context.SaveChangesAsync();
         return NoContent();
     }

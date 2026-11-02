@@ -36,14 +36,16 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
         {
             c.Property(x => x.Nome).HasMaxLength(50).IsRequired();
             c.HasIndex(x => x.Nome).IsUnique();
+            c.Property(x => x.Icona).HasMaxLength(40).IsRequired().HasDefaultValue(AspettoCategoria.IconaPredefinita);
+            c.Property(x => x.Colore).HasMaxLength(7).IsRequired().HasDefaultValue(AspettoCategoria.ColorePredefinito);
             c.HasData(
-                new Categoria { Id = 1, Nome = "Casa" },
-                new Categoria { Id = 2, Nome = "Spesa alimentare" },
-                new Categoria { Id = 3, Nome = "Bollette" },
-                new Categoria { Id = 4, Nome = "Trasporti" },
-                new Categoria { Id = 5, Nome = "Salute" },
-                new Categoria { Id = 6, Nome = "Svago" },
-                new Categoria { Id = 7, Nome = "Altro" });
+                new Categoria { Id = 1, Nome = "Casa", Icona = "house-door", Colore = "#2a78d6" },
+                new Categoria { Id = 2, Nome = "Spesa alimentare", Icona = "cart3", Colore = "#eb6834" },
+                new Categoria { Id = 3, Nome = "Bollette", Icona = "lightning-charge", Colore = "#eda100" },
+                new Categoria { Id = 4, Nome = "Trasporti", Icona = "car-front", Colore = "#1baf7a" },
+                new Categoria { Id = 5, Nome = "Salute", Icona = "heart-pulse", Colore = "#e34948" },
+                new Categoria { Id = 6, Nome = "Svago", Icona = "controller", Colore = "#e87ba4" },
+                new Categoria { Id = 7, Nome = "Altro", Icona = "tag", Colore = "#6c757d" });
         });
 
         modelBuilder.Entity<Uscita>(u =>

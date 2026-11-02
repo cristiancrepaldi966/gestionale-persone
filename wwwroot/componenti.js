@@ -459,3 +459,23 @@ function parametriUscite({ filtroCategoria, dal, al }) {
     if (al) p.set("al", al);
     return p;
 }
+
+// ---------------------------------------------------------------------------
+// Categorie: icona e colore
+// ---------------------------------------------------------------------------
+
+// Cerchio colorato con l'icona della categoria (Bootstrap Icons).
+function iconaCategoria(icona, colore, piccola = false) {
+    const cerchio = el("span", "icona-categoria" + (piccola ? " piccola" : ""));
+    cerchio.style.setProperty("--colore", colore);
+    cerchio.setAttribute("aria-hidden", "true");
+    cerchio.appendChild(el("i", "bi bi-" + icona));
+    return cerchio;
+}
+
+// Colora una riga dell'elenco con il colore della categoria (striscia a sinistra).
+function coloraRiga(riga, colore) {
+    riga.classList.add("riga-colorata");
+    riga.style.setProperty("--colore", colore);
+    return riga;
+}
