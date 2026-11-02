@@ -75,22 +75,82 @@ async function avviaPagina({ soloAdmin = false } = {}) {
 
     const barra = document.getElementById("barraUtente");
     if (barra) {
-        barra.replaceChildren();
-        barra.appendChild(el("span", null, utente.email));
-
-        const link = (testo, href) => {
-            const a = el("a", null, testo);
-            a.href = href;
-            return a;
-        };
-
-        barra.appendChild(link("Uscite", "/"));
-        barra.appendChild(link("Categorie", "/categorie.html"));
-        if (utente.isAdmin) barra.appendChild(link("Utenti", "/utenti.html"));
-        barra.appendChild(link("Password", "/password.html"));
-        barra.appendChild(pulsante("Esci", null, esci));
+        barra.replaceChildren(menuPagine(utente), menuProfilo(utente));
     }
 
     document.body.classList.remove("in-attesa");
     return utente;
+}
+
+// Link alle pagine; quella aperta è evidenziata.
+function menuPagine(utente) {
+    const menu = el("div", "menu-pagine");
+
+    const pagine = [["Uscite", "/"], ["Categorie", "/categorie.html"]];
+    if (utente.isAdmin) pagine.push(["Utenti", "/utenti.html"]);
+
+    const corrente = location.pathname === "/index.html" ? "/" : location.pathname;
+
+    for (const [testo, href] of pagine) {
+        const a = el("a", null, testo);
+        a.href = href;
+        if (href === corrente) {
+            a.classList.add("attivo");
+            a.setAttribute("aria-current", "page");
+        }
+        menu.appendChild(a);
+    }
+
+    return menu;
+}
+
+// Cerchio con l'iniziale: al clic apre una tendina con email, cambio password ed esci.
+function menuProfilo(utente) {
+    const profilo = el("div", "profilo");
+
+    const cerchio = el("button", "avatar", utente.email.charAt(0).toUpperCase());
+    cerchio.type = "button";
+    cerchio.title = utente.email;
+    cerchio.setAttribute("aria-label", "Menu utente");
+    cerchio.setAttribute("aria-haspopup", "true");
+    cerchio.setAttribute("aria-expanded", "false");
+
+    const tendina = el("div", "tendina");
+    tendina.hidden = true;
+
+    const intestazione = el("div", "tendina-utente");
+    intestazione.appendChild(el("div", "tendina-etichetta", "Accesso effettuato come"));
+    intestazione.appendChild(el("div", "tendina-email", utente.email));
+    if (utente.isAdmin) intestazione.appendChild(el("span", "etichetta admin", "Amministratore"));
+
+    const cambio = el("a", "tendina-voce", "Cambia password");
+    cambio.href = "/password.html";
+
+    const uscita = pulsante("Esci", "tendina-voce tendina-esci", esci);
+
+    tendina.append(intestazione, cambio, uscita);
+    profilo.append(cerchio, tendina);
+
+    const apri = aperta => {
+        tendina.hidden = !aperta;
+        cerchio.setAttribute("aria-expanded", String(aperta));
+    };
+
+    cerchio.addEventListener("click", e => {
+        e.stopPropagation();
+        apri(tendina.hidden);
+    });
+
+    // Chiudi cliccando fuori o con Esc.
+    document.addEventListener("click", e => {
+        if (!profilo.contains(e.target)) apri(false);
+    });
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && !tendina.hidden) {
+            apri(false);
+            cerchio.focus();
+        }
+    });
+
+    return profilo;
 }
