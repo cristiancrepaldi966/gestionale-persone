@@ -226,14 +226,54 @@
         document.getElementById("note").value = u && u.note ? u.note : "";
         document.getElementById("erroreFinestra").textContent = "";
 
-        const finestra = document.getElementById("finestra");
-        finestra.showModal();
-        document.getElementById("importo").focus();
+        bloccaPagina();
+        document.getElementById("finestra").showModal();
+
+        // Su telefono non mettere subito il cursore: aprirebbe la tastiera, che su
+        // iPhone sposta la finestra e fa "scivolare" i punti in cui toccare i pulsanti.
+        if (!schermoTouch) {
+            document.getElementById("importo").focus();
+        } else {
+            document.activeElement?.blur();
+        }
     }
 
     function chiudiFinestra() {
         document.getElementById("finestra").close();
     }
+
+    const schermoTouch = matchMedia("(pointer: coarse)").matches;
+
+    // Blocca lo scorrimento della pagina sotto la finestra (su iPhone overflow:hidden
+    // non basta): la pagina viene fissata dov'è e ripristinata alla chiusura.
+    let scrollSalvato = 0;
+
+    function bloccaPagina() {
+        scrollSalvato = window.scrollY;
+        document.body.style.top = `-${scrollSalvato}px`;
+        document.body.classList.add("finestra-aperta");
+    }
+
+    function sbloccaPagina() {
+        document.body.classList.remove("finestra-aperta");
+        document.body.style.top = "";
+        window.scrollTo(0, scrollSalvato);
+    }
+
+    // "close" scatta anche chiudendo con Esc.
+    document.getElementById("finestra").addEventListener("close", sbloccaPagina);
+
+    // Quando la tastiera si chiude, iPhone può lasciare la vista spostata:
+    // riallinea, così i pulsanti si toccano esattamente dove si vedono.
+    document.getElementById("finestra").addEventListener("focusout", () => {
+        setTimeout(() => {
+            const finestra = document.getElementById("finestra");
+            const campo = document.activeElement;
+            const tastieraAncoraAperta = campo && finestra.contains(campo) &&
+                /^(INPUT|TEXTAREA|SELECT)$/.test(campo.tagName);
+            if (finestra.open && !tastieraAncoraAperta) window.scrollTo(0, 0);
+        }, 50);
+    });
 
     async function salvaUscita() {
 

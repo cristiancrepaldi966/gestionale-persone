@@ -639,15 +639,25 @@ dialog::backdrop {
         gap: 6px;
     }
 
+    /* 16px: con un testo più piccolo iPhone fa lo zoom automatico toccando il campo. */
     .filtri select,
     .filtri input {
         padding: 8px 6px;
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .campo-data .segnaposto {
         left: 8px;
-        font-size: 14px;
+        font-size: 16px;
+    }
+
+    /* Finestra di inserimento ancorata in alto (non centrata): con la tastiera
+       aperta su iPhone resta ferma e i pulsanti restano dove si vedono. */
+    dialog {
+        margin: 12px auto auto;
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+        padding: 20px;
     }
 
     .filtri input[type="date"]::-webkit-calendar-picker-indicator {
@@ -796,4 +806,18 @@ button.btn-piccolo.caricamento::after {
     border-radius: 50%;
     animation: gira 0.8s linear infinite;
     z-index: 1;
+}
+
+/* Pagina ferma sotto la finestra di inserimento. */
+body.finestra-aperta {
+    position: fixed;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+}
+
+/* Niente riquadro azzurro al tocco sui pulsanti (iPhone/Android). */
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
 }
