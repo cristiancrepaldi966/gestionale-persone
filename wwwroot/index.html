@@ -60,8 +60,8 @@
 </main>
 
 <dialog id="finestra">
-    <form method="dialog" id="formUscita">
-        <h2 id="titoloFinestra">Nuova uscita</h2>
+    <form method="dialog" id="formUscita" novalidate>
+        <h2 id="titoloFinestra" tabindex="-1" autofocus>Nuova uscita</h2>
 
         <div class="griglia-form">
             <label>Data
@@ -226,15 +226,18 @@
         document.getElementById("note").value = u && u.note ? u.note : "";
         document.getElementById("erroreFinestra").textContent = "";
 
-        bloccaPagina();
-        document.getElementById("finestra").showModal();
+        const finestra = document.getElementById("finestra");
+        scrollSalvato = window.scrollY;
 
-        // Su telefono non mettere subito il cursore: aprirebbe la tastiera, che su
-        // iPhone sposta la finestra e fa "scivolare" i punti in cui toccare i pulsanti.
-        if (!schermoTouch) {
-            document.getElementById("importo").focus();
+        if (moduloAPagina()) {
+            // Telefono: il modulo è una schermata normale al posto dell'elenco
+            // (niente finestra sospesa, che su iPhone con la tastiera sposta i tocchi).
+            document.body.classList.add("modulo-a-pagina");
+            finestra.show();
+            window.scrollTo(0, 0);
         } else {
-            document.activeElement?.blur();
+            finestra.showModal();
+            document.getElementById("importo").focus();
         }
     }
 
@@ -242,37 +245,16 @@
         document.getElementById("finestra").close();
     }
 
-    const schermoTouch = matchMedia("(pointer: coarse)").matches;
+    const moduloAPagina = () => matchMedia("(max-width: 600px), (pointer: coarse)").matches;
 
-    // Blocca lo scorrimento della pagina sotto la finestra (su iPhone overflow:hidden
-    // non basta): la pagina viene fissata dov'è e ripristinata alla chiusura.
     let scrollSalvato = 0;
 
-    function bloccaPagina() {
-        scrollSalvato = window.scrollY;
-        document.body.style.top = `-${scrollSalvato}px`;
-        document.body.classList.add("finestra-aperta");
-    }
-
-    function sbloccaPagina() {
-        document.body.classList.remove("finestra-aperta");
-        document.body.style.top = "";
-        window.scrollTo(0, scrollSalvato);
-    }
-
-    // "close" scatta anche chiudendo con Esc.
-    document.getElementById("finestra").addEventListener("close", sbloccaPagina);
-
-    // Quando la tastiera si chiude, iPhone può lasciare la vista spostata:
-    // riallinea, così i pulsanti si toccano esattamente dove si vedono.
-    document.getElementById("finestra").addEventListener("focusout", () => {
-        setTimeout(() => {
-            const finestra = document.getElementById("finestra");
-            const campo = document.activeElement;
-            const tastieraAncoraAperta = campo && finestra.contains(campo) &&
-                /^(INPUT|TEXTAREA|SELECT)$/.test(campo.tagName);
-            if (finestra.open && !tastieraAncoraAperta) window.scrollTo(0, 0);
-        }, 50);
+    // "close" scatta anche chiudendo con Esc: torna all'elenco dov'eri.
+    document.getElementById("finestra").addEventListener("close", () => {
+        if (document.body.classList.contains("modulo-a-pagina")) {
+            document.body.classList.remove("modulo-a-pagina");
+            window.scrollTo(0, scrollSalvato);
+        }
     });
 
     async function salvaUscita() {
