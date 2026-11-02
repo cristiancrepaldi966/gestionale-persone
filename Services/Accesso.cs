@@ -70,6 +70,9 @@ public static class Politiche
     // Fantapolitica, livello Amministratore: gestisce politici ed eventi.
     public const string FantapoliticaAmministratore = "FantapoliticaAmministratore";
 
+    // Modulo Stampa 3D: qualsiasi livello (catalogo, configuratore, i propri progetti).
+    public const string Stampa3d = "Stampa3d";
+
     // Modulo Admin: solo Super admin.
     public const string Admin = "Admin";
 
@@ -82,6 +85,7 @@ public static class Politiche
         o.AddPolicy(FinanzeAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Finanze, Livelli.Amministratore)));
         o.AddPolicy(Fantapolitica, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Fantapolitica)));
         o.AddPolicy(FantapoliticaAmministratore, p => p.RequireAssertion(c => c.User.E(Moduli.Fantapolitica, Livelli.Amministratore)));
+        o.AddPolicy(Stampa3d, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Stampa3d)));
         o.AddPolicy(Admin, p => p.RequireAssertion(c => c.User.SuperAdmin()));
         o.AddPolicy(LetturaCategorie, p => p.RequireAssertion(c => c.User.HaAccesso(Moduli.Finanze)));
     }

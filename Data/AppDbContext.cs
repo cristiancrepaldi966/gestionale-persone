@@ -19,6 +19,9 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Autorizzazione> Autorizzazioni => Set<Autorizzazione>();
 
+    // Progetti del modulo Stampa 3D (oggetto del catalogo e misure).
+    public DbSet<Progetto3d> Progetti3d => Set<Progetto3d>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -42,6 +45,17 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             a.HasOne(x => x.Utente).WithMany(u => u.Autorizzazioni)
                 .HasForeignKey(x => x.UtenteId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Progetto3d>(p =>
+        {
+            p.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            p.Property(x => x.Oggetto).HasMaxLength(40).IsRequired();
+            p.Property(x => x.Parametri).HasColumnType("jsonb").IsRequired();
+            p.HasIndex(x => x.CreatoDaId);
+            p.HasOne(x => x.CreatoDa).WithMany()
+                .HasForeignKey(x => x.CreatoDaId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Categoria>(c =>

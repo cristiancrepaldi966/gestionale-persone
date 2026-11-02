@@ -127,6 +127,44 @@ namespace GestionalePersone.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.Progetto3d", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AggiornatoIl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CreatoDaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatoIl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Oggetto")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Parametri")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatoDaId");
+
+                    b.ToTable("Progetti3d");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
                 {
                     b.Property<int>("Id")
@@ -254,6 +292,16 @@ namespace GestionalePersone.Migrations
                         .IsRequired();
 
                     b.Navigation("Utente");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Progetto3d", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Utente", "CreatoDa")
+                        .WithMany()
+                        .HasForeignKey("CreatoDaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatoDa");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuratore - Stampa 3D - Gestionale</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale</a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <nav class="small mb-2" aria-label="Percorso">
+        <a class="link-secondary" href="/stampa3d.html">Catalogo</a>
+        <span class="text-body-secondary mx-1">›</span>
+        <span class="fw-semibold" id="percorsoNome">Configuratore</span>
+    </nav>
+    <div class="d-flex align-items-center gap-2 mb-1" id="titolo">
+        <h2 class="h3 fw-bold mb-0">Configuratore</h2>
+    </div>
+    <p class="text-body-secondary mb-3" id="descrizione"></p>
+
+    <div id="caricamento" class="card shadow-sm border-0">
+        <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+            <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+            <span>Caricamento...</span>
+        </div>
+    </div>
+
+    <p class="card card-body shadow-sm border-0 text-body-secondary" id="errore" hidden></p>
+
+    <div class="row g-3" id="contenuto" hidden>
+
+        <!-- Anteprima (prima su telefono) -->
+        <div class="col-md-7 order-md-2">
+            <div class="card card-body shadow-sm border-0 anteprima-fissa">
+                <div class="anteprima-3d" id="anteprima" role="img" aria-label="Anteprima 3D dell'oggetto: trascina per ruotarlo">
+                    <div class="stato-anteprima text-body-secondary" id="statoAnteprima">
+                        <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                        <span>Generazione del modello...</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                    <span class="small text-body-secondary" id="dimensioni"></span>
+                    <span class="small text-body-secondary">Trascina per ruotare, rotella o due dita per ingrandire</span>
+                </div>
+                <div id="messaggioAnteprima" role="status"></div>
+                <button type="button" class="btn btn-primary mt-3" id="scarica" disabled>
+                    <i class="bi bi-download" aria-hidden="true"></i> Scarica STL
+                </button>
+            </div>
+        </div>
+
+        <!-- Misure e salvataggio -->
+        <div class="col-md-5 order-md-1">
+            <form class="card card-body shadow-sm border-0 mb-3" id="formMisure" novalidate>
+                <h3 class="h6 fw-bold mb-3">Misure</h3>
+                <div class="d-flex flex-column gap-3" id="campi"></div>
+                <button type="button" class="btn btn-sm btn-light border mt-3 align-self-start" id="ripristina">
+                    Valori predefiniti
+                </button>
+            </form>
+
+            <form class="card card-body shadow-sm border-0" id="formProgetto" novalidate>
+                <h3 class="h6 fw-bold mb-2" id="titoloProgetto">Salva come progetto</h3>
+                <label class="form-label small fw-semibold mb-1" for="nomeProgetto">Nome del progetto</label>
+                <input type="text" class="form-control" id="nomeProgetto" maxlength="100" required
+                       placeholder="Es. Targhetta di casa Rossi">
+                <div class="d-flex flex-wrap gap-2 mt-2" id="azioniProgetto">
+                    <button type="submit" class="btn btn-outline-primary" id="salva">Salva progetto</button>
+                </div>
+                <div id="messaggioProgetto" role="status"></div>
+            </form>
+        </div>
+    </div>
+
+</main>
+
+<script src="componenti.js"></script>
+<script type="module" src="js/stampa3d-configuratore.js"></script>
+
+</body>
+</html>

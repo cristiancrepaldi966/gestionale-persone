@@ -22,6 +22,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IPasswordHasher<Utente>, PasswordHasher<Utente>>();
 builder.Services.AddScoped<ServizioUtenti>();
 
+// Stampa 3D: generazione dei file STL con OpenSCAD; gli STL recenti restano in memoria (max 64 MB).
+builder.Services.AddMemoryCache(o => o.SizeLimit = 64 * 1024 * 1024);
+builder.Services.AddSingleton<GeneratoreStl>();
+
 // Chiavi dei cookie salvate nel database: l'accesso resta valido dopo riavvii e deploy.
 builder.Services.AddDataProtection()
     .SetApplicationName("GestionalePersone")

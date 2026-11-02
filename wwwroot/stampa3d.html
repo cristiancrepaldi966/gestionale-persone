@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogo - Stampa 3D - Gestionale</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="h4 mb-0 me-auto text-white text-decoration-none fw-bold">Gestionale</a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <div class="small text-body-secondary mb-1"><i class="bi bi-printer" aria-hidden="true"></i> Stampa 3D</div>
+    <h2 class="h3 fw-bold mb-1">Catalogo</h2>
+    <p class="text-body-secondary mb-3">Scegli un oggetto, regola le misure e scarica il file da stampare.</p>
+
+    <div class="row g-3" id="catalogo">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                    <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                    <span>Caricamento...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="componenti.js"></script>
+<script src="js/stampa3d.js"></script>
+
+</body>
+</html>

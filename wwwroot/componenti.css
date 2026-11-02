@@ -384,3 +384,47 @@ body.modale-telefono dialog.finestra[open] {
     border: none;
     line-height: 0;
 }
+
+/* --- Stampa 3D --- */
+
+/* Riquadro dell'anteprima 3D (three.js disegna dentro un <canvas>). */
+.anteprima-3d {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--bs-border-radius);
+    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+    overflow: hidden;
+    touch-action: none;   /* il dito ruota l'oggetto invece di scorrere la pagina */
+}
+
+.anteprima-3d canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.anteprima-3d .stato-anteprima {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(248, 249, 250, 0.75);
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Su computer l'anteprima resta visibile mentre si scorrono le misure. */
+@media (min-width: 768px) {
+    .anteprima-fissa {
+        position: sticky;
+        top: 1rem;
+    }
+}
+
+/* Testi lunghi che vanno a capo dentro una riga flessibile. */
+.min-w-0 {
+    min-width: 0;
+}
