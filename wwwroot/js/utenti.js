@@ -29,8 +29,8 @@ let moduli = [];   // da /api/moduli: { codice, nome, descrizione, livelli }
 // Filtro "Modulo": utenti con accesso a quel modulo. Le autorizzazioni si gestiscono
 // in Admin → Moduli; qui l'elenco le mostra soltanto.
 function preparaModuli() {
-    $("filtroModulo").replaceChildren(new Option("Modulo", ""),
-        ...moduli.map(m => new Option("Con accesso a " + m.nome, m.codice)));
+    $("filtroModulo").replaceChildren(new Option("Modulo", ""), new Option("Super admin", "superadmin"),
+        ...moduli.filter(m => m.livelli.length > 0).map(m => new Option("Con accesso a " + m.nome, m.codice)));
 }
 
 async function caricaUtenti() {
@@ -52,7 +52,7 @@ function mostraUtenti() {
 
     const trovati = utenti.filter(u =>
         `${u.nome} ${u.cognome} ${u.cognome} ${u.nome} ${u.email}`.toLocaleLowerCase("it-IT").includes(testo) &&
-        (filtroModulo === "" || !!u.autorizzazioni[filtroModulo]) &&
+        (filtroModulo === "" || (filtroModulo === "superadmin" ? u.superAdmin : !!u.autorizzazioni[filtroModulo])) &&
         (filtroStato === "" ||
             (filtroStato === "attivi" && u.attivo) ||
             (filtroStato === "disattivati" && !u.attivo) ||
@@ -79,7 +79,7 @@ function rigaUtente(u) {
 
     // 1. Ruolo
     // 1. Autorizzazioni ai moduli
-    const ruolo = etichetteModuli(u.autorizzazioni);
+    const ruolo = etichetteModuli(u.autorizzazioni, u.superAdmin);
     ruolo.classList.add("align-items-center", "mb-1");
     if (u.id === idCorrente) ruolo.appendChild(etichetta("tu", "light"));
     info.appendChild(ruolo);
@@ -124,6 +124,8 @@ function apri(u) {
     $("aiutoPassword").textContent = u
         ? "Lascia vuoto per non cambiarla. Almeno 8 caratteri."
         : "Almeno 8 caratteri.";
+    $("superAdmin").checked = u ? u.superAdmin : false;
+    $("superAdmin").disabled = stessoUtente;
     $("attivo").checked = u ? u.attivo : true;
     $("attivo").disabled = stessoUtente;
     $("rigaAttivo").hidden = !u;                // un utente nuovo è sempre attivo
@@ -161,13 +163,15 @@ async function salva() {
                 nome,
                 cognome,
                 attivo: $("attivo").checked,
+                superAdmin: $("superAdmin").checked,
                 nuovaPassword: password || null
             }))
             : await api(API, jsonBody("POST", {
                 nome,
                 cognome,
                 email: $("email").value.trim(),
-                password
+                password,
+                superAdmin: $("superAdmin").checked
             }));
 
         if (!response.ok) {

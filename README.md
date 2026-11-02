@@ -1,28 +1,26 @@
-# Gestionale Uscite
+# Gestionale
 
-Piccola applicazione ASP.NET Core 10 + PostgreSQL per registrare le uscite (spese)
-divise per categoria, con interfaccia web in `wwwroot/`.
+Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia web in
+`wwwroot/`. Oggi i moduli sono **Gestione finanze** (uscite per categoria) e **Admin**.
 
-- **Uscite** (`index.html`): in alto a destra il pulsante con la lente apre i filtri
-  (categoria, dal, al, sulla stessa riga) e il pulsante **+** inserisce un'uscita; sotto
-  numero e totale delle uscite trovate e l'elenco con modifica ed eliminazione. Un pallino
-  rosso sulla lente indica che ci sono filtri attivi.
-- **Dashboard** (`dashboard.html`, prima voce del menu): stessi filtri delle uscite; i grafici
-  sono in un **carosello** (swipe su telefono, frecce e pallini sopra, frecce della tastiera); grafico
-  a barre delle spese per data (per giorno fino a 2 mesi, altrimenti per mese, con tabella dei
-  dati) e grafico a torta per categoria (al massimo 6 fette, le minori in "Altre", con elenco
-  di importi e percentuali; colore fisso per categoria). Grafici con **Chart.js** (in
-  `wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
-- **Menu**: mostra solo i moduli a cui la persona ha accesso: Dashboard e Uscite (modulo
-  Uscite) e **Admin** con la tendina Utenti / Moduli (modulo Admin).
-- **Icona e colore delle categorie**: ogni categoria ha un'icona (Bootstrap Icons, in
-  `wwwroot/lib/bootstrap-icons`) e un colore scelti dall'amministratore tra quelli ammessi
-  (`Models/AspettoCategoria.cs`). Nell'elenco delle uscite ogni riga ha la striscia del colore
-  e l'icona della categoria; la dashboard usa gli stessi colori e icone.
-- **Admin → Utenti** (solo anagrafica) e **Admin → Moduli → Uscite → Categorie**: stesso layout delle uscite (lente per cercare, + per inserire,
-  modifica nella stessa finestra). Categorie: aggiungi, rinomina, elimina (solo se non usate).
-  Al primo avvio vengono create: Casa, Spesa alimentare, Bollette, Trasporti, Salute,
-  Svago, Altro.
+- **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
+  modulo abilitato con le sue pagine. In alto, la barra mostra un menu per ogni modulo
+  abilitato (es. *Gestione finanze ▾*, *Admin ▾*).
+- **Gestione finanze**:
+  - **Dashboard** (`dashboard.html`): filtri come le uscite; grafici in un **carosello**
+    (swipe su telefono, frecce e pallini sopra): barre delle spese per data (per giorno fino
+    a 2 mesi, altrimenti per mese, con tabella dei dati) e torta per categoria (al massimo 6
+    fette, le minori in "Altre", con importi e percentuali). Grafici con **Chart.js**
+    (`wwwroot/lib/chartjs`). Dati da `GET /api/uscite/riepilogo`.
+  - **Uscite** (`uscite.html`): lente per i filtri (categoria, dal, al), **+** per
+    inserire, elenco con modifica ed eliminazione; ogni riga ha la striscia del colore e
+    l'icona della categoria.
+  - **Categorie** (`categorie.html`, solo Amministratore del modulo): icona (Bootstrap Icons,
+    `wwwroot/lib/bootstrap-icons`) e colore tra quelli ammessi (`Models/AspettoCategoria.cs`);
+    aggiungi, modifica, elimina (solo se non usate). Al primo avvio vengono create: Casa,
+    Spesa alimentare, Bollette, Trasporti, Salute, Svago, Altro.
+- **Admin** (solo Super admin): **Utenti** (anagrafica e Super admin) e **Moduli** (chi
+  accede a ciascun modulo e con che livello).
 
 ## Interfaccia (wwwroot)
 
@@ -87,35 +85,39 @@ dotnet ef migrations add NomeModifica
 ## Moduli e autorizzazioni
 
 L'app è divisa in **moduli** (`Models/Moduli.cs`). Ogni persona ha, per ogni modulo, un
-livello: *Nessuno*, *Utente* o *Amministratore* (tabella `Autorizzazioni`).
+livello: *Nessuno*, *Utente* o *Amministratore* (tabella `Autorizzazioni`). Sopra a tutti
+c'è il **Super admin** (`Utenti.SuperAdmin`).
 
-| Modulo | Contiene | Livelli |
+| Livello | Cosa vede e fa |
+|---|---|
+| **Super admin** | Tutti i moduli, sempre, come Amministratore; è l'unico ad accedere ad **Admin** |
+| **Amministratore** di un modulo | Il modulo e la sua gestione (in Gestione finanze: anche le Categorie) |
+| **Utente** di un modulo | Il modulo (in Gestione finanze: Dashboard e Uscite) |
+| Nessun modulo | Solo la pagina di ingresso, con l'invito a chiedere l'accesso |
+
+| Modulo | Contiene | Livelli assegnabili |
 |---|---|---|
-| **Uscite** | Dashboard, elenco e inserimento delle uscite, categorie | Utente, Amministratore (per ora con gli stessi permessi) |
-| **Admin** | Utenti, autorizzazioni ai moduli | Amministratore |
+| **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
+| **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |
 
-Tutto si gestisce dal modulo **Admin**:
+Dal modulo **Admin** (Super admin):
 
-- **Admin → Utenti**: l'anagrafica delle persone (nome, cognome, email, password, attivo).
-  Un utente appena creato non ha accesso a nessun modulo.
-- **Admin → Moduli**: l'elenco dei moduli. Scegliendo un modulo (es. **Uscite**) si apre la
-  sua pagina:
-  - scheda **Autorizzazioni**: gli utenti che accedono al modulo e il loro livello; con **+**
-    si aggiunge un utente al modulo scegliendo il livello; da ogni riga si cambia il livello
-    o si toglie l'accesso;
-  - scheda **Categorie** (solo Uscite): le categorie del modulo.
-- Valgono subito: alla richiesta successiva la persona ha (o perde) l'accesso.
-- Il server controlla ogni API con una regola per modulo (`Services/Accesso.cs`,
-  classe `Politiche`); le pagine mostrano solo i moduli consentiti e chi apre una pagina
-  senza accesso viene portato alla prima pagina consentita (o a *Nessun accesso*).
-- Le categorie si leggono da Uscite (per sceglierle) e si gestiscono da Admin.
-- Nessuno può togliere a se stesso l'amministrazione del modulo Admin, e deve sempre restare
-  almeno un amministratore attivo del modulo Admin.
+- **Admin → Utenti**: l'anagrafica (nome, cognome, email, password, attivo) e la casella
+  **Super admin**. Un utente appena creato non ha moduli.
+- **Admin → Moduli**: l'elenco dei moduli; scegliendo **Gestione finanze** si vedono gli
+  utenti autorizzati con il loro livello; con **+** si aggiunge un utente scegliendo il livello
+  (anche Amministratore del modulo), da ogni riga si cambia il livello o si toglie l'accesso.
+- Le modifiche valgono subito: alla richiesta successiva la persona ha (o perde) l'accesso.
+- Il server controlla ogni API con una regola (`Services/Accesso.cs`, classe `Politiche`);
+  chi apre una pagina senza accesso torna alla pagina di ingresso.
+- Nessuno può togliere a se stesso il Super admin o disattivarsi, e deve sempre restare
+  almeno un Super admin attivo.
 
 **Aggiungere un modulo**: una riga in `Moduli.Tutti` (codice, nome, descrizione, livelli),
-una regola in `Politiche`, `[Authorize(Policy = ...)]` sui suoi controller, la voce di menu
-in `menuPagine` (`componenti.js`) e `avviaPagina({ modulo: "codice" })` nelle sue pagine.
-Comparirà da solo in Admin → Moduli, pronto per assegnare le autorizzazioni.
+una regola in `Politiche` e `[Authorize(Policy = ...)]` sui suoi controller; in
+`componenti.js` una voce in `MODULI`, `DEFINIZIONE_MODULI` (nome, icona, pagine) e
+`ORDINE_MODULI`; nelle sue pagine `avviaPagina({ modulo: "codice" })`. Comparirà da solo nel
+menu, nella pagina di ingresso e in Admin → Moduli.
 
 ## Accesso e utenti
 
@@ -123,8 +125,8 @@ Per usare l'app bisogna accedere con email e password. Gli utenti (nome, cognome
 autorizzazioni ai moduli) sono salvati nelle tabelle `Utenti` e `Autorizzazioni`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Core Identity).
 
 - **Primo amministratore**: all'avvio, se la tabella `Utenti` è vuota, viene creato con
-  le variabili d'ambiente `ADMIN_EMAIL` e `ADMIN_PASSWORD` (almeno 8 caratteri), con il
-  livello più alto in tutti i moduli.
+  le variabili d'ambiente `ADMIN_EMAIL` e `ADMIN_PASSWORD` (almeno 8 caratteri), come
+  **Super admin**.
   Dopo il primo avvio queste variabili non servono più e si possono togliere.
 - **Nome e cognome**: obbligatori per i nuovi utenti; gli utenti creati prima di questa
   funzione compaiono come "Nome non inserito" finché non vengono completati con *Modifica*.
@@ -134,7 +136,7 @@ autorizzazioni ai moduli) sono salvati nelle tabelle `Utenti` e `Autorizzazioni`
   e `RESET_PASSWORD` (la nuova password, almeno 8 caratteri) e riavvia: all'avvio l'utente
   riceve la nuova password e viene sbloccato e riattivato. Dopo l'accesso **togli le due
   variabili**.
-- **Uscite condivise**: chi ha accesso al modulo Uscite vede e gestisce tutte le uscite; per
+- **Uscite condivise**: chi ha accesso a Gestione finanze vede e gestisce tutte le uscite; per
   ognuna è indicato chi l'ha inserita.
 - **Cambio password**: ognuno può cambiare la propria dalla pagina *Password*; le altre
   sessioni aperte con la vecchia password vengono chiuse.
@@ -171,19 +173,19 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | DELETE | `/api/uscite/{id}`  | Elimina uscita       |
 | GET    | `/api/categorie`    | Elenco categorie     |
 | GET    | `/api/categorie/aspetto` | Icone e colori ammessi |
-| POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (modulo Admin) |
-| PUT/DELETE | `/api/categorie/{id}` | Rinomina / elimina categoria (modulo Admin) |
+| POST   | `/api/categorie`    | Crea categoria con nome, icona, colore (Amministratore di Gestione finanze) |
+| PUT/DELETE | `/api/categorie/{id}` | Modifica / elimina categoria (Amministratore di Gestione finanze) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |
 | POST   | `/api/auth/password`| Cambio della propria password |
-| GET    | `/api/moduli`       | Moduli dell'app e loro livelli (con il numero di utenti per Admin) |
-| GET    | `/api/moduli/{codice}/autorizzazioni` | Utenti con accesso al modulo e livello (modulo Admin) |
-| PUT    | `/api/moduli/{codice}/autorizzazioni/{utenteId}` | Dà accesso / cambia livello, es. `{"livello":"Utente"}` (modulo Admin) |
-| DELETE | `/api/moduli/{codice}/autorizzazioni/{utenteId}` | Toglie l'accesso al modulo (modulo Admin) |
-| GET/POST | `/api/utenti`     | Elenco / crea utenti con autorizzazioni (modulo Admin) |
-| PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (modulo Admin) |
-| PUT    | `/api/utenti/{id}/autorizzazioni` | Solo le autorizzazioni, es. `{"uscite":"Utente","admin":null}` (modulo Admin) |
+| GET    | `/api/moduli`       | Moduli dell'app e loro livelli (con il numero di utenti per il Super admin) |
+| GET    | `/api/moduli/{codice}/autorizzazioni` | Utenti con accesso al modulo e livello (Super admin) |
+| PUT    | `/api/moduli/{codice}/autorizzazioni/{utenteId}` | Dà accesso / cambia livello, es. `{"livello":"Utente"}` (Super admin) |
+| DELETE | `/api/moduli/{codice}/autorizzazioni/{utenteId}` | Toglie l'accesso al modulo (Super admin) |
+| GET/POST | `/api/utenti`     | Elenco / crea utenti con autorizzazioni (Super admin) |
+| PUT/DELETE | `/api/utenti/{id}` | Modifica / elimina utente (Super admin) |
+| PUT    | `/api/utenti/{id}/autorizzazioni` | Solo le autorizzazioni, es. `{"uscite":"Utente","admin":null}` (Super admin) |
 
 Un'uscita richiede data, importo maggiore di zero e categoria; le note (max 1000
 caratteri) sono facoltative. Se i dati non sono validi l'API risponde

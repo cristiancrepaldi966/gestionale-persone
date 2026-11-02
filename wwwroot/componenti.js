@@ -144,23 +144,48 @@ async function esci() {
 // Pagina e barra in alto
 // ---------------------------------------------------------------------------
 
-// Moduli dell'app (devono corrispondere a Models/Moduli.cs).
-const MODULI = { uscite: "uscite", admin: "admin" };
+// Moduli dell'app (codici come in Models/Moduli.cs) con nome, icona e pagine.
+// Menu in alto, pagina di ingresso e controllo delle pagine leggono tutti da qui.
+// amministratore: true = pagina riservata al livello Amministratore del modulo.
+const MODULI = { finanze: "finanze", admin: "admin" };
+
+const DEFINIZIONE_MODULI = {
+    finanze: {
+        nome: "Gestione finanze", icona: "wallet2", descrizione: "Dashboard, uscite e categorie",
+        pagine: [
+            { testo: "Dashboard", href: "/dashboard.html", icona: "bar-chart" },
+            { testo: "Uscite", href: "/uscite.html", icona: "list-ul" },
+            { testo: "Categorie", href: "/categorie.html", icona: "tags", amministratore: true },
+        ]
+    },
+    admin: {
+        nome: "Admin", icona: "shield-lock", descrizione: "Utenti e autorizzazioni ai moduli",
+        pagine: [
+            { testo: "Utenti", href: "/utenti.html", icona: "people" },
+            { testo: "Moduli", href: "/moduli.html", icona: "grid", anche: ["/modulo.html"] },
+        ]
+    },
+};
+
+const ORDINE_MODULI = [MODULI.finanze, MODULI.admin];
 
 // Livello dell'utente in un modulo ("Utente", "Amministratore") o undefined se non ha accesso.
+// Il server dà al Super admin tutti i moduli come Amministratore.
 const livello = (utente, modulo) => (utente.moduli || {})[modulo];
-const eAmministratoreAdmin = utente => livello(utente, MODULI.admin) === "Amministratore";
 
-// Prima pagina a cui l'utente ha accesso.
-function paginaIniziale(utente) {
-    if (livello(utente, MODULI.uscite)) return "/";
-    if (eAmministratoreAdmin(utente)) return "/utenti.html";
-    return "/nessun-accesso.html";
-}
+// Moduli abilitati per l'utente, nell'ordine del menu.
+const moduliAbilitati = utente => ORDINE_MODULI.filter(m => livello(utente, m));
+
+// Pagine del modulo che l'utente può aprire.
+const pagineAbilitate = (utente, modulo) =>
+    DEFINIZIONE_MODULI[modulo].pagine.filter(p => !p.amministratore || livello(utente, modulo) === "Amministratore");
+
+// La pagina di ingresso è per tutti.
+const paginaIniziale = () => "/";
 
 // Controlla l'accesso e disegna la barra in alto. Restituisce l'utente corrente.
 // modulo: la pagina richiede l'accesso a quel modulo; amministratore: richiede il
-// livello Amministratore. Senza accesso si va alla prima pagina consentita.
+// livello Amministratore. Senza accesso si torna alla pagina di ingresso.
 // Se serve cambiare pagina, la promessa non si risolve mai: il resto non viene eseguito.
 async function avviaPagina({ modulo = null, amministratore = false } = {}) {
     const response = await fetch("/api/auth/me", { credentials: "same-origin" });
@@ -189,44 +214,33 @@ async function avviaPagina({ modulo = null, amministratore = false } = {}) {
     return utente;
 }
 
-// Link alle pagine (nav-pills di Bootstrap); quella aperta è evidenziata.
-// Dashboard e Uscite per chi ha il modulo Uscite; "Admin" (Utenti, Moduli) per chi è
-// Amministratore del modulo Admin. Da Moduli si sceglie un modulo e se ne gestiscono
-// autorizzazioni (e, per Uscite, categorie).
+// Barra in alto: un menu a tendina per ogni modulo abilitato (es. "Gestione finanze",
+// "Admin"), con le sue pagine; il modulo della pagina aperta è evidenziato.
 function menuPagine(utente) {
     const menu = el("nav", "menu-pagine nav nav-pills gap-1");
-    const corrente = location.pathname === "/index.html" ? "/" : location.pathname;
+    const corrente = location.pathname;
+    const eCorrente = p => p.href === corrente || (p.anche || []).includes(corrente);
 
-    const voce = (testo, href, classi, attiva) => {
-        const a = el("a", classi, testo);
-        a.href = href;
-        if (attiva) a.setAttribute("aria-current", "page");
-        return a;
-    };
-
-    const pagine = livello(utente, MODULI.uscite) ? [["Dashboard", "/dashboard.html"], ["Uscite", "/"]] : [];
-    for (const [testo, href] of pagine) {
-        const attiva = href === corrente;
-        menu.appendChild(voce(testo, href, "nav-link py-1 px-3 " +
-            (attiva ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), attiva));
-    }
-
-    if (eAmministratoreAdmin(utente)) {
-        const pagineAdmin = [["Utenti", "/utenti.html"], ["Moduli", "/moduli.html"]];
-        // Le pagine di un modulo (autorizzazioni, categorie) fanno parte di "Moduli".
-        const inModuli = ["/modulo.html", "/categorie.html"].includes(corrente);
-        const inAdmin = inModuli || pagineAdmin.some(([, href]) => href === corrente);
+    for (const codice of moduliAbilitati(utente)) {
+        const def = DEFINIZIONE_MODULI[codice];
+        const pagine = pagineAbilitate(utente, codice);
+        const attivo = pagine.some(eCorrente);
 
         const contenitore = el("div", "dropdown");
         const bottone = el("button", "nav-link py-1 px-3 dropdown-toggle " +
-            (inAdmin ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), "Admin");
+            (attivo ? "active" : "link-light link-opacity-75 link-opacity-100-hover"), def.nome);
         bottone.type = "button";
 
         const tendina = el("div", "dropdown-menu shadow");
         tendina.setAttribute("data-bs-theme", "light");
-        for (const [testo, href] of pagineAdmin) {
-            const attiva = href === corrente || (href === "/moduli.html" && inModuli);
-            tendina.appendChild(voce(testo, href, "dropdown-item py-2" + (attiva ? " active" : ""), attiva));
+        for (const p of pagine) {
+            const a = el("a", "dropdown-item py-2 d-flex align-items-center gap-2" + (eCorrente(p) ? " active" : ""));
+            a.href = p.href;
+            if (eCorrente(p)) a.setAttribute("aria-current", "page");
+            const icona = el("i", "bi bi-" + p.icona);
+            icona.setAttribute("aria-hidden", "true");
+            a.append(icona, el("span", null, p.testo));
+            tendina.appendChild(a);
         }
 
         contenitore.append(bottone, tendina);
@@ -283,7 +297,7 @@ function menuProfilo(utente) {
     intestazione.appendChild(el("div", "small text-body-secondary", "Accesso effettuato come"));
     if (nome) intestazione.appendChild(el("div", "fw-bold text-break mt-1", nome));
     intestazione.appendChild(el("div", (nome ? "small text-body-secondary" : "fw-bold mt-1") + " text-break mb-1", utente.email));
-    intestazione.appendChild(etichetteModuli(utente.moduli));
+    intestazione.appendChild(etichetteModuli(utente.moduli, utente.superAdmin));
 
     const cambio = el("a", "dropdown-item py-2", "Cambia password");
     cambio.href = "/password.html";
@@ -572,49 +586,37 @@ function carosello(contenitore) {
 // Moduli e autorizzazioni
 // ---------------------------------------------------------------------------
 
-const NOMI_MODULI = { uscite: "Uscite", admin: "Admin" };
-const ICONE_MODULI = { uscite: "wallet2", admin: "shield-lock" };
-
-// Intestazione delle pagine di un modulo (Admin → Moduli → modulo): percorso e schede.
-// scheda: "autorizzazioni" o "categorie".
-function intestazioneModulo(contenitore, codice, scheda) {
-    const nome = NOMI_MODULI[codice] || codice;
+// Intestazione della pagina di un modulo in Admin → Moduli: percorso e titolo.
+function intestazioneModulo(contenitore, codice) {
+    const def = DEFINIZIONE_MODULI[codice] || { nome: codice, icona: "grid" };
 
     const percorso = el("nav", "small mb-2");
     percorso.setAttribute("aria-label", "Percorso");
     const moduli = el("a", "link-secondary", "Moduli");
     moduli.href = "/moduli.html";
-    percorso.append(moduli, el("span", "text-body-secondary mx-1", "›"), el("span", "fw-semibold", nome));
+    percorso.append(moduli, el("span", "text-body-secondary mx-1", "›"), el("span", "fw-semibold", def.nome));
 
     const titolo = el("div", "d-flex align-items-center gap-2 mb-3");
-    titolo.append(iconaCategoria(ICONE_MODULI[codice] || "grid", "#212529"), el("h2", "h3 fw-bold mb-0", "Modulo " + nome));
+    titolo.append(iconaCategoria(def.icona, "#212529"), el("h2", "h3 fw-bold mb-0", def.nome));
 
-    const schede = el("ul", "nav nav-tabs mb-3");
-    const voci = [["autorizzazioni", "Autorizzazioni", `/modulo.html?codice=${codice}`]];
-    if (codice === MODULI.uscite) voci.push(["categorie", "Categorie", "/categorie.html"]);
-    for (const [chiave, testo, href] of voci) {
-        const li = el("li", "nav-item");
-        const a = el("a", "nav-link" + (chiave === scheda ? " active" : ""), testo);
-        a.href = href;
-        if (chiave === scheda) a.setAttribute("aria-current", "page");
-        li.appendChild(a);
-        schede.appendChild(li);
-    }
-
-    contenitore.replaceChildren(percorso, titolo, schede);
+    contenitore.replaceChildren(percorso, titolo);
 }
 
-// Etichette "Modulo · Livello" (es. "Admin · Amministratore", "Uscite · Utente").
-function etichetteModuli(moduli) {
+// Etichette "Super admin" oppure "Modulo · Livello" (es. "Gestione finanze · Utente").
+// moduli: autorizzazioni registrate; superAdmin: vede tutto.
+function etichetteModuli(moduli, superAdmin = false) {
     const div = el("div", "d-flex flex-wrap gap-1");
-    const voci = Object.entries(moduli || {});
-    if (voci.length === 0) {
+    if (superAdmin) div.appendChild(etichetta("Super admin", "dark"));
+    const voci = Object.entries(moduli || {}).filter(([m]) => !(superAdmin && m === MODULI.admin));
+    if (voci.length === 0 && !superAdmin) {
         div.appendChild(etichetta("Nessun accesso", "danger"));
         return div;
     }
-    for (const [modulo, liv] of voci.sort()) {
-        div.appendChild(etichetta(`${NOMI_MODULI[modulo] || modulo} · ${liv}`,
-            liv === "Amministratore" ? "primary" : "secondary"));
+    if (!superAdmin) {
+        for (const [modulo, liv] of voci) {
+            div.appendChild(etichetta(`${(DEFINIZIONE_MODULI[modulo] || { nome: modulo }).nome} · ${liv}`,
+                liv === "Amministratore" ? "primary" : "secondary"));
+        }
     }
     return div;
 }

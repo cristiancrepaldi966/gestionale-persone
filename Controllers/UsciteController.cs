@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GestionalePersone.Controllers;
 
 [ApiController]
-[Authorize(Policy = Politiche.Uscite)]
+[Authorize(Policy = Politiche.Finanze)]
 [Route("api/uscite")]
 public class UsciteController : ControllerBase
 {

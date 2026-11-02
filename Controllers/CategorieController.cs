@@ -59,10 +59,10 @@ public class CategorieController : ControllerBase
             .Select(c => new CategoriaDto(c.Id, c.Nome, c.Icona, c.Colore, _context.Uscite.Count(u => u.CategoriaId == c.Id)))
             .ToListAsync();
 
-    // Tutti possono leggere le categorie (servono per inserire le uscite);
-    // crearle, rinominarle ed eliminarle è riservato agli amministratori.
+    // Chi accede a Gestione finanze legge le categorie (servono per inserire le uscite);
+    // crearle, modificarle ed eliminarle è dell'Amministratore del modulo (o del Super admin).
     [HttpPost]
-    [Authorize(Policy = Politiche.Admin)]
+    [Authorize(Policy = Politiche.FinanzeAmministratore)]
     public async Task<ActionResult<CategoriaDto>> CreaCategoria(CategoriaRequest categoria)
     {
         var nome = categoria.Nome.Trim();
@@ -83,7 +83,7 @@ public class CategorieController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Policy = Politiche.Admin)]
+    [Authorize(Policy = Politiche.FinanzeAmministratore)]
     public async Task<IActionResult> RinominaCategoria(int id, CategoriaRequest categoria)
     {
         var esistente = await _context.Categorie.FindAsync(id);
@@ -107,7 +107,7 @@ public class CategorieController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = Politiche.Admin)]
+    [Authorize(Policy = Politiche.FinanzeAmministratore)]
     public async Task<IActionResult> EliminaCategoria(int id)
     {
         var categoria = await _context.Categorie.FindAsync(id);

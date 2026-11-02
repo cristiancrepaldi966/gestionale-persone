@@ -1,4 +1,4 @@
-// Pagina Uscite (index.html). Componenti e funzioni comuni: componenti.js.
+// Pagina Uscite (uscite.html, modulo Gestione finanze). Componenti e funzioni comuni: componenti.js.
 
 const API = "/api/uscite";
 let inModifica = null; // uscita in modifica, null se è nuova
@@ -184,7 +184,7 @@ $("nuova").addEventListener("click", () => apri(null));
 $("annulla").addEventListener("click", () => modulo.chiudi());
 alInvio($("formUscita"), salvaUscita);
 
-avviaPagina({ modulo: MODULI.uscite })
+avviaPagina({ modulo: MODULI.finanze })
     .then(caricaCategorie)
     .then(caricaUscite)
     .catch(() => {
