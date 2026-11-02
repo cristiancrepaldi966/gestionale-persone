@@ -113,6 +113,9 @@ using (var scope = app.Services.CreateScope())
 
     await scope.ServiceProvider.GetRequiredService<ServizioUtenti>()
         .CreaAdminIniziale(app.Configuration, app.Logger);
+
+    await scope.ServiceProvider.GetRequiredService<ServizioUtenti>()
+        .ReimpostaPasswordDaVariabili(app.Configuration, app.Logger);
 }
 
 app.UseForwardedHeaders();

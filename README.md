@@ -81,6 +81,10 @@ tabella `Utenti`; le password sono salvate solo come hash (PBKDF2 di ASP.NET Cor
 - **Gestione utenti** (pagina *Utenti*, solo amministratori): creare utenti, renderli
   amministratori, disattivarli, reimpostare la password, eliminarli. Deve sempre restare
   almeno un amministratore attivo.
+- **Password dimenticata / account bloccato**: imposta `RESET_EMAIL` (l'email dell'utente)
+  e `RESET_PASSWORD` (la nuova password, almeno 8 caratteri) e riavvia: all'avvio l'utente
+  riceve la nuova password e viene sbloccato e riattivato. Dopo l'accesso **togli le due
+  variabili**.
 - **Ruoli**: gli amministratori gestiscono uscite, categorie e utenti; gli utenti normali
   uscite e categorie. Tutti gli utenti vedono tutte le uscite; per ognuna è indicato chi l'ha inserita.
 - **Cambio password**: ognuno può cambiare la propria dalla pagina *Password*; le altre
