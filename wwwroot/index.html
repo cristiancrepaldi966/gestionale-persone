@@ -34,17 +34,17 @@
 
     <div class="card" id="pannelloFiltri" hidden>
         <div class="filtri">
-            <label>Categoria
-                <select id="filtroCategoria">
-                    <option value="">Tutte</option>
-                </select>
-            </label>
-            <label>Dal
-                <input type="date" id="dal">
-            </label>
-            <label>Al
-                <input type="date" id="al">
-            </label>
+            <select id="filtroCategoria" aria-label="Categoria" class="vuoto">
+                <option value="">Categoria</option>
+            </select>
+            <span class="campo-data">
+                <input type="date" id="dal" aria-label="Dal" class="vuoto">
+                <span class="segnaposto" aria-hidden="true">Dal</span>
+            </span>
+            <span class="campo-data">
+                <input type="date" id="al" aria-label="Al" class="vuoto">
+                <span class="segnaposto" aria-hidden="true">Al</span>
+            </span>
         </div>
         <div class="filtri-azioni">
             <button type="button" class="link" id="azzera">Azzera filtri</button>
@@ -125,7 +125,7 @@
 
         const filtro = document.getElementById("filtroCategoria");
         const scelta = filtro.value;
-        filtro.replaceChildren(new Option("Tutte", ""),
+        filtro.replaceChildren(new Option("Categoria", ""),
             ...categorie.map(c => new Option(c.nome, c.id)));
         filtro.value = scelta;
 
@@ -302,10 +302,22 @@
         document.getElementById("pallinoFiltri").hidden = parametriRicerca().toString() === "";
     }
 
+    // Classe "vuoto": mostra il segnaposto (Categoria, Dal, Al) in grigio.
+    function aggiornaSegnaposti() {
+        ["filtroCategoria", "dal", "al"].forEach(id => {
+            const campo = document.getElementById(id);
+            campo.classList.toggle("vuoto", campo.value === "");
+        });
+    }
+
     function filtriCambiati() {
+        aggiornaSegnaposti();
         aggiornaPallino();
         caricaUscite();
     }
+
+    ["dal", "al"].forEach(id =>
+        document.getElementById(id).addEventListener("input", aggiornaSegnaposti));
 
     ["filtroCategoria", "dal", "al"].forEach(id =>
         document.getElementById(id).addEventListener("change", filtriCambiati));

@@ -440,21 +440,49 @@ body.in-attesa main {
     gap: 12px;
 }
 
-.filtri label {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    font-size: 14px;
-    font-weight: bold;
-    min-width: 0;
-}
-
 .filtri select,
 .filtri input {
     width: 100%;
     min-width: 0;
     flex: none;
-    font-weight: normal;
+}
+
+/* Segnaposto: "Categoria" nella tendina e "Dal"/"Al" sopra i campi data vuoti. */
+.filtri select.vuoto {
+    color: #9ca3af;
+}
+
+.filtri select option {
+    color: #222;
+}
+
+.campo-data {
+    position: relative;
+    display: block;
+    min-width: 0;
+}
+
+.campo-data .segnaposto {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    display: none;
+}
+
+/* Campo vuoto e non selezionato: nascondi gg/mm/aaaa e mostra il segnaposto. */
+.campo-data input.vuoto:not(:focus) + .segnaposto {
+    display: block;
+}
+
+.campo-data input.vuoto:not(:focus)::-webkit-datetime-edit {
+    color: transparent;
+}
+
+.campo-data input.vuoto:not(:focus) {
+    color: transparent;
 }
 
 .filtri-azioni {
@@ -614,6 +642,11 @@ dialog::backdrop {
     .filtri select,
     .filtri input {
         padding: 8px 6px;
+        font-size: 14px;
+    }
+
+    .campo-data .segnaposto {
+        left: 8px;
         font-size: 14px;
     }
 
