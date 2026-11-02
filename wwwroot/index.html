@@ -151,9 +151,13 @@
         const riepilogo = document.getElementById("riepilogo");
         const numeroRichiesta = ++richiestaCorrente;
 
-        lista.classList.add("in-aggiornamento");
-        // Mantieni l'altezza mentre si carica, così la pagina non "salta".
-        if (lista.offsetHeight) lista.style.minHeight = lista.offsetHeight + "px";
+        // Un solo cerchietto: al primo caricamento c'è già "Caricamento...",
+        // l'effetto di aggiornamento serve solo quando l'elenco è già mostrato.
+        if (!lista.querySelector(".caricamento-elenco")) {
+            lista.classList.add("in-aggiornamento");
+            // Mantieni l'altezza mentre si carica, così la pagina non "salta".
+            if (lista.offsetHeight) lista.style.minHeight = lista.offsetHeight + "px";
+        }
 
         try {
             const response = await api(`${API}?${parametriRicerca()}`);
