@@ -651,14 +651,7 @@ dialog::backdrop {
         font-size: 16px;
     }
 
-    /* Finestra di inserimento ancorata in alto (non centrata): con la tastiera
-       aperta su iPhone resta ferma e i pulsanti restano dove si vedono. */
-    dialog {
-        margin: 12px auto auto;
-        max-height: calc(100dvh - 24px);
-        overflow-y: auto;
-        padding: 20px;
-    }
+
 
     .filtri input[type="date"]::-webkit-calendar-picker-indicator {
         width: 12px;
@@ -808,16 +801,34 @@ button.btn-piccolo.caricamento::after {
     z-index: 1;
 }
 
-/* Pagina ferma sotto la finestra di inserimento. */
-body.finestra-aperta {
-    position: fixed;
-    left: 0;
-    right: 0;
-    overflow: hidden;
+/* Telefono: il modulo di inserimento è una schermata normale al posto
+   dell'elenco (non una finestra sospesa). */
+body.modulo-a-pagina main {
+    display: none;
+}
+
+body.modulo-a-pagina dialog[open] {
+    position: static;
+    display: block;
+    width: auto;
+    max-width: 520px;
+    margin: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+@media (min-width: 552px) {
+    body.modulo-a-pagina dialog[open] {
+        margin: 30px auto;
+    }
 }
 
 /* Niente riquadro azzurro al tocco sui pulsanti (iPhone/Android). */
 button,
 a {
     -webkit-tap-highlight-color: transparent;
+}
+
+#titoloFinestra:focus {
+    outline: none;
 }
