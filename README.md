@@ -94,6 +94,20 @@ dotnet run --environment Development
 
 In ambiente `Development` è disponibile anche Swagger su `/swagger` per provare l'API.
 
+## Prove automatiche
+
+Le prove sono un progetto a parte in `tests/GestionalePersone.Tests` (xUnit), escluso dall'app
+e dall'immagine Docker. Servono il .NET 10 SDK e, per le prove dei file STL, OpenSCAD nel PATH
+(senza, quelle prove vengono saltate). Non serve il database.
+
+```bash
+dotnet test tests/GestionalePersone.Tests
+```
+
+Controllano il riconoscimento delle frasi del modulo IA (forma e misure attese, avvisi, parole
+non capite), i controlli delle misure e i centri dei fori, e la generazione degli STL: forme
+base del modulo IA e oggetti del catalogo Stampa 3D con le misure predefinite.
+
 ## Configurazione del database
 
 La connessione viene letta, in ordine, da:

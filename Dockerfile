@@ -2,13 +2,18 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 
-COPY . .
+# Prima solo il file di progetto: le librerie scaricate restano nella cache di Docker
+# e si riscaricano solo quando cambia il .csproj, non a ogni modifica del codice.
+COPY GestionalePersone.csproj .
 
 RUN dotnet restore "GestionalePersone.csproj"
+
+COPY . .
 
 RUN dotnet publish "GestionalePersone.csproj" \
     -c Release \
     -o /app/publish \
+    --no-restore \
     /p:UseAppHost=false
 
 
