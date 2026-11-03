@@ -44,17 +44,47 @@ a {
     display: contents;
 }
 
+/* Barra allineata al contenuto: stessi margini del .container .contenuto sotto. */
+header.bg-dark {
+    padding-left: max(0.75rem, calc((100% - var(--app-larghezza)) / 2 + 0.75rem)) !important;
+    padding-right: max(0.75rem, calc((100% - var(--app-larghezza)) / 2 + 0.75rem)) !important;
+}
+
+/* Menu e nome del modulo si restringono (nome accorciato con i puntini). */
+.menu-pagine {
+    min-width: 0;
+}
+
 @media (max-width: 575.98px) {
-    /* Telefono: titolo e cerchio sulla prima riga, link sotto. */
-    .menu-pagine {
-        order: 3;
-        width: 100%;
+    /* Telefono: tutto su una riga (Gestionale, Moduli, modulo aperto, cerchio). */
+    header.bg-dark {
+        flex-wrap: nowrap !important;
+        padding-top: 0.6rem !important;
+        padding-bottom: 0.6rem !important;
     }
 
-    /* Voci un po' più compatte su telefono. */
+    header.bg-dark > a.h4 {
+        font-size: 1.15rem;
+        flex: none;
+    }
+
     .menu-pagine .nav-link {
-        padding-left: 0.6rem !important;
-        padding-right: 0.6rem !important;
+        padding-left: 0.4rem !important;
+        padding-right: 0.4rem !important;
+    }
+
+    .menu-pagine .modulo-corrente {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .modulo-corrente::before {
+        margin-right: 0.35rem;
+    }
+
+    /* Schede un po' più vicine: di solito stanno tutte nella larghezza. */
+    .schede-modulo .nav {
+        gap: 0.75rem !important;
     }
 }
 
@@ -83,9 +113,14 @@ a {
     font-size: 1.1rem;
 }
 
-/* Cerchio utente sulla barra scura. */
+/* Cerchio utente sulla barra scura (senza alone). */
 .avatar {
+    flex: none;
     border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.btn-tondo.avatar {
+    box-shadow: none;
 }
 
 .avatar:hover,
@@ -434,16 +469,21 @@ body.modale-telefono dialog.finestra[open] {
 /* Nome del modulo aperto accanto alla tendina "Moduli". */
 .modulo-corrente {
     max-width: 14rem;
+    min-width: 0;
 }
 
+/* Separatore "›" tra "Moduli" e il nome del modulo (fuori dal testo accorciato). */
 .modulo-corrente::before {
-    content: "·";
+    content: "\203A";
     margin-right: 0.5rem;
     opacity: 0.5;
 }
 
 /* Schede delle pagine del modulo: scorrono in orizzontale su telefono. */
 .schede-modulo .nav {
+    /* .nav di Bootstrap toglie il margine del .container: le schede tornano in colonna col contenuto. */
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
     overflow-x: auto;
     scrollbar-width: none;
 }

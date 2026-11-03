@@ -243,13 +243,14 @@ const eCorrente = p => p.href === location.pathname || (p.anche || []).includes(
 // Barra in alto: la tendina "Moduli" con i soli moduli abilitati per l'utente (ognuno porta
 // alla sua pagina principale) e, accanto, il nome del modulo aperto.
 function menuModuli(utente, moduloCorrente) {
-    const menu = el("nav", "menu-pagine nav nav-pills align-items-center gap-1");
+    const menu = el("nav", "menu-pagine nav nav-pills flex-nowrap align-items-center gap-1");
     menu.setAttribute("aria-label", "Moduli");
 
     const contenitore = el("div", "dropdown");
     const bottone = el("button", "nav-link py-1 px-3 dropdown-toggle link-light link-opacity-75 link-opacity-100-hover");
     bottone.type = "button";
-    bottone.append(el("i", "bi bi-grid-3x3-gap me-1"), document.createTextNode("Moduli"));
+    bottone.setAttribute("aria-label", "Moduli");   // su telefono, dentro un modulo, si vede solo l'icona
+    bottone.append(el("i", "bi bi-grid-3x3-gap"), el("span", moduloCorrente ? "d-none d-sm-inline ms-1" : "ms-1", "Moduli"));
     bottone.firstChild.setAttribute("aria-hidden", "true");
 
     const tendina = el("div", "dropdown-menu shadow");

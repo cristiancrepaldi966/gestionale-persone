@@ -16,10 +16,14 @@ function riquadroModulo(utente, codice) {
     info.append(el("div", "fw-bold fs-5", def.nome), el("div", "small text-body-secondary", def.descrizione));
     testa.append(iconaCategoria(def.icona, def.colore || "#6c757d"), info);
 
-    const livelloModulo = utente.superAdmin ? "Super admin" : livello(utente, codice);
-    const badge = etichetta(livelloModulo, utente.superAdmin ? "dark" :
-        livelloModulo === "Amministratore" ? "primary" : "secondary");
-    badge.classList.add("align-self-start");
+    // Il livello nel modulo; il Super admin lo vede una volta sola, sotto il saluto.
+    const parti = [testa];
+    if (!utente.superAdmin) {
+        const livelloModulo = livello(utente, codice);
+        const badge = etichetta(livelloModulo, livelloModulo === "Amministratore" ? "primary" : "secondary");
+        badge.classList.add("align-self-start");
+        parti.push(badge);
+    }
 
     const collegamenti = el("div", "d-flex flex-wrap gap-2 mt-auto");
     for (const p of pagine) {
@@ -31,7 +35,7 @@ function riquadroModulo(utente, codice) {
         collegamenti.appendChild(a);
     }
 
-    corpo.append(testa, badge, collegamenti);
+    corpo.append(...parti, collegamenti);
     card.appendChild(corpo);
     col.appendChild(card);
     return col;
@@ -57,6 +61,11 @@ avviaPagina().then(utente => {
     }
 
     $id("sottotitolo").textContent = moduli.length === 1 ? "Ecco il tuo modulo." : "Scegli un modulo.";
+    if (utente.superAdmin) {
+        const badge = etichetta("Super admin", "dark");
+        badge.classList.add("ms-2", "align-middle");
+        $id("sottotitolo").appendChild(badge);
+    }
     $id("moduli").replaceChildren(...moduli.map(m => riquadroModulo(utente, m)));
 });
 
