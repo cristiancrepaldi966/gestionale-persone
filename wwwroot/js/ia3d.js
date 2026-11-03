@@ -1,7 +1,9 @@
 // Pagina IA 3D del modulo IA (ia3d.html): si descrive un pezzo a parole e il server ne
-// riconosce forma e misure (POST /api/ia/3d/riconosci). Sotto compaiono cosa è stato capito,
-// il disegno tecnico con le quote (SVG costruito qui dalle misure) e l'anteprima 3D del file
-// STL (POST /api/ia/3d/stl), da scaricare.
+// riconosce forma e misure (POST /api/ia/3d/riconosci). Se manca qualcosa di essenziale fa
+// domande, una alla volta: la pagina rimanda ogni volta la descrizione con tutte le risposte.
+// Poi mostra cosa ha capito, il disegno tecnico con le quote (SVG costruito qui) e l'anteprima
+// 3D del file STL (POST /api/ia/3d/stl), e chiede "È il pezzo che volevi?": con "Sì" si può
+// scaricare l'STL, con "Correggo" si cambiano le misure a mano (POST /api/ia/3d/pezzo).
 // Componenti e funzioni comuni: componenti.js (script classico, caricato prima).
 
 import { Anteprima } from "./stampa3d-anteprima.js";
@@ -15,83 +17,212 @@ const ESEMPI = [
     "cilindro diametro 30 alto 50 con un foro centrale da 8",
     "tubo diametro 20 interno 16 lungo 100",
     "cubo 20 con angoli arrotondati",
-    "cono base 40 punta 10 alto 30",
+    "scatolina 50x30 con un buco",
     "sfera 4 cm",
 ];
 
-let anteprima = null;
-let ultimo = null;          // ultimo pezzo riconosciuto
+let forme = [];             // forme e campi della correzione (GET /api/ia/3d/forme)
+let testo = "";             // descrizione in corso
+let risposte = {};          // codice della domanda → risposta data
+let storia = [];            // domande già fatte: { domanda, risposta }
+let riepilogo = null;       // cosa è stato capito della descrizione (capito, non capito, avvisi)
+let pezzo = null;           // pezzo mostrato: parametri, fori, ingombro, misure
 let ultimoStl = null;       // ArrayBuffer del suo STL
+let confermato = false;
+let anteprima = null;
 let richiestaCorrente = 0;
 
+const icona = nome => {
+    const i = el("i", "bi bi-" + nome);
+    i.setAttribute("aria-hidden", "true");
+    return i;
+};
+
 // ---------------------------------------------------------------------------
-// Riconoscimento
+// Riconoscimento e domande
 // ---------------------------------------------------------------------------
 
-async function riconosci() {
-    const messaggio = $("messaggio");
-    messaggio.textContent = "";
-    const testo = $("descrizione").value.trim();
+// Nuova descrizione: si riparte da zero con le domande.
+function nuovaDescrizione() {
+    $("messaggio").textContent = "";
+    testo = $("descrizione").value.trim();
     if (!testo) {
-        mostraMessaggio(messaggio, "Descrivi il pezzo da creare.");
+        mostraMessaggio($("messaggio"), "Descrivi il pezzo da creare.");
         $("descrizione").focus();
         return;
     }
+    risposte = {};
+    storia = [];
+    return chiedi();
+}
 
+async function chiedi() {
     const numeroRichiesta = ++richiestaCorrente;
     let response;
     try {
-        response = await api("/api/ia/3d/riconosci", jsonBody("POST", { testo }));
+        response = await api("/api/ia/3d/riconosci", jsonBody("POST", { testo, risposte }));
     } catch {
-        if (numeroRichiesta === richiestaCorrente) mostraMessaggio(messaggio, "Errore nel collegamento al server.");
+        if (numeroRichiesta === richiestaCorrente) mostraMessaggio($("messaggio"), "Errore nel collegamento al server.");
         return;
     }
     if (numeroRichiesta !== richiestaCorrente) return;
 
     if (!response.ok) {
-        $("risultato").hidden = true;
-        mostraMessaggio(messaggio, await messaggioErrore(response, "Non sono riuscito a riconoscere il pezzo."));
+        nascondiTutto();
+        mostraMessaggio($("messaggio"), await messaggioErrore(response, "Non sono riuscito a riconoscere il pezzo."));
+        return;
+    }
+    const r = await response.json();
+    if (numeroRichiesta !== richiestaCorrente) return;
+
+    if (r.domande.length > 0) {
+        mostraDomanda(r);
         return;
     }
 
-    ultimo = await response.json();
-    if (numeroRichiesta !== richiestaCorrente) return;
-    mostraRiconoscimento(ultimo);
-    generaModello(ultimo, numeroRichiesta);   // senza attendere: il pulsante torna subito libero
+    $("dialogo").hidden = true;
+    riepilogo = { capito: r.capito, nonCapito: r.nonCapito, avvisi: r.avvisi };
+    if (r.errori.length > 0) {
+        // Misure impossibili: si correggono a mano partendo da quelle capite.
+        mostraRiepilogo(r.nomeForma, r.misure);
+        $("vista").hidden = true;
+        $("conferma").hidden = true;
+        apriCorrezione(r.parametri, r.errori.join(" "));
+        return;
+    }
+    mostraPezzo(r);
 }
 
-function mostraRiconoscimento(r) {
-    $("risultato").hidden = false;
-    $("nomeForma").textContent = r.nomeForma;
-    $("misure").replaceChildren(...r.misure.map(rigaMisura));
+function nascondiTutto() {
+    $("dialogo").hidden = true;
+    $("risultato").hidden = true;
+}
 
-    $("capito").replaceChildren(...r.capito.map(p => {
-        const li = el("li", "d-flex gap-2 mb-1");
-        const icona = el("i", "bi bi-check2 text-success");
-        icona.setAttribute("aria-hidden", "true");
-        const testo = el("span");
-        testo.append(el("span", "fw-semibold", `«${p.testo}»`), ` → ${p.significato}`);
-        li.append(icona, testo);
-        return li;
+// Una domanda alla volta, con sopra quelle già fatte e le risposte date.
+function mostraDomanda(r) {
+    $("risultato").hidden = true;
+    $("dialogo").hidden = false;
+    const d = r.domande[0];
+
+    $("storia").replaceChildren(...storia.map(s => {
+        const riga = el("div", "small mb-2");
+        riga.append(el("div", "text-body-secondary", s.domanda), el("div", "fw-semibold", "→ " + s.risposta));
+        return riga;
     }));
+    $("storia").hidden = storia.length === 0;
+
+    const contenuto = [el("p", "fw-semibold mb-2", d.testo)];
+    let primo = null;
+
+    if (d.tipo === "numero") {
+        const form = el("form", "d-flex flex-wrap align-items-start gap-2");
+        form.noValidate = true;
+        const gruppo = el("div", "input-group campo-domanda");
+        const input = el("input", "form-control");
+        input.type = "number";
+        input.inputMode = "decimal";
+        input.step = "any";
+        if (d.min != null) input.min = d.min;
+        if (d.max != null) input.max = d.max;
+        if (d.suggerito != null) input.placeholder = "es. " + mm(d.suggerito);
+        input.setAttribute("aria-label", d.testo);
+        gruppo.appendChild(input);
+        if (d.unita) gruppo.appendChild(el("span", "input-group-text", d.unita));
+        const avanti = el("button", "btn btn-primary", "Avanti");
+        avanti.type = "submit";
+        form.append(gruppo, avanti);
+        const errore = el("div", "w-100");
+        form.appendChild(errore);
+        alInvio(form, () => {
+            const v = input.value === "" ? NaN : Number(input.value);
+            if (!Number.isFinite(v) || (d.min != null && v < d.min) || (d.max != null && v > d.max)) {
+                mostraMessaggio(errore, d.min != null && d.max != null
+                    ? `Scrivi un numero tra ${mm(d.min)} e ${mm(d.max)}.` : "Scrivi un numero.");
+                input.focus();
+                return;
+            }
+            return rispondi(d, String(v), mm(v) + (d.unita ? " " + d.unita : ""));
+        });
+        contenuto.push(form);
+        if (d.aiuto) contenuto.push(el("div", "form-text", d.aiuto));
+        primo = input;
+    }
+
+    if (d.opzioni.length > 0) {
+        const scelte = el("div", "d-flex flex-wrap gap-2" + (d.tipo === "numero" ? " mt-2" : ""));
+        for (const o of d.opzioni) {
+            const b = pulsante(o.etichetta, d.tipo === "numero" ? "btn btn-sm btn-light border" : "btn btn-outline-primary",
+                () => rispondi(d, o.valore, o.etichetta));
+            scelte.appendChild(b);
+            primo ??= b;
+        }
+        contenuto.push(scelte);
+    }
+
+    $("domanda").replaceChildren(...contenuto);
+
+    // Quello che ha già capito, per dare contesto alla domanda.
+    const finora = r.capito.map(p => `«${p.testo}» → ${p.significato}`);
+    $("finora").textContent = finora.length ? "Finora ho capito: " + finora.join(" · ") : "";
+    $("finora").hidden = finora.length === 0;
+
+    // Su telefono la domanda può finire sotto gli esempi: la si porta in vista.
+    $("dialogo").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (primo && !schermoTouch) primo.focus({ preventScroll: true });
+}
+
+function rispondi(d, valore, etichetta) {
+    if (d.codice === "parole" && valore === "riscrivi") {
+        nascondiTutto();
+        mostraMessaggio($("messaggio"), "Riscrivi la descrizione e premi Riconosci.", "successo");
+        $("descrizione").focus();
+        $("descrizione").select();
+        return;
+    }
+    risposte[d.codice] = valore;
+    // Nella storia la risposta senza il suggerimento "(dalle misure)".
+    storia.push({ domanda: d.testo, risposta: etichetta.replace(/ \(dalle misure\)$/, "") });
+    return chiedi();
+}
+
+function ricomincia() {
+    risposte = {};
+    storia = [];
+    return chiedi();
+}
+
+// ---------------------------------------------------------------------------
+// Riepilogo, conferma, correzione
+// ---------------------------------------------------------------------------
+
+function mostraRiepilogo(nomeForma, misure) {
+    $("risultato").hidden = false;
+    $("nomeForma").textContent = nomeForma;
+    $("misure").replaceChildren(...misure.map(rigaMisura));
+
+    const rigaElenco = (nomeIcona, classe, ...contenuto) => {
+        const li = el("li", "d-flex gap-2 mb-1 " + classe);
+        const testoRiga = el("span");
+        testoRiga.append(...contenuto);
+        li.append(icona(nomeIcona), testoRiga);
+        return li;
+    };
+
+    $("capito").replaceChildren(
+        ...riepilogo.capito.map(p => rigaElenco("check2 text-success", "",
+            el("span", "fw-semibold", `«${p.testo}»`), ` → ${p.significato}`)),
+        ...storia.map(s => rigaElenco("chat-left-text text-primary", "",
+            el("span", "text-body-secondary", s.domanda + " "), el("span", "fw-semibold", s.risposta))));
 
     // L'attributo hidden sta sul contenitore: su un elemento con d-flex non avrebbe effetto.
     const nonCapito = $("nonCapito");
     const parole = el("div", "d-flex flex-wrap align-items-center gap-1");
     parole.append(el("span", "small text-body-secondary me-1", "Parole non usate:"),
-        ...r.nonCapito.map(p => el("span", "badge rounded-pill text-bg-light border fw-normal", p)));
+        ...riepilogo.nonCapito.map(p => el("span", "badge rounded-pill text-bg-light border fw-normal", p)));
     nonCapito.replaceChildren(parole);
-    nonCapito.hidden = r.nonCapito.length === 0;
+    nonCapito.hidden = riepilogo.nonCapito.length === 0;
 
-    $("avvisi").replaceChildren(...r.avvisi.map(a => {
-        const li = el("li", "d-flex gap-2 mb-1 text-body-secondary");
-        const icona = el("i", "bi bi-info-circle");
-        icona.setAttribute("aria-hidden", "true");
-        li.append(icona, el("span", null, a));
-        return li;
-    }));
-
-    disegna(r);
+    $("avvisi").replaceChildren(...riepilogo.avvisi.map(a => rigaElenco("info-circle", "text-body-secondary", a)));
 }
 
 function rigaMisura(m) {
@@ -105,28 +236,141 @@ function rigaMisura(m) {
     return riga;
 }
 
+// Pezzo valido: riepilogo, disegno, 3D e domanda di conferma.
+function mostraPezzo(p) {
+    pezzo = p;
+    mostraRiepilogo(p.nomeForma, p.misure);
+    $("vista").hidden = false;
+    $("conferma").hidden = false;
+    $("correzione").hidden = true;
+    disegna(p);
+    impostaConferma(false);
+    generaModello(p, richiestaCorrente);
+    if (storia.length > 0) $("risultato").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function impostaConferma(valore) {
+    confermato = valore;
+    $("chiediConferma").hidden = valore;
+    $("confermato").hidden = !valore;
+    aggiornaScarica();
+}
+
+function aggiornaScarica() {
+    $("scarica").disabled = !(confermato && ultimoStl);
+    $("notaScarica").hidden = confermato;
+}
+
+// Campi con tutte le misure della forma (si può cambiare anche la forma).
+function apriCorrezione(parametri, errore) {
+    impostaConferma(false);
+    $("correzione").hidden = false;
+    $("cForma").replaceChildren(...forme.map(f => new Option(f.nome, f.codice)));
+    $("cForma").value = parametri.forma;
+    $("formCorrezione").dataset.base = JSON.stringify(parametri);
+    campiCorrezione(parametri);
+    if (errore) mostraMessaggio($("messaggioCorrezione"), errore);
+    else $("messaggioCorrezione").textContent = "";
+    $("correzione").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function campiCorrezione(parametri) {
+    const forma = forme.find(f => f.codice === $("cForma").value);
+    const campi = forma.misure.map(c => campoNumero("c_" + c.nome, c.etichetta, parametri[c.nome], c.min, c.max, "mm"));
+    if (forma.fori) {
+        campi.push(campoNumero("c_fori", "Numero di fori", parametri.fori, 0, 50, null, 1));
+        campi.push(campoNumero("c_diametro_fori", "Diametro dei fori", parametri.diametro_fori, 0.5, 100, "mm"));
+        const colonna = el("div", "col-sm-6");
+        const etichettaCampo = el("label", "form-label small fw-semibold mb-1", "Posizione dei fori");
+        etichettaCampo.htmlFor = "c_posizione_fori";
+        const select = el("select", "form-select");
+        select.id = "c_posizione_fori";
+        select.append(...forma.posizioniFori.map(o => new Option(o.etichetta, o.valore)));
+        select.value = forma.posizioniFori.some(o => o.valore === parametri.posizione_fori)
+            ? parametri.posizione_fori : forma.posizioniFori[0].valore;
+        colonna.append(etichettaCampo, select);
+        campi.push(colonna);
+    }
+    $("campiCorrezione").replaceChildren(...campi);
+}
+
+function campoNumero(id, etichetta, valore, min, max, unita, passo = "any") {
+    const colonna = el("div", "col-sm-6");
+    const etichettaCampo = el("label", "form-label small fw-semibold mb-1", etichetta);
+    etichettaCampo.htmlFor = id;
+    const input = el("input", "form-control");
+    input.type = "number";
+    input.id = id;
+    input.inputMode = "decimal";
+    input.min = min;
+    input.max = max;
+    input.step = passo;
+    input.required = true;
+    input.value = valore ?? "";
+    if (unita) {
+        const gruppo = el("div", "input-group");
+        gruppo.append(input, el("span", "input-group-text", unita));
+        colonna.append(etichettaCampo, gruppo);
+    } else {
+        colonna.append(etichettaCampo, input);
+    }
+    colonna.appendChild(el("div", "form-text", `Da ${mm(min)} a ${mm(max)}${unita ? " " + unita : ""}.`));
+    return colonna;
+}
+
+async function salvaCorrezione() {
+    const messaggio = $("messaggioCorrezione");
+    const forma = forme.find(f => f.codice === $("cForma").value);
+    const parametri = { ...JSON.parse($("formCorrezione").dataset.base), forma: forma.codice };
+
+    const nomi = forma.misure.map(c => c.nome).concat(forma.fori ? ["fori", "diametro_fori"] : []);
+    for (const nome of nomi) {
+        const input = $("c_" + nome);
+        if (!input.checkValidity()) {
+            mostraMessaggio(messaggio, `${input.closest(".col-sm-6").querySelector("label").textContent}: ` +
+                `scrivi un numero tra ${mm(Number(input.min))} e ${mm(Number(input.max))}.`);
+            input.focus();
+            return;
+        }
+        parametri[nome] = Number(input.value);
+    }
+    if (forma.fori) parametri.posizione_fori = $("c_posizione_fori").value;
+    else parametri.fori = 0;
+
+    const response = await api("/api/ia/3d/pezzo", jsonBody("POST", { parametri }));
+    if (!response.ok) {
+        mostraMessaggio(messaggio, await messaggioErrore(response, "Misure non valide."));
+        return;
+    }
+    const p = await response.json();
+    ++richiestaCorrente;   // un'eventuale generazione in corso non serve più
+    riepilogo = { ...riepilogo, avvisi: [...riepilogo.avvisi.filter(a => !a.startsWith("Hai corretto")), "Hai corretto le misure a mano."] };
+    mostraPezzo(p);
+    $("conferma").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 // ---------------------------------------------------------------------------
 // Modello 3D e download
 // ---------------------------------------------------------------------------
 
-function statoAnteprima(testo, inCorso) {
+function statoAnteprima(testoStato, inCorso) {
     const stato = $("statoAnteprima");
-    stato.hidden = !testo;
-    if (!testo) return;
-    const figli = [el("span", null, testo)];
+    stato.hidden = !testoStato;
+    if (!testoStato) return;
+    const figli = [el("span", null, testoStato)];
     if (inCorso) figli.unshift(cerchietto());
     stato.replaceChildren(...figli);
 }
 
-async function generaModello(r, numeroRichiesta) {
+async function generaModello(p, numeroRichiesta) {
     ultimoStl = null;
-    $("scarica").disabled = true;
+    aggiornaScarica();
     $("dimensioni").textContent = "";
     $("messaggioAnteprima").textContent = "";
     statoAnteprima("Generazione del modello...", true);
 
     try {
-        const response = await api("/api/ia/3d/stl", jsonBody("POST", { parametri: r.parametri }));
+        const response = await api("/api/ia/3d/stl", jsonBody("POST", { parametri: p.parametri }));
         if (numeroRichiesta !== richiestaCorrente) return;
         if (!response.ok) {
             statoAnteprima("Anteprima non disponibile", false);
@@ -141,7 +385,7 @@ async function generaModello(r, numeroRichiesta) {
         const d = anteprima.mostra(buffer, { reinquadra: true });
         $("dimensioni").textContent = `Ingombro ${mm(d.x)} × ${mm(d.y)} × ${mm(d.z)} mm`;
         statoAnteprima("", false);
-        $("scarica").disabled = false;
+        aggiornaScarica();
     } catch {
         if (numeroRichiesta === richiestaCorrente) {
             statoAnteprima("Anteprima non disponibile", false);
@@ -151,11 +395,11 @@ async function generaModello(r, numeroRichiesta) {
 }
 
 function scarica() {
-    if (!ultimoStl || !ultimo) return;
+    if (!ultimoStl || !pezzo || !confermato) return;
     const url = URL.createObjectURL(new Blob([ultimoStl], { type: "model/stl" }));
     const a = el("a");
     a.href = url;
-    a.download = `ia3d-${ultimo.forma}.stl`;
+    a.download = `ia3d-${pezzo.forma}.stl`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -481,17 +725,17 @@ function disegna(r) {
 // Avvio
 // ---------------------------------------------------------------------------
 
-function avvio() {
+async function avvio() {
     const modulo = DEFINIZIONE_MODULI[MODULI.ia];
     $("titolo").prepend(iconaCategoria(modulo.icona, modulo.colore));
 
-    $("esempi").replaceChildren(...ESEMPI.map(testo =>
-        pulsante(testo, "btn btn-sm btn-light border", () => {
-            $("descrizione").value = testo;
-            return riconosci();
+    $("esempi").replaceChildren(...ESEMPI.map(esempio =>
+        pulsante(esempio, "btn btn-sm btn-light border", () => {
+            $("descrizione").value = esempio;
+            return nuovaDescrizione();
         })));
 
-    alInvio($("formDescrizione"), riconosci);
+    alInvio($("formDescrizione"), nuovaDescrizione);
 
     // Invio = Riconosci (Maiusc + Invio va a capo).
     $("descrizione").addEventListener("keydown", e => {
@@ -501,7 +745,20 @@ function avvio() {
         }
     });
 
+    $("ricomincia").addEventListener("click", () => conAttesa($("ricomincia"), ricomincia));
+    $("giusto").addEventListener("click", () => impostaConferma(true));
+    $("correggo").addEventListener("click", () => apriCorrezione(pezzo.parametri));
+    $("correggiAncora").addEventListener("click", () => apriCorrezione(pezzo.parametri));
+    $("cForma").addEventListener("change", () => campiCorrezione(JSON.parse($("formCorrezione").dataset.base)));
+    alInvio($("formCorrezione"), salvaCorrezione);
+    $("annullaCorrezione").addEventListener("click", () => {
+        $("correzione").hidden = true;
+        if (!pezzo || $("vista").hidden) $("risultato").hidden = true;
+    });
     $("scarica").addEventListener("click", scarica);
+
+    const response = await api("/api/ia/3d/forme");
+    if (response.ok) forme = await response.json();
 }
 
 avviaPagina({ modulo: MODULI.ia }).then(avvio);

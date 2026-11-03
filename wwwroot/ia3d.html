@@ -20,7 +20,7 @@
     <div class="d-flex align-items-center gap-2 mb-1" id="titolo">
         <h2 class="h3 fw-bold mb-0">IA 3D</h2>
     </div>
-    <p class="text-body-secondary mb-3">Descrivi un pezzo semplice: riconosco forma e misure, ti mostro il disegno con le quote e il modello 3D da stampare.</p>
+    <p class="text-body-secondary mb-3">Descrivi un pezzo semplice: riconosco forma e misure, ti chiedo quello che manca, poi ti mostro il disegno con le quote e il modello 3D da stampare.</p>
 
     <!-- Descrizione -->
     <form class="card card-body shadow-sm border-0 mb-3" id="formDescrizione" novalidate>
@@ -42,6 +42,18 @@
             <div class="d-flex flex-wrap gap-2" id="esempi"></div>
         </div>
     </form>
+
+    <!-- Domande, una alla volta -->
+    <section class="card card-body shadow-sm border-0 mb-3" id="dialogo" aria-labelledby="titoloDialogo" aria-live="polite" hidden>
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-chat-dots text-primary fs-5" aria-hidden="true"></i>
+            <h3 class="h6 fw-bold mb-0 me-auto" id="titoloDialogo">Mi serve qualche informazione</h3>
+            <button type="button" class="btn btn-sm btn-light border" id="ricomincia">Ricomincia</button>
+        </div>
+        <div class="border-start border-3 ps-3 mb-3" id="storia" hidden></div>
+        <div id="domanda"></div>
+        <div class="small text-body-secondary mt-3" id="finora" hidden></div>
+    </section>
 
     <div id="risultato" hidden>
 
@@ -65,7 +77,50 @@
             </div>
         </section>
 
-        <div class="row g-3">
+        <!-- È il pezzo giusto? -->
+        <section class="card card-body shadow-sm border-0 mb-3 conferma-pezzo" id="conferma" aria-live="polite" hidden>
+            <!-- hidden sta sui contenitori: su un elemento con d-flex non avrebbe effetto -->
+            <div id="chiediConferma">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="fw-semibold me-auto">È il pezzo che volevi?</span>
+                <button type="button" class="btn btn-success" id="giusto">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i> Sì, è giusto
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="correggo">
+                    <i class="bi bi-pencil" aria-hidden="true"></i> Correggo
+                </button>
+            </div>
+            </div>
+            <div id="confermato" hidden>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <span class="text-success fw-semibold me-auto">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Confermato: puoi scaricare il file STL.
+                </span>
+                <button type="button" class="btn btn-sm btn-light border" id="correggiAncora">Correggo ancora</button>
+            </div>
+            </div>
+        </section>
+
+        <!-- Correzione a mano -->
+        <section class="card card-body shadow-sm border-0 mb-3" id="correzione" aria-labelledby="titoloCorrezione" hidden>
+            <h3 class="h6 fw-bold mb-3" id="titoloCorrezione">Correggi le misure</h3>
+            <form id="formCorrezione" novalidate>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label small fw-semibold mb-1" for="cForma">Forma</label>
+                        <select class="form-select" id="cForma"></select>
+                    </div>
+                </div>
+                <div class="row g-3 mt-0" id="campiCorrezione"></div>
+                <div id="messaggioCorrezione" role="status"></div>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">Aggiorna</button>
+                    <button type="button" class="btn btn-light border" id="annullaCorrezione">Annulla</button>
+                </div>
+            </form>
+        </section>
+
+        <div class="row g-3" id="vista">
             <!-- Disegno con le quote -->
             <div class="col-lg-6">
                 <section class="card card-body shadow-sm border-0 h-100" aria-labelledby="titoloDisegno">
@@ -90,6 +145,7 @@
                     <button type="button" class="btn btn-primary mt-3 align-self-start" id="scarica" disabled>
                         <i class="bi bi-download" aria-hidden="true"></i> Scarica STL
                     </button>
+                    <div class="small text-body-secondary mt-1" id="notaScarica">Prima conferma che il pezzo è giusto.</div>
                 </section>
             </div>
         </div>

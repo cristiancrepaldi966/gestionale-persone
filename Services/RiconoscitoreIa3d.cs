@@ -12,6 +12,11 @@ namespace GestionalePersone.Services;
 // (mm, cm), dimensioni "AxBxC", fori (numero, diametro, viti M3/M4..., posizione) e angoli
 // arrotondati. Le misure non scritte prendono un valore predefinito, segnalato.
 // I valori ottenuti vanno poi controllati con FormeBaseIa3d.Valida.
+//
+// Dialogo: quando manca qualcosa di essenziale (la forma, una misura principale, numero o
+// diametro dei fori) o restano parole non capite, invece di inventare un valore il risultato
+// contiene delle domande. La pagina le pone una alla volta e rimanda la stessa frase con
+// tutte le risposte date (codice della domanda → valore): il server non ricorda nulla.
 public static class RiconoscitoreIa3d
 {
     public const int LunghezzaMassima = 300;
@@ -22,16 +27,60 @@ public static class RiconoscitoreIa3d
     // Una misura del pezzo, già scritta per l'utente (es. "100 mm").
     public record Misura(string Nome, string Etichetta, string Valore, bool Predefinita);
 
-    // Forma null: non è stato possibile capire che pezzo serve.
+    public static class TipiDomanda
+    {
+        public const string Scelta = "scelta";   // si risponde con uno dei pulsanti
+        public const string Numero = "numero";   // si scrive un numero; le opzioni sono scorciatoie
+    }
+
+    public record Opzione(string Valore, string Etichetta);
+
+    // Codice: "forma", "parole", "misura:<nome>" (anche "misura:lato"), "fori:numero",
+    // "fori:diametro", "fori:posizione". Suggerito: valore proposto (segnaposto del campo).
+    public record Domanda(string Codice, string Testo, string Tipo, Opzione[] Opzioni,
+        string? Unita = null, decimal? Min = null, decimal? Max = null, decimal? Suggerito = null, string? Aiuto = null);
+
+    // Forma null: serve ancora sapere che forma ha il pezzo (c'è la domanda "forma").
+    // Con domande da fare, le misure non ancora note hanno un valore provvisorio.
     public record Risultato(
         string? Forma,
         Dictionary<string, object> Parametri,
         List<Parte> Capito,
         List<string> NonCapito,
         List<string> Avvisi,
-        List<Misura> Misure);
+        List<Misura> Misure,
+        List<Domanda> Domande);
 
-    public static Risultato Riconosci(string testo) => new Lettura(testo).Esegui();
+    public static Risultato Riconosci(string testo, IReadOnlyDictionary<string, string>? risposte = null) =>
+        new Lettura(testo, risposte ?? new Dictionary<string, string>()).Esegui();
+
+    // Misure da mostrare per un pezzo (solo quelle che contano per la sua forma).
+    public static List<Misura> MisureDi(IReadOnlyDictionary<string, object> parametri, IReadOnlySet<string>? predefinite = null)
+    {
+        var forma = (string)parametri["forma"];
+        decimal N(string nome) => Convert.ToDecimal(parametri[nome], CultureInfo.InvariantCulture);
+        bool P(string nome) => predefinite?.Contains(nome) == true;
+
+        var misure = new List<Misura>();
+        foreach (var (nome, etichetta) in FormeBaseIa3d.MisureDi(forma))
+        {
+            if (nome == "raggio_angoli" && N(nome) == 0) continue;
+            misure.Add(new Misura(nome, etichetta, FormeBaseIa3d.Mm(N(nome)), P(nome)));
+        }
+
+        if (forma == Forme.Tubo && N("diametro_interno") > 0)
+            misure.Add(new Misura("parete", "Parete", FormeBaseIa3d.Mm((N("diametro") - N("diametro_interno")) / 2), false));
+
+        if (FormeBaseIa3d.ConFori(forma) && N("fori") > 0)
+        {
+            var posizione = FormeBaseIa3d.NomePosizione((string)parametri["posizione_fori"]);
+            misure.Add(new Misura("fori", "Fori", ((int)N("fori")).ToString(CultureInfo.InvariantCulture), P("fori")));
+            misure.Add(new Misura("diametro_fori", "Diametro dei fori", "Ø " + FormeBaseIa3d.Mm(N("diametro_fori")), P("diametro_fori")));
+            misure.Add(new Misura("posizione_fori", "Posizione dei fori", char.ToUpperInvariant(posizione[0]) + posizione[1..],
+                P("posizione_fori")));
+        }
+        return misure;
+    }
 
     // ---------------------------------------------------------------------------
     // Parole riconosciute (minuscole, senza accenti)
@@ -251,13 +300,6 @@ public static class RiconoscitoreIa3d
     private static decimal DiametroPerVite(decimal vite) =>
         ForiPerViti.TryGetValue(vite, out var d) ? d : Math.Round(vite * 1.1m, 1);
 
-    private static string ConArticolo(string forma) => forma switch
-    {
-        Forme.Piastra => "una piastra",
-        Forme.Sfera => "una sfera",
-        _ => "un " + FormeBaseIa3d.NomeForma(forma).ToLowerInvariant(),
-    };
-
     private static (string, decimal)[] P(params (string, decimal)[] valori) => valori;
 
     // "Agli angoli" → "agli angoli"; "Ø 4 mm" resta com'è.
@@ -306,11 +348,22 @@ public static class RiconoscitoreIa3d
         private readonly Dictionary<string, decimal> _valori = new();
         private readonly HashSet<string> _predefinite = new();
 
-        public Lettura(string testo)
+        private readonly IReadOnlyDictionary<string, string> _risposte;
+        private readonly List<Domanda> _domande = new();
+
+        public Lettura(string testo, IReadOnlyDictionary<string, string> risposte)
         {
             _originale = testo;
             _testo = Normalizza(testo).ToCharArray();
+            _risposte = risposte;
         }
+
+        private string? RispostaTesto(string codice) => _risposte.GetValueOrDefault(codice);
+
+        // Risposta numerica (in mm per le misure); null se manca o non è un numero valido.
+        private decimal? RispostaNumero(string codice) =>
+            decimal.TryParse(RispostaTesto(codice), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var n) &&
+            n <= 100000 ? Math.Round(n, 2) : null;
 
         // Rondella, distanziale e anello: lo "spessore" è l'altezza, non la parete.
         private bool SpessoreEAltezza => _parolaForma is "rondella" or "distanziale" or "anello";
@@ -327,20 +380,61 @@ public static class RiconoscitoreIa3d
             CercaBase();
             Cerca(ModelloNumero, m => { _numeri.Add(new NumeroLibero(m.Index, Pezzo(m), Valore(m, "n"), m.Length)); return false; });
 
-            _forma ??= DeduciForma();
-            if (_forma == null)
-                return new Risultato(null, new(), Capito(), NonCapito(), _avvisi, new());
+            if (_forma == null && !ScegliForma())
+                return new Risultato(null, new(), Capito(), NonCapito(), _avvisi, new(), _domande);
 
             Assegna();
             Completa();
 
-            var misure = Misure();
+            // Parole non capite: si chiede prima di tutto se ignorarle (o riscrivere la frase).
+            var nonCapito = NonCapito();
+            if (nonCapito.Count > 0 && RispostaTesto("parole") != "ignora")
+                _domande.Insert(0, new Domanda("parole",
+                    (nonCapito.Count == 1 ? "Non ho capito " : "Non ho capito queste parti: ") +
+                    string.Join(", ", nonCapito.Select(p => $"«{p}»")) + ". Cosa faccio?",
+                    TipiDomanda.Scelta,
+                    [new("ignora", nonCapito.Count == 1 ? "Ignorala" : "Ignorale"), new("riscrivi", "Riscrivo la descrizione")]));
+
+            var parametri = Parametri();
+            var misure = MisureDi(parametri, _predefinite);
             var predefinite = misure.Where(m => m.Predefinita)
                 .Select(m => $"{m.Etichetta.ToLowerInvariant()} {Minuscola(m.Valore)}").ToList();
             if (predefinite.Count > 0)
                 _avvisi.Add("Non indicato nella descrizione, uso un valore predefinito: " + string.Join(", ", predefinite) + ".");
 
-            return new Risultato(_forma, Parametri(), Capito(), NonCapito(), _avvisi, misure);
+            return new Risultato(_forma, parametri, Capito(), nonCapito, _avvisi, misure, _domande);
+        }
+
+        // Nessuna forma scritta: vale la risposta alla domanda "forma", altrimenti la si chiede
+        // (proponendo per prima quella che si deduce dalle misure). False se manca la risposta.
+        private bool ScegliForma()
+        {
+            var sconosciute = ModelloParola.Matches(new string(_testo))
+                .Where(m => m.Value.Any(char.IsLetter) && !ParoleVuote.Contains(m.Value)).ToList();
+            var scelta = RispostaTesto("forma");
+
+            if (scelta != null && FormeBaseIa3d.NomiForme.ContainsKey(scelta))
+            {
+                _forma = scelta;
+                // Una sola parola sconosciuta (es. «scatolina»): era il nome della forma.
+                if (sconosciute.Count == 1)
+                {
+                    var m = sconosciute[0];
+                    AggiungiCapito(m, FormeBaseIa3d.NomeForma(scelta).ToLowerInvariant() + " (tua risposta)");
+                    Segna(m.Index, m.Length);
+                }
+                return true;
+            }
+
+            var dedotta = DeduciForma();
+            var opzioni = FormeBaseIa3d.NomiForme
+                .OrderBy(f => f.Key == dedotta ? 0 : 1)
+                .Select(f => new Opzione(f.Key, f.Key == dedotta ? f.Value + " (dalle misure)" : f.Value))
+                .ToArray();
+            _domande.Add(new Domanda("forma",
+                sconosciute.Count == 1 ? $"Non conosco «{Pezzo(sconosciute[0])}»: che forma è?" : "Che forma deve avere il pezzo?",
+                TipiDomanda.Scelta, opzioni));
+            return false;
         }
 
         // -----------------------------------------------------------------------
@@ -479,15 +573,14 @@ public static class RiconoscitoreIa3d
             });
         }
 
-        // Nessuna forma scritta: si prova a capirla dalle misure.
+        // Forma che si deduce dalle misure (proposta per prima nella domanda "forma").
         private string? DeduciForma()
         {
             var voci = _elementi.OfType<Indicazione>().Select(i => i.Voce).ToHashSet();
             var dimensioni = _elementi.OfType<Dimensioni>().ToList();
             bool Una(params Voce[] scelte) => scelte.Any(voci.Contains);
 
-            string? forma =
-                dimensioni.Any(d => d.Valori.Length == 3) ? Forme.Blocco
+            return dimensioni.Any(d => d.Valori.Length == 3) ? Forme.Blocco
                 : Una(Voce.Interno, Voce.Esterno, Voce.Parete) ? Forme.Tubo
                 : Una(Voce.Cima, Voce.Base) ? Forme.Cono
                 : Una(Voce.Diametro, Voce.Raggio) ? Forme.Cilindro
@@ -495,10 +588,6 @@ public static class RiconoscitoreIa3d
                 : dimensioni.Count > 0 || Una(Voce.Lunghezza, Voce.Larghezza, Voce.Profondita, Voce.Altezza, Voce.Spessore, Voce.Lato)
                     ? Forme.Blocco
                 : null;
-
-            if (forma != null)
-                _avvisi.Add($"Non hai scritto la forma: ho pensato a {ConArticolo(forma)}.");
-            return forma;
         }
 
         // -----------------------------------------------------------------------
@@ -531,17 +620,6 @@ public static class RiconoscitoreIa3d
         private void Predefinito(string nome, decimal valore)
         {
             if (_valori.TryAdd(nome, valore)) _predefinite.Add(nome);
-        }
-
-        // Lati uguali (cubo, quadrato): il primo lato scritto vale per tutti.
-        private void Uguali(decimal predefinito, params string[] nomi)
-        {
-            decimal? lato = null;
-            foreach (var nome in nomi)
-                if (_valori.TryGetValue(nome, out var v)) { lato = v; break; }
-            foreach (var nome in nomi)
-                if (lato is decimal l) _valori.TryAdd(nome, l);
-                else Predefinito(nome, predefinito);
         }
 
         private void Assegna()
@@ -670,7 +748,41 @@ public static class RiconoscitoreIa3d
             }
         }
 
-        // Misure mancanti (valori predefiniti), parete del tubo, angoli e fori.
+        // Misura essenziale non scritta: vale la risposta "misura:<nome>"; altrimenti la si
+        // chiede, tenendo intanto un valore provvisorio (serve solo a completare i parametri).
+        private void Essenziale(string nome, decimal provvisorio, params Opzione[] scorciatoie)
+        {
+            if (_valori.ContainsKey(nome)) return;
+            if (RispostaNumero("misura:" + nome) is decimal v)
+            {
+                _valori[nome] = v;
+                return;
+            }
+            _valori[nome] = provvisorio;
+            var p = FormeBaseIa3d.Definizione.Parametri.First(x => x.Nome == nome);
+            _domande.Add(new Domanda("misura:" + nome, $"Che {Etichetta(nome)} deve avere?", TipiDomanda.Numero,
+                scorciatoie, "mm", p.Min, p.Max, provvisorio, $"In millimetri, da {Scrivi(p.Min!.Value)} a {Scrivi(p.Max!.Value)}."));
+        }
+
+        // Lati uguali (cubo, quadrato): il primo lato scritto vale per tutti; se nessuno è
+        // scritto vale la risposta "misura:lato", altrimenti si chiede il lato.
+        private void Lato(decimal provvisorio, params string[] nomi)
+        {
+            var lato = nomi.Select(n => _valori.TryGetValue(n, out var v) ? v : (decimal?)null).FirstOrDefault(v => v != null)
+                ?? RispostaNumero("misura:lato");
+            if (lato == null)
+            {
+                lato = provvisorio;
+                _domande.Add(new Domanda("misura:lato", "Quanto è lungo il lato?", TipiDomanda.Numero, [], "mm",
+                    1, FormeBaseIa3d.MisuraMassima, provvisorio, $"In millimetri, da 1 a {Scrivi(FormeBaseIa3d.MisuraMassima)}."));
+            }
+            foreach (var nome in nomi)
+                _valori.TryAdd(nome, lato.Value);
+        }
+
+        private static string Scrivi(decimal valore) => valore.ToString("0.##", CultureInfo.GetCultureInfo("it-IT"));
+
+        // Misure essenziali mancanti (domande), parete del tubo, angoli e fori.
         private void Completa()
         {
             switch (_forma)
@@ -679,22 +791,22 @@ public static class RiconoscitoreIa3d
                 {
                     var piastra = _forma == Forme.Piastra;
                     if (_parolaForma != null && ParoleCubo.Contains(_parolaForma))
-                        Uguali(20, "larghezza", "profondita", "altezza");
-                    if (_quadrato)
-                        Uguali(piastra ? 60 : 20, "larghezza", "profondita");
-                    Predefinito("larghezza", piastra ? 100 : 40);
-                    Predefinito("profondita", piastra ? 60 : 20);
-                    Predefinito("altezza", piastra ? 3 : 10);
+                        Lato(20, "larghezza", "profondita", "altezza");
+                    else if (_quadrato)
+                        Lato(piastra ? 60 : 20, "larghezza", "profondita");
+                    Essenziale("larghezza", piastra ? 100 : 40);
+                    Essenziale("profondita", piastra ? 60 : 20);
+                    Essenziale("altezza", piastra ? 3 : 10);
                     CompletaAngoli();
                     break;
                 }
                 case Forme.Cilindro:
-                    Predefinito("diametro", 20);
-                    Predefinito("altezza", 20);
+                    Essenziale("diametro", 20);
+                    Essenziale("altezza", 20);
                     break;
                 case Forme.Tubo:
                 {
-                    Predefinito("diametro", 20);
+                    Essenziale("diametro", 20);
                     var d = _valori["diametro"];
                     if (_parete is decimal parete)
                     {
@@ -703,17 +815,17 @@ public static class RiconoscitoreIa3d
                         else
                             _valori["diametro_interno"] = Math.Max(0, d - 2 * parete);
                     }
-                    Predefinito("diametro_interno", d > 6 ? d - 4 : Math.Round(d / 2, 1));
-                    Predefinito("altezza", SpessoreEAltezza ? 3 : 20);
+                    Essenziale("diametro_interno", d > 6 ? d - 4 : Math.Round(d / 2, 1));
+                    Essenziale("altezza", SpessoreEAltezza ? 3 : 20);
                     break;
                 }
                 case Forme.Sfera:
-                    Predefinito("diametro", 30);
+                    Essenziale("diametro", 30);
                     break;
                 case Forme.Cono:
-                    Predefinito("diametro", 30);
-                    Predefinito("diametro_cima", 0);
-                    Predefinito("altezza", 30);
+                    Essenziale("diametro", 30);
+                    Essenziale("diametro_cima", 0, new Opzione("0", "A punta"));
+                    Essenziale("altezza", 30);
                     break;
             }
 
@@ -731,10 +843,17 @@ public static class RiconoscitoreIa3d
                 Imposta(_arrotondati, ("raggio_angoli", r));
                 return;
             }
+            // Dettaglio, non essenziale: raggio predefinito, modificabile nella correzione.
             _capito.Add((_arrotondati.Posizione, new Parte(_arrotondati.Testo, "angoli arrotondati")));
             var lato = Math.Min(_valori["larghezza"], _valori["profondita"]);
             Predefinito("raggio_angoli", Math.Round(Math.Min(3, lato / 4), 1));
         }
+
+        // Diametri dei fori passanti per le viti più comuni (scorciatoie della domanda).
+        private static readonly Opzione[] ForiViti =
+        [
+            new("3.4", "M3 · 3,4 mm"), new("4.5", "M4 · 4,5 mm"), new("5.5", "M5 · 5,5 mm"), new("6.6", "M6 · 6,6 mm"),
+        ];
 
         private void CompletaFori()
         {
@@ -744,7 +863,7 @@ public static class RiconoscitoreIa3d
                 _capito.Add((_fori.Posizione, new Parte(_fori.Testo, "nessun foro")));
                 return;
             }
-            if (_forma is not (Forme.Blocco or Forme.Piastra or Forme.Cilindro))
+            if (!FormeBaseIa3d.ConFori(_forma!))
             {
                 _avvisi.Add($"«{_fori.Testo}»: per ora i fori si fanno solo su blocco, piastra e cilindro.");
                 return;
@@ -752,18 +871,22 @@ public static class RiconoscitoreIa3d
 
             var rettangolo = _forma != Forme.Cilindro;
             var dove = _fori.Dove;
-            var quantiPredefinito = _fori.Quanti == null;
-            var n = _fori.Quanti ?? dove switch
-            {
-                Posizioni.Angoli or Posizioni.Cerchio => 4,
-                Posizioni.Centro => 1,
-                _ => 2,
-            };
-            var dovePredefinito = dove == null;
-            dove ??= n == 1 ? Posizioni.Centro
-                : rettangolo ? (n == 4 ? Posizioni.Angoli : Posizioni.Fila)
-                : Posizioni.Cerchio;
+            var inAttesa = false;
 
+            // Quanti: scritto, implicito ("agli angoli" = 4) oppure chiesto.
+            var quanti = _fori.Quanti;
+            if (quanti == null && rettangolo && dove == Posizioni.Angoli) quanti = 4;
+            if (quanti == null && RispostaNumero("fori:numero") is decimal r && r >= 1 && r <= 50 && r == decimal.Truncate(r))
+                quanti = (int)r;
+            if (quanti == null)
+            {
+                _domande.Add(new Domanda("fori:numero", "Quanti fori devo fare?", TipiDomanda.Numero,
+                    [new("1", "1"), new("2", "2"), new("4", "4")], null, 1, 50, 2));
+                inAttesa = true;
+            }
+            var n = quanti ?? 2;
+
+            // Correzioni automatiche delle posizioni che non si possono fare (segnalate).
             if (rettangolo && dove == Posizioni.Cerchio)
             {
                 var nuova = n == 1 ? Posizioni.Centro : n == 4 ? Posizioni.Angoli : Posizioni.Fila;
@@ -778,7 +901,7 @@ public static class RiconoscitoreIa3d
             }
             if (dove == Posizioni.Angoli && n != 4)
             {
-                if (!quantiPredefinito) _avvisi.Add("Agli angoli vanno 4 fori: ne metto 4.");
+                _avvisi.Add("Agli angoli vanno 4 fori: ne metto 4.");
                 n = 4;
             }
             if (dove == Posizioni.Centro && n > 1)
@@ -787,18 +910,39 @@ public static class RiconoscitoreIa3d
                 _avvisi.Add($"Al centro va un solo foro: con {n} fori li metto {FormeBaseIa3d.NomePosizione(nuova)}.");
                 dove = nuova;
             }
-            if (n == 1) dove = Posizioni.Centro;
 
-            var diametro = _fori.Diametro ?? 4;
-            if (_fori.Diametro == null) _predefinite.Add("diametro_fori");
-            if (quantiPredefinito) _predefinite.Add("fori");
-            if (dovePredefinito && n > 1) _predefinite.Add("posizione_fori");   // un foro solo: va al centro
+            // Posizione non scritta: si chiede solo quando c'è davvero da scegliere
+            // (4 fori su blocco o piastra: agli angoli o in fila).
+            if (dove == null && !inAttesa)
+            {
+                if (n == 1) dove = Posizioni.Centro;
+                else if (!rettangolo) dove = Posizioni.Cerchio;
+                else if (n != 4) dove = Posizioni.Fila;
+                else if (RispostaTesto("fori:posizione") is Posizioni.Angoli or Posizioni.Fila) dove = RispostaTesto("fori:posizione");
+                else
+                {
+                    _domande.Add(new Domanda("fori:posizione", "Dove metto i 4 fori?", TipiDomanda.Scelta,
+                        [new(Posizioni.Angoli, "Agli angoli"), new(Posizioni.Fila, "In fila")]));
+                    inAttesa = true;
+                }
+            }
+            dove ??= Posizioni.Centro;
+
+            // Diametro: scritto (anche come vite M) oppure chiesto.
+            var diametro = _fori.Diametro ?? RispostaNumero("fori:diametro");
+            if (diametro == null)
+            {
+                _domande.Add(new Domanda("fori:diametro", n == 1 ? "Che diametro deve avere il foro?" : "Che diametro devono avere i fori?",
+                    TipiDomanda.Numero, ForiViti, "mm", 0.5m, 100, 4, "In millimetri. Per una vite scegli la sua misura M."));
+                inAttesa = true;
+            }
 
             _valori["fori"] = n;
-            _valori["diametro_fori"] = diametro;
+            _valori["diametro_fori"] = diametro ?? 4;
             _posizioneFori = dove;
-            _capito.Add((_fori.Posizione, new Parte(_fori.Testo,
-                $"{n} {(n == 1 ? "foro" : "fori")} da {FormeBaseIa3d.Mm(diametro)} {FormeBaseIa3d.NomePosizione(dove)}")));
+            _capito.Add((_fori.Posizione, new Parte(_fori.Testo, inAttesa
+                ? "fori (mi servono ancora dei dettagli)"
+                : $"{n} {(n == 1 ? "foro" : "fori")} da {FormeBaseIa3d.Mm(diametro!.Value)} {FormeBaseIa3d.NomePosizione(dove)}")));
         }
 
         // -----------------------------------------------------------------------
@@ -814,34 +958,6 @@ public static class RiconoscitoreIa3d
             parametri["forma"] = _forma!;
             parametri["posizione_fori"] = _posizioneFori ?? Posizioni.Centro;
             return parametri;
-        }
-
-        private List<Misura> Misure()
-        {
-            var misure = new List<Misura>();
-            foreach (var (nome, etichetta) in FormeBaseIa3d.MisureDi(_forma!))
-            {
-                var valore = _valori.GetValueOrDefault(nome);
-                if (nome == "raggio_angoli" && valore == 0) continue;
-                misure.Add(new Misura(nome, etichetta, FormeBaseIa3d.Mm(valore), _predefinite.Contains(nome)));
-            }
-
-            if (_forma == Forme.Tubo && _valori.GetValueOrDefault("diametro_interno") > 0)
-            {
-                var parete = (_valori["diametro"] - _valori["diametro_interno"]) / 2;
-                misure.Add(new Misura("parete", "Parete", FormeBaseIa3d.Mm(parete), false));
-            }
-
-            if (_valori.GetValueOrDefault("fori") > 0)
-            {
-                var posizione = FormeBaseIa3d.NomePosizione(_posizioneFori!);
-                misure.Add(new Misura("fori", "Fori", Scrivi("fori", _valori["fori"]), _predefinite.Contains("fori")));
-                misure.Add(new Misura("diametro_fori", "Diametro dei fori", "Ø " + FormeBaseIa3d.Mm(_valori["diametro_fori"]),
-                    _predefinite.Contains("diametro_fori")));
-                misure.Add(new Misura("posizione_fori", "Posizione dei fori", char.ToUpperInvariant(posizione[0]) + posizione[1..],
-                    _predefinite.Contains("posizione_fori")));
-            }
-            return misure;
         }
 
         private List<Parte> Capito() => _capito.OrderBy(c => c.Posizione).Select(c => c.Parte).ToList();

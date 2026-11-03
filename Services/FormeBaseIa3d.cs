@@ -86,6 +86,20 @@ public static class FormeBaseIa3d
 
     public static string NomeForma(string forma) => Nomi.GetValueOrDefault(forma, forma);
 
+    // Codice → nome di tutte le forme, nell'ordine in cui si propongono.
+    public static IReadOnlyDictionary<string, string> NomiForme => Nomi;
+
+    // Forme su cui si possono fare fori passanti.
+    public static bool ConFori(string forma) => forma is Forme.Blocco or Forme.Piastra or Forme.Cilindro;
+
+    // Posizioni dei fori possibili per la forma.
+    public static string[] PosizioniPer(string forma) => forma switch
+    {
+        Forme.Blocco or Forme.Piastra => new[] { Posizioni.Centro, Posizioni.Angoli, Posizioni.Fila },
+        Forme.Cilindro => new[] { Posizioni.Centro, Posizioni.Cerchio },
+        _ => Array.Empty<string>(),
+    };
+
     // Misure che contano per ogni forma, con il nome da mostrare (in ordine).
     public static (string Nome, string Etichetta)[] MisureDi(string forma) => forma switch
     {
