@@ -40,10 +40,18 @@ Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia 
     installati; senza Docker serve OpenSCAD nel PATH (oppure `OPENSCAD_PATH`).
 - **IA**:
   - **IA 3D** (`ia3d.html`): si descrive un pezzo a parole, es. *"piastra 100x60 spessore 4
-    con 4 fori da 5 agli angoli"*. Sotto compaiono la forma riconosciuta con le misure (quelle
-    non scritte prendono un valore predefinito, segnalato), le parti della frase capite e quelle
-    no, il **disegno tecnico** (vista frontale e vista dall'alto con le quote, in SVG) e
-    l'**anteprima 3D** con **Scarica STL**.
+    con 4 fori da 5 agli angoli"*.
+  - **Dialogo**: se manca qualcosa di essenziale (la forma, una misura principale, numero,
+    diametro o posizione dei fori) o restano parole non capite, la pagina fa **una domanda
+    alla volta** (pulsanti o campo in mm, con scorciatoie come le viti M3/M4/M5). Le risposte
+    date restano visibili e c'è **Ricomincia**. Una parola sconosciuta seguita dalla scelta della
+    forma (es. «scatolina» → Blocco) viene mostrata come nome della forma.
+  - Poi compaiono la forma con le misure (i dettagli non scritti, come il raggio degli angoli,
+    prendono un valore predefinito, segnalato), le parti capite e le risposte date, il **disegno
+    tecnico** (vista frontale e vista dall'alto con le quote, in SVG) e l'**anteprima 3D**.
+  - **"È il pezzo che volevi?"**: **Sì, è giusto** abilita **Scarica STL**; **Correggo** apre i
+    campi con tutte le misure (anche forma, fori e angoli) da cambiare a mano. Se le misure
+    descritte sono impossibili (es. 300 mm), la correzione si apre subito con l'errore.
   - Forme base: blocco (cubo), piastra, cilindro, tubo, sfera, cono, fino a 250 mm per lato.
     Fori passanti su blocco, piastra e cilindro (numero, diametro o vite M3/M4..., al centro,
     agli angoli, in fila o in cerchio) e angoli arrotondati su blocco e piastra. Una forma
@@ -104,9 +112,10 @@ e dall'immagine Docker. Servono il .NET 10 SDK e, per le prove dei file STL, Ope
 dotnet test tests/GestionalePersone.Tests
 ```
 
-Controllano il riconoscimento delle frasi del modulo IA (forma e misure attese, avvisi, parole
-non capite), i controlli delle misure e i centri dei fori, e la generazione degli STL: forme
-base del modulo IA e oggetti del catalogo Stampa 3D con le misure predefinite.
+Controllano il riconoscimento delle frasi del modulo IA (forma e misure attese, domande del
+dialogo e risposte che le risolvono, avvisi, parole non capite), i controlli delle misure e i
+centri dei fori, e la generazione degli STL: forme base del modulo IA e oggetti del catalogo
+Stampa 3D con le misure predefinite.
 
 ## Configurazione del database
 
@@ -230,8 +239,10 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | POST   | `/api/stampa3d/stl` | File STL di un oggetto, es. `{"oggetto":"targhetta","parametri":{"testo":"CASA"}}` |
 | GET    | `/api/stampa3d/progetti?tutti=` | I miei progetti (tutti, per l'Amministratore) |
 | GET/POST/PUT/DELETE | `/api/stampa3d/progetti/{id}` | Leggi / crea / modifica / elimina un progetto |
-| POST   | `/api/ia/3d/riconosci` | Forma e misure da una descrizione, es. `{"testo":"cilindro diametro 30 alto 50"}` (IA) |
-| POST   | `/api/ia/3d/stl` | File STL della forma base, con i `parametri` restituiti da `/riconosci` (IA) |
+| POST   | `/api/ia/3d/riconosci` | Forma e misure da una descrizione, oppure la prossima domanda: `{"testo":"cilindro diametro 30","risposte":{"misura:altezza":50}}` (IA) |
+| POST   | `/api/ia/3d/pezzo` | Controlla le misure corrette a mano (`parametri`) e restituisce fori e ingombro per il disegno (IA) |
+| GET    | `/api/ia/3d/forme` | Forme base con i campi della correzione a mano (IA) |
+| POST   | `/api/ia/3d/stl` | File STL della forma base, con i `parametri` restituiti da `/riconosci` o `/pezzo` (IA) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |

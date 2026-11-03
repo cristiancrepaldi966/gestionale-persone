@@ -573,3 +573,16 @@ body.modale-telefono dialog.finestra[open] {
     color: var(--bs-primary);
     border-bottom-color: var(--bs-primary);
 }
+
+/* --- IA 3D: domande e conferma --- */
+
+/* Campo numerico della domanda: non tutta la riga. */
+.campo-domanda {
+    width: auto;
+    max-width: 12rem;
+}
+
+/* Riquadro "È il pezzo che volevi?": risalta tra le card. */
+.conferma-pezzo {
+    border-left: 4px solid #5b5bd6 !important;
+}
