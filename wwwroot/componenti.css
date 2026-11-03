@@ -463,6 +463,79 @@ body.modale-telefono dialog.finestra[open] {
     }
 }
 
+/* --- IA 3D: disegno tecnico (SVG costruito da js/ia3d.js) --- */
+
+.disegno-tecnico {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.disegno-tecnico + .disegno-tecnico {
+    border-top: 1px dashed var(--bs-border-color);
+}
+
+.disegno-tecnico .titolo-vista {
+    fill: #6c757d;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--bs-font-sans-serif);
+}
+
+.disegno-tecnico .contorno {
+    fill: rgba(91, 91, 214, 0.1);
+    stroke: #212529;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+}
+
+.disegno-tecnico .spigolo {
+    fill: none;
+    stroke: #212529;
+    stroke-width: 1.2;
+}
+
+.disegno-tecnico .foro {
+    fill: #fff;
+    stroke: #212529;
+    stroke-width: 1.2;
+}
+
+.disegno-tecnico .nascosto {
+    fill: none;
+    stroke: #6c757d;
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+}
+
+.disegno-tecnico .asse {
+    fill: none;
+    stroke: #adb5bd;
+    stroke-width: 0.8;
+    stroke-dasharray: 9 3 2 3;
+}
+
+.disegno-tecnico .richiamo {
+    stroke: #9b9be8;
+    stroke-width: 0.7;
+}
+
+.disegno-tecnico .quota {
+    fill: none;
+    stroke: #5b5bd6;
+    stroke-width: 0.9;
+}
+
+.disegno-tecnico .freccia {
+    fill: #5b5bd6;
+}
+
+.disegno-tecnico .testo-quota {
+    fill: #3b3bb3;
+    font-size: 12px;
+    font-family: var(--bs-font-sans-serif);
+}
+
 /* Testi lunghi che vanno a capo dentro una riga flessibile. */
 .min-w-0 {
     min-width: 0;

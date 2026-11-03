@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA 3D - IA</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="casa me-auto link-light link-opacity-75 link-opacity-100-hover" title="Pagina di ingresso" aria-label="Pagina di ingresso"><i class="bi bi-house-door" aria-hidden="true"></i></a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <div class="d-flex align-items-center gap-2 mb-1" id="titolo">
+        <h2 class="h3 fw-bold mb-0">IA 3D</h2>
+    </div>
+    <p class="text-body-secondary mb-3">Descrivi un pezzo semplice: riconosco forma e misure, ti mostro il disegno con le quote e il modello 3D da stampare.</p>
+
+    <!-- Descrizione -->
+    <form class="card card-body shadow-sm border-0 mb-3" id="formDescrizione" novalidate>
+        <label class="form-label small fw-semibold mb-1" for="descrizione">Descrizione del pezzo</label>
+        <textarea class="form-control" id="descrizione" rows="2" maxlength="300" required
+                  placeholder="Es. piastra 100x60 spessore 4 con 4 fori da 5 agli angoli"></textarea>
+        <div class="form-text">
+            Forme: cubo o blocco, piastra, cilindro, tubo, sfera, cono. Misure in mm (oppure cm),
+            fori (anche "per viti M4") e angoli arrotondati. Massimo 250 mm per lato.
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary" id="riconosci">
+                <i class="bi bi-stars" aria-hidden="true"></i> Riconosci
+            </button>
+        </div>
+        <div id="messaggio" role="status"></div>
+        <div class="mt-3">
+            <div class="small text-body-secondary mb-1">Oppure prova un esempio:</div>
+            <div class="d-flex flex-wrap gap-2" id="esempi"></div>
+        </div>
+    </form>
+
+    <div id="risultato" hidden>
+
+        <!-- Cosa è stato capito -->
+        <section class="card card-body shadow-sm border-0 mb-3" aria-labelledby="titoloRiconosciuto">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h3 class="h6 fw-bold mb-0" id="titoloRiconosciuto">Ho riconosciuto:</h3>
+                <span class="badge rounded-pill text-bg-primary fs-6 fw-semibold" id="nomeForma"></span>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <h4 class="small fw-bold text-body-secondary mb-2">Misure</h4>
+                    <div class="small" id="misure"></div>
+                </div>
+                <div class="col-md-7">
+                    <h4 class="small fw-bold text-body-secondary mb-2">Dalla tua descrizione</h4>
+                    <ul class="list-unstyled small mb-0" id="capito"></ul>
+                    <div class="mt-2" id="nonCapito" hidden></div>
+                    <ul class="list-unstyled small mt-2 mb-0" id="avvisi"></ul>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-3">
+            <!-- Disegno con le quote -->
+            <div class="col-lg-6">
+                <section class="card card-body shadow-sm border-0 h-100" aria-labelledby="titoloDisegno">
+                    <h3 class="h6 fw-bold mb-2" id="titoloDisegno">Disegno con le misure</h3>
+                    <div id="disegno"></div>
+                    <div class="small text-body-secondary mt-2">Misure in millimetri. Le linee tratteggiate sono i fori nascosti.</div>
+                </section>
+            </div>
+
+            <!-- Modello 3D -->
+            <div class="col-lg-6">
+                <section class="card card-body shadow-sm border-0 h-100" aria-labelledby="titoloModello">
+                    <h3 class="h6 fw-bold mb-2" id="titoloModello">Modello 3D</h3>
+                    <div class="anteprima-3d" id="anteprima" role="img" aria-label="Anteprima 3D del pezzo: trascina per ruotarlo">
+                        <div class="stato-anteprima text-body-secondary" id="statoAnteprima" hidden></div>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                        <span class="small text-body-secondary" id="dimensioni"></span>
+                        <span class="small text-body-secondary">Trascina per ruotare, rotella o due dita per ingrandire</span>
+                    </div>
+                    <div id="messaggioAnteprima" role="status"></div>
+                    <button type="button" class="btn btn-primary mt-3 align-self-start" id="scarica" disabled>
+                        <i class="bi bi-download" aria-hidden="true"></i> Scarica STL
+                    </button>
+                </section>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="componenti.js"></script>
+<script type="module" src="js/ia3d.js"></script>
+
+</body>
+</html>
