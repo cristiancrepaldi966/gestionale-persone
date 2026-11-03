@@ -2,7 +2,8 @@
 
 Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia web in
 `wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria),
-**Fantapolitica** (in costruzione) e **Stampa 3D** (oggetti personalizzabili da stampare).
+**Fantapolitica** (in costruzione), **Stampa 3D** (oggetti personalizzabili da stampare) e
+**IA** (pezzi 3D creati descrivendoli a parole).
 
 - **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
   modulo abilitato con le sue pagine.
@@ -37,6 +38,20 @@ Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia 
     genera l'STL con OpenSCAD (`Services/GeneratoreStl.cs`: massimo 2 generazioni insieme,
     60 secondi, risultati recenti in memoria). Nel Docker OpenSCAD e i font DejaVu sono già
     installati; senza Docker serve OpenSCAD nel PATH (oppure `OPENSCAD_PATH`).
+- **IA**:
+  - **IA 3D** (`ia3d.html`): si descrive un pezzo a parole, es. *"piastra 100x60 spessore 4
+    con 4 fori da 5 agli angoli"*. Sotto compaiono la forma riconosciuta con le misure (quelle
+    non scritte prendono un valore predefinito, segnalato), le parti della frase capite e quelle
+    no, il **disegno tecnico** (vista frontale e vista dall'alto con le quote, in SVG) e
+    l'**anteprima 3D** con **Scarica STL**.
+  - Forme base: blocco (cubo), piastra, cilindro, tubo, sfera, cono, fino a 250 mm per lato.
+    Fori passanti su blocco, piastra e cilindro (numero, diametro o vite M3/M4..., al centro,
+    agli angoli, in fila o in cerchio) e angoli arrotondati su blocco e piastra. Una forma
+    per frase.
+  - Il riconoscimento è a regole, senza servizi esterni (`Services/RiconoscitoreIa3d.cs`):
+    forme e sinonimi, misure con unità (mm, cm), dimensioni `AxBxC`. Le misure si controllano
+    in `Services/FormeBaseIa3d.cs`, che calcola anche i centri dei fori; l'STL lo genera
+    OpenSCAD con un unico modello, `Modelli3d/ia_forme_base.scad`.
 - **Admin** (solo Super admin): **Utenti** (anagrafica e Super admin) e **Moduli** (chi
   accede a ciascun modulo e con che livello).
 
@@ -118,6 +133,7 @@ c'è il **Super admin** (`Utenti.SuperAdmin`).
 | **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
 | **Fantapolitica** (`fantapolitica`) | Panoramica; Politici ed eventi (solo Amministratore). Pagine in costruzione | Utente, Amministratore |
 | **Stampa 3D** (`stampa3d`) | Catalogo, configuratore, progetti propri; l'Amministratore vede i progetti di tutti | Utente, Amministratore |
+| **IA** (`ia`) | IA 3D (per ora uguale per i due livelli) | Utente, Amministratore |
 | **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |
 
 Dal modulo **Admin** (Super admin):
@@ -200,6 +216,8 @@ Tutte le API richiedono l'accesso (altrimenti rispondono `401`).
 | POST   | `/api/stampa3d/stl` | File STL di un oggetto, es. `{"oggetto":"targhetta","parametri":{"testo":"CASA"}}` |
 | GET    | `/api/stampa3d/progetti?tutti=` | I miei progetti (tutti, per l'Amministratore) |
 | GET/POST/PUT/DELETE | `/api/stampa3d/progetti/{id}` | Leggi / crea / modifica / elimina un progetto |
+| POST   | `/api/ia/3d/riconosci` | Forma e misure da una descrizione, es. `{"testo":"cilindro diametro 30 alto 50"}` (IA) |
+| POST   | `/api/ia/3d/stl` | File STL della forma base, con i `parametri` restituiti da `/riconosci` (IA) |
 | POST   | `/api/auth/login`   | Accesso (email, password) |
 | POST   | `/api/auth/logout`  | Uscita               |
 | GET    | `/api/auth/me`      | Utente corrente      |

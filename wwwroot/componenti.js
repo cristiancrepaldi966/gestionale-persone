@@ -148,7 +148,7 @@ async function esci() {
 // Menu in alto, pagina di ingresso e controllo delle pagine leggono tutti da qui.
 // amministratore: true = pagina riservata al livello Amministratore del modulo.
 // colore: colore dell'icona del modulo (pagina di ingresso e pagina del modulo).
-const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", stampa3d: "stampa3d", admin: "admin" };
+const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", stampa3d: "stampa3d", ia: "ia", admin: "admin" };
 
 const DEFINIZIONE_MODULI = {
     finanze: {
@@ -173,6 +173,12 @@ const DEFINIZIONE_MODULI = {
             { testo: "Progetti", href: "/stampa3d-progetti.html", icona: "folder2-open", descrizione: "Le configurazioni salvate" },
         ]
     },
+    ia: {
+        nome: "IA", icona: "stars", colore: "#5b5bd6", descrizione: "Strumenti intelligenti: IA 3D crea un pezzo da stampare descrivendolo a parole",
+        pagine: [
+            { testo: "IA 3D", href: "/ia3d.html", icona: "box", descrizione: "Descrivi un pezzo: disegno con le misure, anteprima 3D e file STL" },
+        ]
+    },
     admin: {
         nome: "Admin", icona: "shield-lock", colore: "#212529", descrizione: "Utenti e autorizzazioni ai moduli",
         pagine: [
@@ -182,7 +188,7 @@ const DEFINIZIONE_MODULI = {
     },
 };
 
-const ORDINE_MODULI = [MODULI.admin, MODULI.finanze, MODULI.fantapolitica, MODULI.stampa3d];   // ordine nella barra e nella pagina di ingresso
+const ORDINE_MODULI = [MODULI.admin, MODULI.finanze, MODULI.fantapolitica, MODULI.stampa3d, MODULI.ia];   // ordine nella barra e nella pagina di ingresso
 
 // Livello dell'utente in un modulo ("Utente", "Amministratore") o undefined se non ha accesso.
 // Il server dà al Super admin tutti i moduli come Amministratore.
