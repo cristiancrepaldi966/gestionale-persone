@@ -50,23 +50,27 @@ header.bg-dark {
     padding-right: max(0.75rem, calc((100% - var(--app-larghezza)) / 2 + 0.75rem)) !important;
 }
 
+/* Casetta in alto a sinistra: torna alla pagina di ingresso. */
+.casa {
+    flex: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0.25rem 0.25rem 0.25rem 0;
+}
+
 /* Menu e nome del modulo si restringono (nome accorciato con i puntini). */
 .menu-pagine {
     min-width: 0;
 }
 
 @media (max-width: 575.98px) {
-    /* Telefono: tutto su una riga (Gestionale, Moduli, modulo aperto, cerchio). */
+    /* Telefono: tutto su una riga (casetta, Moduli, modulo aperto, cerchio). */
     header.bg-dark {
         flex-wrap: nowrap !important;
         padding-top: 0.6rem !important;
         padding-bottom: 0.6rem !important;
     }
 
-    header.bg-dark > a.h4 {
-        font-size: 1.15rem;
-        flex: none;
-    }
 
     .menu-pagine .nav-link {
         padding-left: 0.4rem !important;

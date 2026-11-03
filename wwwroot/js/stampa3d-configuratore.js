@@ -252,7 +252,7 @@ async function carica() {
     oggetto = catalogo.find(o => o.codice === codice);
     if (!oggetto) return mostraErrore("Oggetto non presente nel catalogo.");
 
-    document.title = `${oggetto.nome} - Stampa 3D - Gestionale`;
+    document.title = `${oggetto.nome} - Stampa 3D`;
     $("percorsoNome").textContent = progetto ? progetto.nome : oggetto.nome;
     $("titolo").replaceChildren(iconaCategoria(oggetto.icona, "#eb6834"),
         el("h2", "h3 fw-bold mb-0", progetto ? progetto.nome : oggetto.nome));

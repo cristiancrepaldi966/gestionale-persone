@@ -155,7 +155,7 @@ avviaPagina({ modulo: MODULI.admin, amministratore: true }).then(async u => {
     }
     utenti = await ru.json();
 
-    document.title = `Modulo ${definizione.nome} - Gestionale`;
+    document.title = `Modulo ${definizione.nome}`;
     intestazioneModulo($("intestazioneModulo"), codice);
     $("filtroLivello").replaceChildren(new Option("Livello", ""), ...definizione.livelli.map(l => new Option(l, l)));
     if (definizione.livelli.length < 2) $("filtroLivello").closest(".col-6").hidden = true;
