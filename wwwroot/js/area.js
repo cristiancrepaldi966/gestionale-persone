@@ -24,7 +24,7 @@ if (!DEFINIZIONE_MODULI[codiceModulo]) {
     avviaPagina({ modulo: codiceModulo }).then(utente => {
         const def = DEFINIZIONE_MODULI[codiceModulo];
         const colore = def.colore || "#6c757d";
-        document.title = `${def.nome} - Gestionale`;
+        document.title = `${def.nome}`;
 
         const titolo = document.getElementById("titolo");
         titolo.replaceChildren(iconaCategoria(def.icona, colore), el("h2", "h3 fw-bold mb-0", def.nome));
