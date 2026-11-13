@@ -138,12 +138,15 @@ function disegnaDate(perGiorno, filtri) {
 // Torta per categoria (al massimo 6 fette) + elenco con importi e percentuali
 // ---------------------------------------------------------------------------
 
+// Fette dalla spesa più alta alla più bassa. Con più di MAX_FETTE categorie le minori
+// vanno in "Altre", sempre per ultima.
 function fetteCategorie(perCategoria) {
     const fetta = c => ({ nome: c.categoria, totale: c.totale, colore: c.colore, icona: c.icona });
-    if (perCategoria.length <= MAX_FETTE) return perCategoria.map(fetta);
-    const altre = perCategoria.slice(MAX_FETTE - 1);
+    const perSpesa = [...perCategoria].sort((a, b) => b.totale - a.totale);
+    if (perSpesa.length <= MAX_FETTE) return perSpesa.map(fetta);
+    const altre = perSpesa.slice(MAX_FETTE - 1);
     return [
-        ...perCategoria.slice(0, MAX_FETTE - 1).map(fetta),
+        ...perSpesa.slice(0, MAX_FETTE - 1).map(fetta),
         { nome: `Altre (${altre.length})`, totale: altre.reduce((s, c) => s + c.totale, 0), colore: COLORE_ALTRE, icona: "three-dots" }
     ];
 }
@@ -165,9 +168,14 @@ function disegnaCategorie(perCategoria, totale) {
         return li;
     }));
 
-    // Una sola categoria: una torta di una fetta non dice niente, basta l'elenco.
-    $("contenitoreTorta").hidden = fette.length < 2;
-    if (fette.length < 2) {
+    // Una sola categoria: una torta di una fetta non dice niente, basta l'elenco,
+    // in alto e a tutta larghezza (senza lo spazio vuoto della torta).
+    const unaSola = fette.length < 2;
+    $("colonnaTorta").hidden = unaSola;
+    $("colonnaElenco").classList.toggle("col-md-6", !unaSola);
+    $("rigaCategorie").classList.toggle("align-items-center", !unaSola);
+    $("rigaCategorie").classList.toggle("align-content-start", unaSola);
+    if (unaSola) {
         if (graficoCategorie) { graficoCategorie.destroy(); graficoCategorie = null; }
         return;
     }
