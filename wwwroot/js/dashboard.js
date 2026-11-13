@@ -8,6 +8,8 @@ const $ = id => document.getElementById(id);
 const COLORE_ALTRE = "#a3a29b";     // fetta "Altre" (categorie minori)
 const COLORE_BARRE = "#2a78d6";
 const COLORE_MESE_PASSATO = "#b9b8b1";   // confronto: barre del mese passato
+const GIALLO_MESE_CORRENTE = "#eda100";  // torta gialla: mese in corso
+const GIALLO_MESE_PASSATO = "#f6d27a";   // torta gialla: mese passato (giallo chiaro)
 const SUPERFICIE = "#ffffff";
 const TESTO_SECONDARIO = "#6c757d";
 const GRIGLIA = "#e9ecef";
@@ -15,6 +17,7 @@ const MAX_FETTE = 6;                // oltre: le minori finiscono in "Altre"
 
 let graficoDate = null;
 let graficoCategorie = null;
+let graficoMesi = null;
 
 Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 Chart.defaults.color = TESTO_SECONDARIO;
@@ -298,6 +301,81 @@ function disegnaCategorie(perCategoria, totale) {
 }
 
 // ---------------------------------------------------------------------------
+// Torta gialla: totale del mese in corso e del mese passato (due fette)
+// ---------------------------------------------------------------------------
+
+function disegnaMesi(perGiorno) {
+
+    const oggi = new Date();
+    const corrente = aIso(oggi).slice(0, 7);
+    const passato = aIso(new Date(oggi.getFullYear(), oggi.getMonth() - 1, 1)).slice(0, 7);
+    const totaleMese = mese => perGiorno.filter(g => g.data.startsWith(mese)).reduce((s, g) => s + g.totale, 0);
+
+    const fette = [
+        { nome: maiuscola(nomeMeseLungo.format(daIso(corrente + "-01"))), totale: totaleMese(corrente), colore: GIALLO_MESE_CORRENTE },
+        { nome: maiuscola(nomeMeseLungo.format(daIso(passato + "-01"))), totale: totaleMese(passato), colore: GIALLO_MESE_PASSATO }
+    ];
+    const somma = fette[0].totale + fette[1].totale;
+    const formatoPerc = v => (somma > 0 ? Math.round(v / somma * 1000) / 10 : 0).toLocaleString("it-IT") + "%";
+
+    $("sottotitoloMesi").textContent = `${fette[0].nome} (fino a oggi) e ${fette[1].nome.toLowerCase()}`;
+
+    $("legendaMesi").replaceChildren(...fette.map(f => {
+        const li = el("li", "list-group-item d-flex align-items-center gap-2 px-0");
+        const campione = el("span", "campione-colore");
+        campione.style.background = f.colore;
+        li.append(campione,
+            el("span", "me-auto text-break", f.nome),
+            el("span", "fw-semibold text-nowrap", euro.format(f.totale)),
+            el("span", "text-body-secondary small text-nowrap text-end", formatoPerc(f.totale)));
+        li.lastChild.style.minWidth = "3.2rem";
+        return li;
+    }));
+
+    const differenza = fette[0].totale - fette[1].totale;
+    $("differenzaMesi").textContent = somma === 0 ? "Nessuna spesa in questi due mesi."
+        : differenza === 0 ? "Finora hai speso come il mese passato."
+        : `Finora hai speso ${euro.format(Math.abs(differenza))} ${differenza > 0 ? "in più" : "in meno"} del mese passato.`;
+
+    // Senza spese nei due mesi la torta non ha niente da mostrare.
+    $("colonnaTortaMesi").hidden = somma === 0;
+    if (somma === 0) {
+        if (graficoMesi) { graficoMesi.destroy(); graficoMesi = null; }
+        return;
+    }
+
+    const dati = {
+        labels: fette.map(f => f.nome),
+        datasets: [{
+            data: fette.map(f => f.totale),
+            backgroundColor: fette.map(f => f.colore),
+            borderColor: SUPERFICIE,
+            borderWidth: 2,
+            hoverOffset: 6
+        }]
+    };
+
+    const opzioni = {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: { duration: 250 },
+        layout: { padding: 6 },
+        plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => ` ${euro.format(c.parsed)} · ${formatoPerc(c.parsed)}` } }
+        }
+    };
+
+    if (graficoMesi) {
+        graficoMesi.data = dati;
+        graficoMesi.options = opzioni;
+        graficoMesi.update();
+    } else {
+        graficoMesi = new Chart($("graficoMesi"), { type: "pie", data: dati, options: opzioni });
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Caricamento
 // ---------------------------------------------------------------------------
 
@@ -339,6 +417,7 @@ async function caricaRiepilogo() {
         $("grafici").hidden = false;
         disegnaDate(r.perGiorno, filtri);
         disegnaCategorie(r.perCategoria, r.totale);
+        disegnaMesi(r.perGiorno);
 
     } catch {
         if (numeroRichiesta === richiestaCorrente) {
