@@ -7,6 +7,7 @@ const $ = id => document.getElementById(id);
 // il colore segue la categoria, non la sua posizione, quindi filtrando non cambia.
 const COLORE_ALTRE = "#a3a29b";     // fetta "Altre" (categorie minori)
 const COLORE_BARRE = "#2a78d6";
+const COLORE_MESE_PASSATO = "#b9b8b1";   // confronto: barre del mese passato
 const SUPERFICIE = "#ffffff";
 const TESTO_SECONDARIO = "#6c757d";
 const GRIGLIA = "#e9ecef";
@@ -72,7 +73,116 @@ function serieDate(perGiorno, filtri) {
     return { mensile, punti };
 }
 
+// Senza filtri sulle date: confronto giorno per giorno tra il mese in corso e il mese
+// passato (barre affiancate). Con "Dal" o "Al" il grafico mostra il periodo scelto.
+const nomeMeseLungo = new Intl.DateTimeFormat("it-IT", { month: "long", year: "numeric" });
+const maiuscola = t => t.charAt(0).toUpperCase() + t.slice(1);
+
+function disegnaConfronto(perGiorno) {
+
+    const oggi = new Date();
+    const inizioCorrente = new Date(oggi.getFullYear(), oggi.getMonth(), 1);
+    const inizioPassato = new Date(oggi.getFullYear(), oggi.getMonth() - 1, 1);
+    const giorniNelMese = d => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const giorniCorrente = giorniNelMese(inizioCorrente);
+    const giorniPassato = giorniNelMese(inizioPassato);
+    const giorni = Math.max(giorniCorrente, giorniPassato);
+
+    const totali = new Map(perGiorno.map(g => [g.data, g.totale]));
+    const giorno = (inizio, n) => aIso(new Date(inizio.getFullYear(), inizio.getMonth(), n));
+
+    // null = giorno che non esiste (es. 31 in un mese di 30) o non ancora arrivato.
+    const corrente = [], passato = [];
+    for (let n = 1; n <= giorni; n++) {
+        corrente.push(n <= giorniCorrente && n <= oggi.getDate() ? (totali.get(giorno(inizioCorrente, n)) || 0) : null);
+        passato.push(n <= giorniPassato ? (totali.get(giorno(inizioPassato, n)) || 0) : null);
+    }
+
+    const nomeCorrente = maiuscola(nomeMeseLungo.format(inizioCorrente));
+    const nomePassato = maiuscola(nomeMeseLungo.format(inizioPassato));
+    $("sottotitoloDate").textContent = `${nomeCorrente} e ${nomePassato.toLowerCase()}, giorno per giorno`;
+    $("intestazionePeriodo").textContent = "Giorno";
+
+    // Tabella: i giorni con spese dei due mesi, in ordine di data.
+    const righe = [];
+    for (let n = 1; n <= giorni; n++) {
+        if (passato[n - 1]) righe.push([giorno(inizioPassato, n), passato[n - 1]]);
+    }
+    for (let n = 1; n <= giorni; n++) {
+        if (corrente[n - 1]) righe.push([giorno(inizioCorrente, n), corrente[n - 1]]);
+    }
+    $("tabellaDate").replaceChildren(...righe.map(([data, valore]) => {
+        const tr = el("tr");
+        tr.append(el("td", null, formatoData(data)), el("td", "text-end", euro.format(valore)));
+        return tr;
+    }));
+
+    const barre = (label, data, colore) => ({
+        label, data, backgroundColor: colore,
+        borderRadius: { topLeft: 3, topRight: 3 },
+        borderSkipped: "bottom",
+        categoryPercentage: 0.9,
+        barPercentage: 0.95,
+        maxBarThickness: 14
+    });
+
+    const dati = {
+        labels: Array.from({ length: giorni }, (_, i) => String(i + 1)),
+        datasets: [
+            barre(nomePassato, passato, COLORE_MESE_PASSATO),
+            barre(nomeCorrente, corrente, COLORE_BARRE)
+        ]
+    };
+
+    mostraGraficoDate(dati, {
+        legenda: true,
+        titolo: el => "Giorno " + (el[0].dataIndex + 1),
+        etichetta: c => ` ${c.dataset.label}: ${euro.format(c.parsed.y)}`
+    });
+}
+
+// Crea o aggiorna il grafico a barre "Spese per data".
+function mostraGraficoDate(dati, { legenda = false, titolo, etichetta }) {
+    const opzioni = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 250 },
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+            legend: {
+                display: legenda,
+                position: "top",
+                align: "start",
+                labels: { boxWidth: 12, boxHeight: 12, useBorderRadius: true, borderRadius: 3 }
+            },
+            tooltip: { callbacks: { title: titolo, label: etichetta } }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 12 } },
+            y: {
+                beginAtZero: true,
+                border: { display: false },
+                grid: { color: GRIGLIA },
+                ticks: { maxTicksLimit: 5, callback: v => euro.format(v).replace(/,00\s€$/, " €") }
+            }
+        }
+    };
+
+    if (graficoDate) {
+        graficoDate.data = dati;
+        graficoDate.options = opzioni;
+        graficoDate.update();
+    } else {
+        graficoDate = new Chart($("graficoDate"), { type: "bar", data: dati, options: opzioni });
+    }
+}
+
 function disegnaDate(perGiorno, filtri) {
+
+    if (!filtri.dal && !filtri.al) {
+        disegnaConfronto(perGiorno);
+        return;
+    }
 
     const { mensile, punti } = serieDate(perGiorno, filtri);
     $("sottotitoloDate").textContent = mensile ? "Totale per mese" : "Totale per giorno";
@@ -100,38 +210,10 @@ function disegnaDate(perGiorno, filtri) {
         }]
     };
 
-    const opzioni = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 250 },
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    title: el => punti[el[0].dataIndex].dataCompleta || punti[el[0].dataIndex].etichetta,
-                    label: c => " " + euro.format(c.parsed.y)
-                }
-            }
-        },
-        scales: {
-            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, autoSkipPadding: 12 } },
-            y: {
-                beginAtZero: true,
-                border: { display: false },
-                grid: { color: GRIGLIA },
-                ticks: { maxTicksLimit: 5, callback: v => euro.format(v).replace(/,00\s€$/, " €") }
-            }
-        }
-    };
-
-    if (graficoDate) {
-        graficoDate.data = dati;
-        graficoDate.options = opzioni;
-        graficoDate.update();
-    } else {
-        graficoDate = new Chart($("graficoDate"), { type: "bar", data: dati, options: opzioni });
-    }
+    mostraGraficoDate(dati, {
+        titolo: el => punti[el[0].dataIndex].dataCompleta || punti[el[0].dataIndex].etichetta,
+        etichetta: c => " " + euro.format(c.parsed.y)
+    });
 }
 
 // ---------------------------------------------------------------------------
