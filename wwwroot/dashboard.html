@@ -79,7 +79,7 @@
         <div id="grafici" hidden>
             <div class="carosello" id="carosello" aria-roledescription="carosello" aria-label="Grafici">
                 <div class="carosello-binario" tabindex="0">
-                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="1 di 2: Spese per data">
+                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="1 di 3: Spese per data">
                         <h3 class="h5 fw-bold mb-0">Spese per data</h3>
                         <p class="small text-body-secondary mb-2" id="sottotitoloDate"></p>
                         <div class="grafico-barre">
@@ -96,7 +96,7 @@
                         </details>
                     </section>
 
-                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="2 di 2: Spese per categoria">
+                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="2 di 3: Spese per categoria">
                         <h3 class="h5 fw-bold mb-3">Spese per categoria</h3>
                         <div class="row g-4 align-items-center flex-grow-1" id="rigaCategorie">
                             <div class="col-md-6" id="colonnaTorta">
@@ -106,6 +106,22 @@
                             </div>
                             <div class="col-md-6" id="colonnaElenco">
                                 <ul class="list-group list-group-flush" id="legendaCategorie"></ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="carosello-slide card card-body shadow-sm border-0" aria-roledescription="slide" aria-label="3 di 3: Mese in corso e mese passato">
+                        <h3 class="h5 fw-bold mb-0">Mese in corso e mese passato</h3>
+                        <p class="small text-body-secondary mb-3" id="sottotitoloMesi"></p>
+                        <div class="row g-4 align-items-center flex-grow-1">
+                            <div class="col-md-6" id="colonnaTortaMesi">
+                                <div class="grafico-torta mx-auto">
+                                    <canvas id="graficoMesi" role="img" aria-label="Grafico a torta: spese del mese in corso e del mese passato"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-group list-group-flush" id="legendaMesi"></ul>
+                                <p class="small text-body-secondary mt-2 mb-0" id="differenzaMesi"></p>
                             </div>
                         </div>
                     </section>
