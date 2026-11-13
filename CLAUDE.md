@@ -18,3 +18,9 @@
 - Non ricontrollare nulla da solo: niente controlli programmati, promemoria o verifiche
   automatiche (PR, CI, deploy). Controlli solo quando te lo chiedo.
 - Se un'azione sembra utile, proponila e aspetta il mio via.
+
+## Rami
+
+- Ogni lavoro va su un ramo nuovo con un nome che riassume l'attività svolta
+  (es. `claude/dashboard-ordine-categorie`), non su un ramo generico.
+- Un ramo per ogni attività: lavori diversi vanno su rami diversi.
