@@ -1,7 +1,8 @@
 // Pagina Leghe del modulo Fantapolitica (fantapolitica.html): tutte le leghe con le
 // persone che ne fanno parte, le loro squadre e la classifica (ordine e posizioni dal server). Ognuno può creare una lega, di cui fa
 // sempre parte; modifica ed eliminazione solo per chi l'ha creata e per il Super admin
-// (il server lo indica con "gestibile").
+// (il server lo indica con "gestibile"). Il Super admin e l'Amministratore del modulo
+// possono creare, modificare ed eliminare le squadre dei membri ("gestioneSquadre").
 // Componenti comuni: componenti.js e js/fantapolitica-comune.js.
 
 const API = API_FANTAPOLITICA;
@@ -10,6 +11,32 @@ const $ = id => document.getElementById(id);
 let utenteCorrente = null;
 let utenti = [];        // utenti abilitati alla Fantapolitica, tra cui scegliere i membri
 let inModifica = null;  // lega in modifica, null se è nuova
+let sceltaPreparata = false;
+
+// Finestra per le squadre dei membri (solo gestori).
+const scelta = finestraSquadra({ dopoSalvataggio: () => caricaLeghe() });
+
+async function apriSquadra(l, m) {
+    if (!sceltaPreparata) { await scelta.prepara(); sceltaPreparata = true; }
+    scelta.apri({
+        legaNome: l.nome, squadra: m.squadra, perChi: m.nome,
+        url: `${API}/leghe/${l.id}/squadre/${m.id}`
+    });
+}
+
+async function eliminaSquadra(l, m) {
+    if (!confirm(`Eliminare la squadra "${m.squadra.nome}" di ${m.nome}?`)) return;
+    try {
+        const response = await api(`${API}/leghe/${l.id}/squadre/${m.id}`, { method: "DELETE" });
+        if (!response.ok) {
+            alert(await messaggioErrore(response, "Errore durante l'eliminazione."));
+            return;
+        }
+        await caricaLeghe();
+    } catch {
+        alert("Errore nel collegamento al server.");
+    }
+}
 
 const modulo = moduloFinestra($("finestra"), { primoCampo: $("nome") });
 
@@ -96,7 +123,7 @@ function rigaMembro(l, m) {
             el("span", null, `· ${crediti(m.squadra.spesi)} spesi`));
     } else {
         sotto.appendChild(el("span", "fst-italic", "nessuna squadra"));
-        if (io) {
+        if (io && !l.gestioneSquadre) {
             const link = el("a", null, "Crea la tua squadra");
             link.href = "/fantapolitica-squadra.html";
             sotto.append(document.createTextNode("·"), link);
@@ -107,8 +134,11 @@ function rigaMembro(l, m) {
     const riga = [posizione, centro, etichettaPunti(m.punti)];
 
     if (!m.squadra) {
-        const contenitore = el("div", "d-flex align-items-center gap-3");
+        const contenitore = el("div", "d-flex align-items-center gap-3 flex-wrap");
         contenitore.append(...riga);
+        if (l.gestioneSquadre) {
+            contenitore.appendChild(pulsante("Crea squadra", "btn btn-sm btn-outline-primary", () => apriSquadra(l, m)));
+        }
         li.appendChild(contenitore);
         return li;
     }
@@ -118,6 +148,13 @@ function rigaMembro(l, m) {
     sommario.append(...riga);
     const corpo = el("div", "mt-2 small dettaglio-squadra");
     corpo.appendChild(elencoPoliticiSquadra(m.squadra.politici));
+    if (l.gestioneSquadre) {
+        const azioni = el("div", "d-flex gap-2 mt-2");
+        azioni.append(
+            pulsante("Modifica squadra", "btn btn-sm btn-light border", () => apriSquadra(l, m)),
+            pulsante("Elimina squadra", "btn btn-sm btn-outline-danger", () => eliminaSquadra(l, m)));
+        corpo.appendChild(azioni);
+    }
     dettagli.append(sommario, corpo);
     li.appendChild(dettagli);
     return li;
