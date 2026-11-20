@@ -2,7 +2,7 @@
 
 Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia web in
 `wwwroot/`. Oggi i moduli sono **Admin**, **Gestione finanze** (uscite per categoria),
-**Fantapolitica** (leghe; il resto in costruzione), **Stampa 3D** (oggetti personalizzabili da stampare) e
+**Fantapolitica** (leghe, squadre di politici), **Stampa 3D** (oggetti personalizzabili da stampare) e
 **IA** (pezzi 3D creati descrivendoli a parole).
 
 - **Pagina di ingresso** (`index.html`, per tutti): dopo l'accesso, un riquadro per ogni
@@ -154,7 +154,7 @@ c'è il **Super admin** (`Utenti.SuperAdmin`).
 | Modulo | Contiene | Livelli assegnabili |
 |---|---|---|
 | **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
-| **Fantapolitica** (`fantapolitica`) | Leghe: tutti vedono tutte le leghe e ne creano di nuove scegliendo le persone tra gli utenti abilitati al modulo (Super admin compresi); chi crea la lega ne fa sempre parte e solo lui o il Super admin la modifica o la elimina. Politici ed eventi (solo Amministratore, in costruzione) | Utente, Amministratore |
+| **Fantapolitica** (`fantapolitica`) | Leghe: tutti vedono tutte le leghe e ne creano di nuove scegliendo le persone tra gli utenti abilitati al modulo (Super admin compresi); chi crea la lega ne fa sempre parte e solo lui o il Super admin la modifica o la elimina. La mia squadra: in ogni lega ognuno sceglie 5 politici (anche gli stessi degli altri) e la cambia quando vuole; tutti i membri vedono le squadre della lega. Politici: elenco gestito solo dal Super admin (all'inizio i politici di Adria) | Utente, Amministratore |
 | **Stampa 3D** (`stampa3d`) | Catalogo, configuratore, progetti propri; l'Amministratore vede i progetti di tutti | Utente, Amministratore |
 | **IA** (`ia`) | IA 3D (per ora uguale per i due livelli) | Utente, Amministratore |
 | **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |

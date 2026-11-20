@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La mia squadra - Fantapolitica</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="casa me-auto link-light link-opacity-75 link-opacity-100-hover" title="Pagina di ingresso" aria-label="Pagina di ingresso"><i class="bi bi-house-door" aria-hidden="true"></i></a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <h2 class="h3 fw-bold mb-1">La mia squadra</h2>
+    <p class="text-body-secondary mb-3" id="spiegazione">In ogni lega di cui fai parte hai una squadra di politici.</p>
+
+    <div class="d-flex flex-column gap-3" id="elencoSquadre">
+        <div class="card shadow-sm border-0">
+            <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                <span>Caricamento...</span>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<dialog id="finestra" class="finestra">
+    <form method="dialog" id="formSquadra" novalidate>
+        <h2 class="h4 fw-bold mb-1" tabindex="-1" autofocus>La mia squadra</h2>
+        <p class="small text-body-secondary mb-3" id="nomeLega"></p>
+
+        <label for="nome" class="form-label fw-semibold">Nome della squadra</label>
+        <input type="text" id="nome" class="form-control" maxlength="50" autocomplete="off">
+
+        <div class="d-flex justify-content-between align-items-baseline mt-3 mb-2">
+            <span class="fw-semibold" id="etichettaPolitici">Politici</span>
+            <span class="small" id="contaPolitici"></span>
+        </div>
+        <div class="list-group overflow-auto scelta-membri" id="sceltaPolitici"
+             role="group" aria-labelledby="etichettaPolitici"></div>
+
+        <div id="erroreFinestra" class="small mt-2 text-danger"></div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-light" id="annulla">Annulla</button>
+            <button type="submit" class="btn btn-primary px-4">Salva</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="componenti.js"></script>
+<script src="js/fantapolitica-comune.js"></script>
+<script src="js/fantapolitica-squadra.js"></script>
+
+</body>
+</html>

@@ -67,7 +67,7 @@ public static class Politiche
     // Modulo Fantapolitica: qualsiasi livello.
     public const string Fantapolitica = "Fantapolitica";
 
-    // Fantapolitica, livello Amministratore: gestisce politici ed eventi.
+    // Fantapolitica, livello Amministratore (i politici invece li gestisce solo il Super admin).
     public const string FantapoliticaAmministratore = "FantapoliticaAmministratore";
 
     // Modulo Stampa 3D: qualsiasi livello (catalogo, configuratore, i propri progetti).

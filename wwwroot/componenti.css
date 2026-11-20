@@ -324,6 +324,27 @@ body.modale-telefono dialog.finestra[open] {
     max-height: 18rem;
 }
 
+/* Squadra di un membro nella pagina Leghe: riga che si apre per mostrare i politici. */
+.squadra-lega > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.squadra-lega > summary::-webkit-details-marker {
+    display: none;
+}
+
+.squadra-lega > summary::after {
+    content: "\F282"; /* bi-chevron-down */
+    font-family: "bootstrap-icons";
+    color: var(--bs-secondary-color);
+    transition: transform 0.15s;
+}
+
+.squadra-lega[open] > summary::after {
+    transform: rotate(180deg);
+}
+
 /* Scelta di icona e colore nella finestra della categoria. */
 .scelta-icone {
     display: grid;
