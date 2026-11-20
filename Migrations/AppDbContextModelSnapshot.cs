@@ -127,6 +127,47 @@ namespace GestionalePersone.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.Lega", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatoDaId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatoIl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatoDaId");
+
+                    b.ToTable("Leghe");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.MembroLega", b =>
+                {
+                    b.Property<int>("LegaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UtenteId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("LegaId", "UtenteId");
+
+                    b.HasIndex("UtenteId");
+
+                    b.ToTable("MembriLeghe");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Progetto3d", b =>
                 {
                     b.Property<int>("Id")
@@ -294,6 +335,35 @@ namespace GestionalePersone.Migrations
                     b.Navigation("Utente");
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.Lega", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Utente", "CreatoDa")
+                        .WithMany()
+                        .HasForeignKey("CreatoDaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatoDa");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.MembroLega", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Lega", "Lega")
+                        .WithMany("Membri")
+                        .HasForeignKey("LegaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestionalePersone.Models.Utente", "Utente")
+                        .WithMany()
+                        .HasForeignKey("UtenteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lega");
+
+                    b.Navigation("Utente");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Progetto3d", b =>
                 {
                     b.HasOne("GestionalePersone.Models.Utente", "CreatoDa")
@@ -320,6 +390,11 @@ namespace GestionalePersone.Migrations
                     b.Navigation("Categoria");
 
                     b.Navigation("CreatoDa");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Lega", b =>
+                {
+                    b.Navigation("Membri");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Utente", b =>
