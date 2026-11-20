@@ -108,6 +108,17 @@ public class FantapoliticaController : ControllerBase
     // Le mie leghe con la mia squadra (pagina "La mia squadra").
     public record MiaLegaDto(int Id, string Nome, SquadraDto? Squadra);
 
+    // Classifica generale: tutte le squadre di tutte le leghe e tutti i politici.
+    public record LegaBreveDto(int Id, string Nome);
+
+    public record SquadraInClassificaDto(int Posizione, PersonaDto Utente, LegaBreveDto Lega, SquadraDto Squadra);
+
+    public record EventoDelPoliticoDto(DateOnly Data, string Voce, int Punti, string? Descrizione);
+
+    public record PoliticoInClassificaDto(int Posizione, PoliticoDto Politico, List<EventoDelPoliticoDto> Eventi);
+
+    public record ClassificaDto(List<SquadraInClassificaDto> Squadre, List<PoliticoInClassificaDto> Politici);
+
     // GestioneSquadre: posso cambiare la mia squadra anche dopo averla confermata.
     public record MieSquadreDto(int PoliticiPerSquadra, int CreditiPerSquadra, bool GestioneSquadre, List<MiaLegaDto> Leghe);
 
@@ -286,7 +297,22 @@ public class FantapoliticaController : ControllerBase
         return (scelti, null);
     }
 
-    // La lega con i membri in ordine di classifica.
+    // Posizioni in classifica di un elenco già ordinato: chi ha la stessa chiave (es. stessi
+    // punti e stessi crediti spesi) ha la stessa posizione (1, 2, 2, 4...).
+    private static List<int> Posizioni<T, TChiave>(IList<T> ordinati, Func<T, TChiave> chiave)
+    {
+        var posizioni = new List<int>(ordinati.Count);
+        for (var i = 0; i < ordinati.Count; i++)
+        {
+            posizioni.Add(i > 0 && EqualityComparer<TChiave>.Default.Equals(chiave(ordinati[i]), chiave(ordinati[i - 1]))
+                ? posizioni[i - 1]
+                : i + 1);
+        }
+        return posizioni;
+    }
+
+    // La lega con i membri in ordine di classifica: punti, poi (spareggio) meno crediti spesi.
+    // Chi non ha la squadra va in fondo.
     private LegaDto Dto(Lega l, Dictionary<(int, int), Squadra> squadre, PunteggiFantapolitica punteggi)
     {
         var membri = l.Membri
@@ -295,21 +321,70 @@ public class FantapoliticaController : ControllerBase
                 var squadra = squadre.TryGetValue((l.Id, m.UtenteId), out var s) ? Dto(s, punteggi) : null;
                 return new MembroDto(m.UtenteId, NomeVisibile(m.Utente), squadra, squadra?.Punti ?? 0, 0);
             })
-            .OrderByDescending(m => m.Punti)
-            .ThenBy(m => m.Squadra == null)
+            .OrderBy(m => m.Squadra == null)
+            .ThenByDescending(m => m.Punti)
+            .ThenBy(m => m.Squadra?.Spesi ?? 0)
             .ThenBy(m => m.Nome, Alfabetico)
             .ToList();
 
-        // Posizione: a pari punti la stessa (1, 2, 2, 4...).
+        var posizioni = Posizioni(membri, m => (m.Squadra == null, m.Punti, m.Squadra?.Spesi ?? 0));
         for (var i = 0; i < membri.Count; i++)
-        {
-            var posizione = i > 0 && membri[i].Punti == membri[i - 1].Punti ? membri[i - 1].Posizione : i + 1;
-            membri[i] = membri[i] with { Posizione = posizione };
-        }
+            membri[i] = membri[i] with { Posizione = posizioni[i] };
 
         return new(l.Id, l.Nome,
             l.CreatoDa == null ? null : new PersonaDto(l.CreatoDa.Id, NomeVisibile(l.CreatoDa)),
             PuoGestire(l), l.CreatoIl, membri, GestoreSquadre);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Classifica generale (tutti gli utenti del modulo)
+    // ---------------------------------------------------------------------------
+
+    // Squadre di tutte le leghe (punti, poi meno crediti spesi) e politici (punti), con il
+    // dettaglio degli eventi di ogni politico.
+    [HttpGet("classifica")]
+    public async Task<ClassificaDto> GetClassifica()
+    {
+        var punteggi = await PunteggiFantapolitica.Carica(_context);
+
+        var squadre = (await _context.Squadre.AsNoTracking()
+                .Include(s => s.Utente)
+                .Include(s => s.Politici).ThenInclude(ps => ps.Politico)
+                .ToListAsync())
+            .Select(s => new { s.LegaId, s.Utente, Dto = Dto(s, punteggi) })
+            .OrderByDescending(x => x.Dto.Punti)
+            .ThenBy(x => x.Dto.Spesi)
+            .ThenBy(x => x.Dto.Nome, Alfabetico)
+            .ToList();
+        var leghe = await _context.Leghe.AsNoTracking().ToDictionaryAsync(l => l.Id, l => l.Nome);
+        var posizioniSquadre = Posizioni(squadre, x => (x.Dto.Punti, x.Dto.Spesi));
+
+        var politici = await _context.Politici.AsNoTracking().ToListAsync();
+        var inSquadra = await _context.PoliticiSquadre.AsNoTracking()
+            .Where(ps => ps.CedutoIl == null)
+            .GroupBy(ps => ps.PoliticoId)
+            .Select(g => new { g.Key, Numero = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Numero);
+        var eventi = (await _context.EventiPolitici.AsNoTracking()
+                .Select(ep => new { ep.PoliticoId, ep.Evento.Data, ep.Evento.Id, Voce = ep.Evento.Voce.Nome, ep.Evento.Punti, ep.Evento.Descrizione })
+                .ToListAsync())
+            .GroupBy(e => e.PoliticoId)
+            .ToDictionary(g => g.Key, g => g
+                .OrderByDescending(e => e.Data).ThenByDescending(e => e.Id)
+                .Select(e => new EventoDelPoliticoDto(e.Data, e.Voce, e.Punti, e.Descrizione))
+                .ToList());
+        var ordinati = Ordina(politici)
+            .Select(p => Dto(p, inSquadra.GetValueOrDefault(p.Id), punteggi.DelPolitico(p.Id)))
+            .OrderByDescending(p => p.Punti)   // stabile: a pari punti resta l'ordine per ruolo e nome
+            .ToList();
+        var posizioniPolitici = Posizioni(ordinati, p => p.Punti);
+
+        return new ClassificaDto(
+            squadre.Select((x, i) => new SquadraInClassificaDto(posizioniSquadre[i],
+                new PersonaDto(x.Utente.Id, NomeVisibile(x.Utente)),
+                new LegaBreveDto(x.LegaId, leghe.GetValueOrDefault(x.LegaId, "")), x.Dto)).ToList(),
+            ordinati.Select((p, i) => new PoliticoInClassificaDto(posizioniPolitici[i], p,
+                eventi.GetValueOrDefault(p.Id) ?? [])).ToList());
     }
 
     // ---------------------------------------------------------------------------

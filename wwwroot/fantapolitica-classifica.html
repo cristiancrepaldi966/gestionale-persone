@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classifica - Fantapolitica</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="casa me-auto link-light link-opacity-75 link-opacity-100-hover" title="Pagina di ingresso" aria-label="Pagina di ingresso"><i class="bi bi-house-door" aria-hidden="true"></i></a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <h2 class="h3 fw-bold mb-3">Classifica</h2>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="nav nav-pills gap-1" role="tablist" aria-label="Classifiche">
+            <button type="button" class="nav-link active" id="schedaSquadre" role="tab" aria-selected="true" aria-controls="pannelloSquadre">
+                <i class="bi bi-shield-fill" aria-hidden="true"></i> Squadre
+            </button>
+            <button type="button" class="nav-link" id="schedaPolitici" role="tab" aria-selected="false" aria-controls="pannelloPolitici">
+                <i class="bi bi-person-badge" aria-hidden="true"></i> Politici
+            </button>
+        </div>
+        <select id="filtroLega" class="form-select w-auto" aria-label="Lega"></select>
+    </div>
+
+    <section id="pannelloSquadre" role="tabpanel" aria-labelledby="schedaSquadre">
+        <p class="small text-body-secondary px-1 mb-2" id="spiegazioneSquadre">Tutte le squadre di tutte le leghe. A pari punti passa davanti chi ha speso meno crediti.</p>
+        <div class="card shadow-sm border-0">
+            <ul class="list-group list-group-flush rounded" id="classificaSquadre">
+                <li class="list-group-item caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                    <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                    <span>Caricamento...</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="pannelloPolitici" role="tabpanel" aria-labelledby="schedaPolitici" hidden>
+        <p class="small text-body-secondary px-1 mb-2">Tutti i punti presi da ogni politico. Tocca un politico per vedere i suoi eventi.</p>
+        <div class="card shadow-sm border-0">
+            <ul class="list-group list-group-flush rounded" id="classificaPolitici"></ul>
+        </div>
+    </section>
+
+</main>
+
+<script src="componenti.js"></script>
+<script src="js/fantapolitica-comune.js"></script>
+<script src="js/fantapolitica-classifica.js"></script>
+
+</body>
+</html>
