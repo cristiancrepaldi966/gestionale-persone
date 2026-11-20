@@ -19,6 +19,9 @@ namespace GestionalePersone.Controllers;
 // (lo stesso politico può stare in più squadre), comprati spendendo al massimo i crediti
 // per squadra (li decide il Super admin, come i costi). Il prezzo pagato resta quello anche
 // se poi il costo cambia. Tutti i membri vedono le squadre e la classifica della lega.
+// La squadra si crea una volta sola: salvarla vale come conferma e poi il giocatore non la
+// può più cambiare né eliminare. Il Super admin e l'Amministratore del modulo ("gestori")
+// modificano ed eliminano le squadre di tutti, compresa la propria.
 // Punti: dagli eventi (FantapoliticaEventiController), vedi Services/PunteggiFantapolitica.
 [ApiController]
 [Authorize(Policy = Politiche.Fantapolitica)]
@@ -97,13 +100,16 @@ public class FantapoliticaController : ControllerBase
     // Posizione in classifica (a pari punti, stessa posizione); chi non ha squadra ha 0 punti.
     public record MembroDto(int Id, string Nome, SquadraDto? Squadra, int Punti, int Posizione);
 
+    // GestioneSquadre: chi guarda può modificare le squadre dei membri (Super admin e
+    // Amministratore del modulo).
     public record LegaDto(int Id, string Nome, PersonaDto? CreatoDa, bool Gestibile, DateTime CreatoIl,
-        List<MembroDto> Membri);
+        List<MembroDto> Membri, bool GestioneSquadre);
 
     // Le mie leghe con la mia squadra (pagina "La mia squadra").
     public record MiaLegaDto(int Id, string Nome, SquadraDto? Squadra);
 
-    public record MieSquadreDto(int PoliticiPerSquadra, int CreditiPerSquadra, List<MiaLegaDto> Leghe);
+    // GestioneSquadre: posso cambiare la mia squadra anche dopo averla confermata.
+    public record MieSquadreDto(int PoliticiPerSquadra, int CreditiPerSquadra, bool GestioneSquadre, List<MiaLegaDto> Leghe);
 
     private int IdCorrente => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -119,6 +125,9 @@ public class FantapoliticaController : ControllerBase
     }
 
     private bool PuoGestire(Lega l) => l.CreatoDaId == IdCorrente || User.SuperAdmin();
+
+    // Super admin e Amministratore del modulo: modificano le squadre di tutti.
+    private bool GestoreSquadre => User.E(Moduli.Fantapolitica, Livelli.Amministratore);
 
     private static readonly StringComparer Alfabetico =
         StringComparer.Create(new System.Globalization.CultureInfo("it-IT"), true);
@@ -300,7 +309,7 @@ public class FantapoliticaController : ControllerBase
 
         return new(l.Id, l.Nome,
             l.CreatoDa == null ? null : new PersonaDto(l.CreatoDa.Id, NomeVisibile(l.CreatoDa)),
-            PuoGestire(l), l.CreatoIl, membri);
+            PuoGestire(l), l.CreatoIl, membri, GestoreSquadre);
     }
 
     // ---------------------------------------------------------------------------
@@ -422,20 +431,41 @@ public class FantapoliticaController : ControllerBase
             .ToDictionaryAsync(s => s.LegaId);
         var punteggi = await PunteggiFantapolitica.Carica(_context);
 
-        return new MieSquadreDto(Squadra.PoliticiPerSquadra, (await Impostazioni()).CreditiPerSquadra, leghe
+        return new MieSquadreDto(Squadra.PoliticiPerSquadra, (await Impostazioni()).CreditiPerSquadra, GestoreSquadre, leghe
             .OrderBy(l => l.Nome, Alfabetico)
             .Select(l => new MiaLegaDto(l.Id, l.Nome, squadre.TryGetValue(l.Id, out var s) ? Dto(s, punteggi) : null))
             .ToList());
     }
 
-    // Crea o aggiorna la mia squadra nella lega.
+    // Crea la mia squadra nella lega (vale come conferma). Dopo, solo i gestori possono
+    // cambiarla.
     [HttpPut("leghe/{legaId}/squadra")]
     public async Task<IActionResult> SalvaSquadra(int legaId, SquadraRequest richiesta)
     {
         var id = IdCorrente;
         if (!await _context.MembriLeghe.AnyAsync(m => m.LegaId == legaId && m.UtenteId == id))
             return NotFound(new { messaggio = "Non fai parte di questa lega." });
+        if (!GestoreSquadre && await _context.Squadre.AnyAsync(s => s.LegaId == legaId && s.UtenteId == id))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { messaggio = "La tua squadra è già confermata: non si può più cambiare." });
 
+        return await Salva(legaId, id, richiesta);
+    }
+
+    // Crea o modifica la squadra di un membro della lega (solo gestori).
+    [HttpPut("leghe/{legaId}/squadre/{utenteId}")]
+    [Authorize(Policy = Politiche.FantapoliticaAmministratore)]
+    public async Task<IActionResult> SalvaSquadraDi(int legaId, int utenteId, SquadraRequest richiesta)
+    {
+        if (!await _context.MembriLeghe.AnyAsync(m => m.LegaId == legaId && m.UtenteId == utenteId))
+            return NotFound(new { messaggio = "Questa persona non fa parte della lega." });
+
+        return await Salva(legaId, utenteId, richiesta);
+    }
+
+    // Regole comuni: nome, numero di politici, crediti; acquisti e vendite nello storico.
+    private async Task<IActionResult> Salva(int legaId, int id, SquadraRequest richiesta)
+    {
         if (string.IsNullOrWhiteSpace(richiesta.Nome))
             return BadRequest(new { messaggio = "Il nome della squadra è obbligatorio." });
 
@@ -482,10 +512,20 @@ public class FantapoliticaController : ControllerBase
         return NoContent();
     }
 
+    // Eliminare la propria squadra: solo i gestori (il giocatore non può rifarla da capo).
     [HttpDelete("leghe/{legaId}/squadra")]
-    public async Task<IActionResult> EliminaSquadra(int legaId)
+    public Task<IActionResult> EliminaSquadra(int legaId) =>
+        GestoreSquadre
+            ? Elimina(legaId, IdCorrente)
+            : Task.FromResult<IActionResult>(StatusCode(StatusCodes.Status403Forbidden,
+                new { messaggio = "La tua squadra è confermata: non si può eliminare." }));
+
+    [HttpDelete("leghe/{legaId}/squadre/{utenteId}")]
+    [Authorize(Policy = Politiche.FantapoliticaAmministratore)]
+    public Task<IActionResult> EliminaSquadraDi(int legaId, int utenteId) => Elimina(legaId, utenteId);
+
+    private async Task<IActionResult> Elimina(int legaId, int id)
     {
-        var id = IdCorrente;
         var squadra = await _context.Squadre.SingleOrDefaultAsync(s => s.LegaId == legaId && s.UtenteId == id);
         if (squadra == null)
             return NotFound(new { messaggio = "Squadra non trovata." });
