@@ -325,24 +325,52 @@ body.modale-telefono dialog.finestra[open] {
 }
 
 /* Squadra di un membro nella pagina Leghe: riga che si apre per mostrare i politici. */
-.squadra-lega > summary {
+/* Anche il listino della pagina Eventi si apre e chiude allo stesso modo. */
+.squadra-lega > summary,
+.listino > summary {
     cursor: pointer;
     list-style: none;
 }
 
-.squadra-lega > summary::-webkit-details-marker {
+.squadra-lega > summary::-webkit-details-marker,
+.listino > summary::-webkit-details-marker {
     display: none;
 }
 
-.squadra-lega > summary::after {
+.squadra-lega > summary::after,
+.listino > summary::after {
     content: "\F282"; /* bi-chevron-down */
     font-family: "bootstrap-icons";
     color: var(--bs-secondary-color);
     transition: transform 0.15s;
 }
 
-.squadra-lega[open] > summary::after {
+.squadra-lega[open] > summary::after,
+.listino[open] > summary::after {
     transform: rotate(180deg);
+}
+
+/* Classifica della lega: posizione in un cerchio (oro, argento, bronzo sul podio). */
+.posizione-classifica {
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
+}
+
+.posizione-classifica.podio-1 { background: #f5c518; color: #3d2f00; }
+.posizione-classifica.podio-2 { background: #c9ced6; color: #2b3035; }
+.posizione-classifica.podio-3 { background: #d9935a; color: #3a1d05; }
+
+/* Politici della squadra sotto la riga della classifica, allineati al nome. */
+.dettaglio-squadra {
+    padding-left: 2.75rem;
 }
 
 /* Casella dei crediti per squadra (pagina Politici). */

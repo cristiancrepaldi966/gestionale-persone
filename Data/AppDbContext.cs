@@ -36,6 +36,13 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<ImpostazioniFantapolitica> ImpostazioniFantapolitica => Set<ImpostazioniFantapolitica>();
 
+    // Listino dei bonus e malus ed eventi che danno i punti ai politici.
+    public DbSet<VocePunteggio> VociPunteggio => Set<VocePunteggio>();
+
+    public DbSet<Evento> Eventi => Set<Evento>();
+
+    public DbSet<EventoPolitico> EventiPolitici => Set<EventoPolitico>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -119,6 +126,41 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             i.HasData(new ImpostazioniFantapolitica { Id = Models.ImpostazioniFantapolitica.IdUnico, CreditiPerSquadra = 100 });
         });
 
+        modelBuilder.Entity<VocePunteggio>(v =>
+        {
+            v.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            v.HasData(
+                new VocePunteggio { Id = 1, Nome = "Intervento in consiglio", Punti = 2 },
+                new VocePunteggio { Id = 2, Nome = "Mozione o interrogazione presentata", Punti = 3 },
+                new VocePunteggio { Id = 3, Nome = "Mozione approvata", Punti = 5 },
+                new VocePunteggio { Id = 4, Nome = "Articolo sui giornali locali", Punti = 1 },
+                new VocePunteggio { Id = 5, Nome = "Inaugurazione o evento pubblico", Punti = 2 },
+                new VocePunteggio { Id = 6, Nome = "Assenza in consiglio", Punti = -2 },
+                new VocePunteggio { Id = 7, Nome = "Polemica o gaffe", Punti = -3 },
+                new VocePunteggio { Id = 8, Nome = "Cambio di partito o lista", Punti = -5 });
+        });
+
+        modelBuilder.Entity<Evento>(e =>
+        {
+            e.Property(x => x.Descrizione).HasMaxLength(300);
+            e.HasIndex(x => x.Data);
+            // Una voce usata da qualche evento non si può eliminare.
+            e.HasOne(x => x.Voce).WithMany()
+                .HasForeignKey(x => x.VocePunteggioId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<EventoPolitico>(ep =>
+        {
+            ep.HasKey(x => new { x.EventoId, x.PoliticoId });
+            ep.HasOne(x => x.Evento).WithMany(e => e.Politici)
+                .HasForeignKey(x => x.EventoId)
+                .OnDelete(DeleteBehavior.Cascade);
+            ep.HasOne(x => x.Politico).WithMany()
+                .HasForeignKey(x => x.PoliticoId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Squadra>(s =>
         {
             s.Property(x => x.Nome).HasMaxLength(50).IsRequired();
@@ -136,7 +178,9 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<PoliticoSquadra>(ps =>
         {
-            ps.HasKey(x => new { x.SquadraId, x.PoliticoId });
+            ps.Ignore(x => x.InSquadra);
+            // Un politico è in squadra al massimo una volta (le righe vendute sono storico).
+            ps.HasIndex(x => new { x.SquadraId, x.PoliticoId }).IsUnique().HasFilter("\"CedutoIl\" IS NULL");
             ps.HasOne(x => x.Squadra).WithMany(s => s.Politici)
                 .HasForeignKey(x => x.SquadraId)
                 .OnDelete(DeleteBehavior.Cascade);

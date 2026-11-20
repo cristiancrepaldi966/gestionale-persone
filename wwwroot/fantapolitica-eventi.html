@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventi - Fantapolitica</title>
+    <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="componenti.css">
+</head>
+<body class="in-attesa">
+
+<header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
+    <a href="/" class="casa me-auto link-light link-opacity-75 link-opacity-100-hover" title="Pagina di ingresso" aria-label="Pagina di ingresso"><i class="bi bi-house-door" aria-hidden="true"></i></a>
+    <div class="barra-utente" id="barraUtente"></div>
+</header>
+
+<main class="container contenuto py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h2 class="h3 fw-bold mb-0">Eventi</h2>
+        <button type="button" class="btn btn-primary btn-tondo" id="nuovoEvento"
+                title="Nuovo evento" aria-label="Nuovo evento" hidden>+</button>
+    </div>
+    <p class="text-body-secondary mb-3">I fatti che danno o tolgono punti ai politici. Alla tua squadra contano quelli dal giorno in cui il politico è entrato; se esce, i suoi punti vengono tolti.</p>
+
+    <details class="card shadow-sm border-0 mb-3 listino" id="listino">
+        <summary class="card-body d-flex justify-content-between align-items-center gap-2">
+            <span class="fw-semibold d-inline-flex align-items-center gap-2"><i class="bi bi-list-check" aria-hidden="true"></i>Listino dei bonus e malus</span>
+            <span class="small text-body-secondary" id="contaVoci"></span>
+        </summary>
+        <div class="list-group list-group-flush border-top" id="listaVoci"></div>
+        <div class="card-body border-top py-2 text-end" id="azioniListino" hidden>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="nuovaVoce">Nuova voce</button>
+        </div>
+    </details>
+
+    <div class="px-1 mb-2 text-body-secondary" id="riepilogo"></div>
+
+    <div class="d-flex flex-column gap-3" id="elencoEventi">
+        <div class="card shadow-sm border-0">
+            <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                <span>Caricamento...</span>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<dialog id="finestraEvento" class="finestra">
+    <form method="dialog" id="formEvento" novalidate>
+        <h2 class="h4 fw-bold mb-3" tabindex="-1" autofocus>Nuovo evento</h2>
+
+        <div class="row g-3">
+            <div class="col-sm-5">
+                <label for="data" class="form-label fw-semibold">Data</label>
+                <input type="date" id="data" class="form-control">
+            </div>
+            <div class="col-sm-7">
+                <label for="voce" class="form-label fw-semibold">Voce del listino</label>
+                <select id="voce" class="form-select"></select>
+            </div>
+            <div class="col-12">
+                <label for="descrizione" class="form-label fw-semibold">Descrizione <span class="fw-normal text-body-secondary">(facoltativa)</span></label>
+                <input type="text" id="descrizione" class="form-control" maxlength="300" autocomplete="off"
+                       placeholder="Es. Consiglio comunale, intervento sul bilancio">
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-baseline mt-3 mb-2">
+            <span class="fw-semibold" id="etichettaPoliticiEvento">Politici coinvolti</span>
+            <span class="small text-body-secondary" id="contaPoliticiEvento"></span>
+        </div>
+        <div class="list-group overflow-auto scelta-membri" id="sceltaPoliticiEvento"
+             role="group" aria-labelledby="etichettaPoliticiEvento"></div>
+
+        <div id="erroreEvento" class="small mt-2 text-danger"></div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-light" id="annullaEvento">Annulla</button>
+            <button type="submit" class="btn btn-primary px-4">Salva</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="finestraVoce" class="finestra">
+    <form method="dialog" id="formVoce" novalidate>
+        <h2 class="h4 fw-bold mb-3" tabindex="-1" autofocus>Nuova voce</h2>
+
+        <div class="row g-3">
+            <div class="col-sm-8">
+                <label for="nomeVoce" class="form-label fw-semibold">Nome</label>
+                <input type="text" id="nomeVoce" class="form-control" maxlength="100" autocomplete="off"
+                       placeholder="Es. Intervento in consiglio">
+            </div>
+            <div class="col-sm-4">
+                <label for="puntiVoce" class="form-label fw-semibold">Punti</label>
+                <input type="number" id="puntiVoce" class="form-control" min="-1000" max="1000" step="1">
+            </div>
+        </div>
+        <div class="small text-body-secondary mt-2">Punti negativi per i malus. Cambiare i punti non modifica gli eventi già registrati.</div>
+
+        <div id="erroreVoce" class="small mt-2 text-danger"></div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-light" id="annullaVoce">Annulla</button>
+            <button type="submit" class="btn btn-primary px-4">Salva</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="componenti.js"></script>
+<script src="js/fantapolitica-comune.js"></script>
+<script src="js/fantapolitica-eventi.js"></script>
+
+</body>
+</html>

@@ -37,7 +37,8 @@ function rigaPolitico(p) {
 
     const info = el("div", "min-w-0");
     const titolo = el("div", "d-flex align-items-center gap-2 flex-wrap");
-    titolo.append(el("span", "fw-bold text-break", nomePolitico(p)), etichettaRuolo(p.ruolo), etichettaCrediti(p.costo));
+    titolo.append(el("span", "fw-bold text-break", nomePolitico(p)), etichettaRuolo(p.ruolo), etichettaCrediti(p.costo),
+        etichettaPunti(p.punti));
     info.appendChild(titolo);
     const sotto = [p.partito, p.squadre === 0 ? "in nessuna squadra" : p.squadre === 1 ? "in 1 squadra" : `in ${p.squadre} squadre`]
         .filter(Boolean).join(" · ");
