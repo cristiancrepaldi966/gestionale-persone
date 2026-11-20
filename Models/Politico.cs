@@ -15,6 +15,20 @@ public class Politico
 
     // Partito o lista (facoltativo).
     public string? Partito { get; set; }
+
+    // Costo in crediti per chi lo compra (lo decide il Super admin).
+    public int Costo { get; set; }
+}
+
+// Impostazioni del modulo Fantapolitica (una sola riga, Id = 1), gestite dal Super admin.
+public class ImpostazioniFantapolitica
+{
+    public const int IdUnico = 1;
+
+    public int Id { get; set; } = IdUnico;
+
+    // Crediti a disposizione per ogni squadra.
+    public int CreditiPerSquadra { get; set; } = 100;
 }
 
 public static class RuoliPolitico
@@ -28,7 +42,8 @@ public static class RuoliPolitico
     public static readonly string[] Tutti = [Sindaco, Vicesindaco, Assessore, Consigliere];
 }
 
-// La squadra di un membro in una lega: un nome e Squadra.PoliticiPerSquadra politici.
+// La squadra di un membro in una lega: un nome e Squadra.PoliticiPerSquadra politici,
+// comprati spendendo al massimo i crediti per squadra (ImpostazioniFantapolitica).
 // Una per persona in ogni lega; se la persona esce dalla lega la squadra viene eliminata.
 public class Squadra
 {
@@ -55,6 +70,9 @@ public class Squadra
 // Un politico scelto in una squadra (lo stesso politico può stare in più squadre).
 public class PoliticoSquadra
 {
+    // Prezzo pagato al momento dell'acquisto: resta questo anche se poi il costo cambia.
+    public int Prezzo { get; set; }
+
     public int SquadraId { get; set; }
 
     public Squadra Squadra { get; set; } = null!;

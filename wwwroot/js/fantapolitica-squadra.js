@@ -1,12 +1,18 @@
 // Pagina La mia squadra del modulo Fantapolitica (fantapolitica-squadra.html): per ogni
 // lega di cui faccio parte, la mia squadra (nome e politici). Si crea, si modifica e si
-// elimina quando si vuole. Componenti comuni: componenti.js e js/fantapolitica-comune.js.
+// elimina quando si vuole. I politici si comprano con i crediti per squadra: chi è già in
+// squadra resta al prezzo pagato, i nuovi costano quanto indica oggi il Super admin. Componenti comuni: componenti.js e js/fantapolitica-comune.js.
 
 const $ = id => document.getElementById(id);
 
 let politici = [];          // tutti i politici tra cui scegliere
 let politiciPerSquadra = 5; // dal server
+let creditiPerSquadra = 100; // dal server
 let legaAperta = null;      // lega di cui si sta modificando la squadra
+let prezziPagati = new Map(); // politici già nella squadra aperta → prezzo pagato
+
+// Quanto costa un politico per la squadra aperta.
+const prezzo = p => prezziPagati.has(p.id) ? prezziPagati.get(p.id) : p.costo;
 
 const modulo = moduloFinestra($("finestra"), { primoCampo: $("nome") });
 
@@ -16,8 +22,10 @@ async function caricaSquadre() {
         if (!response.ok) throw new Error();
         const dati = await response.json();
         politiciPerSquadra = dati.politiciPerSquadra;
+        creditiPerSquadra = dati.creditiPerSquadra;
         $("spiegazione").textContent =
-            `In ogni lega di cui fai parte hai una squadra di ${politiciPerSquadra} politici. Puoi cambiarla quando vuoi.`;
+            `In ogni lega di cui fai parte compri una squadra di ${politiciPerSquadra} politici ` +
+            `con ${crediti(creditiPerSquadra)}. Puoi cambiarla quando vuoi.`;
         mostraSquadre(dati.leghe);
     } catch {
         $("elencoSquadre").replaceChildren(el("p", "card card-body shadow-sm border-0 mb-0 text-danger",
@@ -49,6 +57,8 @@ function schedaSquadra(lega) {
     const info = el("div", "min-w-0");
     info.appendChild(el("div", "small text-body-secondary", titoloLega(lega.nome)));
     info.appendChild(el("h3", "h5 fw-bold mb-0 text-break", s ? s.nome : "Nessuna squadra"));
+    if (s) info.appendChild(el("div", "small text-body-secondary",
+        `Spesi ${s.spesi} di ${crediti(creditiPerSquadra)} · ne restano ${creditiPerSquadra - s.spesi}`));
     titolo.appendChild(info);
     testa.appendChild(titolo);
 
@@ -76,10 +86,12 @@ function schedaSquadra(lega) {
     return scheda;
 }
 
-// Finestra: nome e caselle dei politici; arrivati al numero richiesto le altre si bloccano.
+// Finestra: nome e caselle dei politici con il prezzo. Si bloccano i politici che non si
+// possono più prendere: squadra già completa o crediti che non bastano.
 function apri(lega) {
     legaAperta = lega;
     const s = lega.squadra;
+    prezziPagati = new Map(s ? s.politici.map(p => [p.id, p.prezzo]) : []);
     $("nomeLega").textContent = titoloLega(lega.nome);
     $("nome").value = s ? s.nome : "";
     $("erroreFinestra").textContent = "";
@@ -93,7 +105,12 @@ function apri(lega) {
         const testo = el("span", "me-auto min-w-0");
         testo.append(el("span", "d-block", nomePolitico(p)));
         if (p.partito) testo.append(el("span", "d-block small text-body-secondary", p.partito));
-        voce.append(casella, testo, etichettaRuolo(p.ruolo));
+        const destra = el("span", "d-flex flex-column align-items-end gap-1 flex-shrink-0");
+        destra.append(etichettaRuolo(p.ruolo), etichettaCrediti(prezzo(p)));
+        if (prezziPagati.has(p.id) && prezzo(p) !== p.costo) {
+            destra.appendChild(el("span", "small text-body-secondary", `pagato; oggi ${crediti(p.costo)}`));
+        }
+        voce.append(casella, testo, destra);
         return voce;
     }));
     aggiornaScelta();
@@ -104,15 +121,21 @@ function apri(lega) {
 const politiciScelti = () =>
     [...document.querySelectorAll('#sceltaPolitici input[name="politico"]:checked')].map(c => Number(c.value));
 
+const spesa = scelti => scelti.reduce((totale, id) => totale + prezzo(politici.find(p => p.id === id)), 0);
+
 function aggiornaScelta() {
-    const n = politiciScelti().length;
+    const scelti = politiciScelti();
+    const n = scelti.length;
+    const restano = creditiPerSquadra - spesa(scelti);
     const completa = n >= politiciPerSquadra;
     for (const c of document.querySelectorAll('#sceltaPolitici input[name="politico"]')) {
-        c.disabled = completa && !c.checked;
+        const p = politici.find(x => x.id === Number(c.value));
+        c.disabled = !c.checked && (completa || prezzo(p) > restano);
         c.closest("label").classList.toggle("text-body-tertiary", c.disabled);
     }
-    $("contaPolitici").textContent = `${n} di ${politiciPerSquadra} scelti`;
-    $("contaPolitici").className = "small " + (n === politiciPerSquadra ? "text-success fw-semibold" : "text-body-secondary");
+    $("contaPolitici").textContent = `${n} di ${politiciPerSquadra} · restano ${crediti(restano)}`;
+    $("contaPolitici").className = "small " + (restano < 0 ? "text-danger fw-semibold"
+        : n === politiciPerSquadra ? "text-success fw-semibold" : "text-body-secondary");
 }
 
 async function salva() {
@@ -126,6 +149,10 @@ async function salva() {
     }
     if (scelti.length !== politiciPerSquadra) {
         errore.textContent = `Scegli ${politiciPerSquadra} politici (ne hai scelti ${scelti.length}).`;
+        return;
+    }
+    if (spesa(scelti) > creditiPerSquadra) {
+        errore.textContent = `Hai superato i crediti: la squadra costa ${spesa(scelti)} su ${creditiPerSquadra}.`;
         return;
     }
 

@@ -127,6 +127,26 @@ namespace GestionalePersone.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.ImpostazioniFantapolitica", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CreditiPerSquadra")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImpostazioniFantapolitica");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreditiPerSquadra = 100
+                        });
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Lega", b =>
                 {
                     b.Property<int>("Id")
@@ -181,6 +201,9 @@ namespace GestionalePersone.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int>("Costo")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -204,6 +227,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 1,
                             Cognome = "Barbujani",
+                            Costo = 35,
                             Nome = "Massimo",
                             Partito = "Lista Bobo",
                             Ruolo = "Sindaco"
@@ -212,6 +236,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 2,
                             Cognome = "Simoni",
+                            Costo = 25,
                             Nome = "Federico",
                             Ruolo = "Vicesindaco"
                         },
@@ -219,6 +244,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 3,
                             Cognome = "Baratella",
+                            Costo = 20,
                             Nome = "Giselda",
                             Ruolo = "Assessore"
                         },
@@ -226,6 +252,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 4,
                             Cognome = "Crepaldi",
+                            Costo = 20,
                             Nome = "Giorgio",
                             Ruolo = "Assessore"
                         },
@@ -233,6 +260,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 5,
                             Cognome = "D'Angelo",
+                            Costo = 20,
                             Nome = "Giorgio",
                             Partito = "Lega",
                             Ruolo = "Assessore"
@@ -241,6 +269,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 6,
                             Cognome = "Paccagnella",
+                            Costo = 20,
                             Nome = "Vittoria",
                             Ruolo = "Assessore"
                         },
@@ -248,6 +277,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 7,
                             Cognome = "Ravagnan",
+                            Costo = 20,
                             Nome = "Antonella",
                             Ruolo = "Assessore"
                         },
@@ -255,6 +285,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 8,
                             Cognome = "Barbierato",
+                            Costo = 10,
                             Nome = "Omar",
                             Partito = "Impegno per il bene comune",
                             Ruolo = "Consigliere"
@@ -263,6 +294,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 9,
                             Cognome = "Bonato",
+                            Costo = 10,
                             Nome = "Enrico",
                             Partito = "Impegno per il bene comune",
                             Ruolo = "Consigliere"
@@ -271,6 +303,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 10,
                             Cognome = "Moda",
+                            Costo = 10,
                             Nome = "Sandra",
                             Partito = "Impegno per il bene comune",
                             Ruolo = "Consigliere"
@@ -279,6 +312,7 @@ namespace GestionalePersone.Migrations
                         {
                             Id = 11,
                             Cognome = "Zanellato",
+                            Costo = 10,
                             Nome = "Giorgio",
                             Partito = "PD",
                             Ruolo = "Consigliere"
@@ -291,6 +325,9 @@ namespace GestionalePersone.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("PoliticoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Prezzo")
                         .HasColumnType("integer");
 
                     b.HasKey("SquadraId", "PoliticoId");

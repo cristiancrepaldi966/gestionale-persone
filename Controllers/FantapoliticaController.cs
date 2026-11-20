@@ -15,7 +15,9 @@ namespace GestionalePersone.Controllers;
 // utenti attivi abilitati al modulo (Super admin compresi). Modifica ed eliminazione:
 // solo chi ha creato la lega e il Super admin (non l'Amministratore del modulo).
 // Politici: tutti li vedono, solo il Super admin li gestisce.
-// Squadre: ogni membro ha una squadra per lega con Squadra.PoliticiPerSquadra politici
+// Squadre: ogni membro ha una squadra per lega con Squadra.PoliticiPerSquadra politici,
+// comprati spendendo al massimo i crediti per squadra (li decide il Super admin, come i costi).
+// Il prezzo pagato per un politico resta quello anche se poi il suo costo cambia.
 // (lo stesso politico può stare in più squadre); tutti i membri vedono le squadre della lega.
 [ApiController]
 [Authorize(Policy = Politiche.Fantapolitica)]
@@ -54,6 +56,15 @@ public class FantapoliticaController : ControllerBase
 
         [StringLength(100, ErrorMessage = "Il partito deve avere al massimo 100 caratteri.")]
         public string? Partito { get; set; }
+
+        [Range(0, 10000, ErrorMessage = "Il costo deve essere tra 0 e 10000 crediti.")]
+        public int Costo { get; set; }
+    }
+
+    public class ImpostazioniRequest
+    {
+        [Range(1, 10000, ErrorMessage = "I crediti per squadra devono essere tra 1 e 10000.")]
+        public int CreditiPerSquadra { get; set; }
     }
 
     public class SquadraRequest
@@ -67,9 +78,15 @@ public class FantapoliticaController : ControllerBase
 
     public record PersonaDto(int Id, string Nome);
 
-    public record PoliticoDto(int Id, string Nome, string Cognome, string Ruolo, string? Partito, int Squadre);
+    public record PoliticoDto(int Id, string Nome, string Cognome, string Ruolo, string? Partito, int Costo, int Squadre);
 
-    public record SquadraDto(int Id, string Nome, List<PoliticoDto> Politici, DateTime AggiornatoIl);
+    // Politico in una squadra: Prezzo è quanto è stato pagato, Costo quanto costa oggi.
+    public record PoliticoAcquistatoDto(int Id, string Nome, string Cognome, string Ruolo, string? Partito,
+        int Costo, int Prezzo);
+
+    public record SquadraDto(int Id, string Nome, List<PoliticoAcquistatoDto> Politici, int Spesi, DateTime AggiornatoIl);
+
+    public record ImpostazioniDto(int CreditiPerSquadra, int PoliticiPerSquadra);
 
     public record MembroDto(int Id, string Nome, SquadraDto? Squadra);
 
@@ -79,7 +96,7 @@ public class FantapoliticaController : ControllerBase
     // Le mie leghe con la mia squadra (pagina "La mia squadra").
     public record MiaLegaDto(int Id, string Nome, SquadraDto? Squadra);
 
-    public record MieSquadreDto(int PoliticiPerSquadra, List<MiaLegaDto> Leghe);
+    public record MieSquadreDto(int PoliticiPerSquadra, int CreditiPerSquadra, List<MiaLegaDto> Leghe);
 
     private int IdCorrente => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -106,10 +123,22 @@ public class FantapoliticaController : ControllerBase
         .ThenBy(p => p.Nome, Alfabetico);
 
     private static PoliticoDto Dto(Politico p, int squadre = 0) =>
-        new(p.Id, p.Nome, p.Cognome, p.Ruolo, p.Partito, squadre);
+        new(p.Id, p.Nome, p.Cognome, p.Ruolo, p.Partito, p.Costo, squadre);
 
-    private static SquadraDto Dto(Squadra s) =>
-        new(s.Id, s.Nome, Ordina(s.Politici.Select(ps => ps.Politico)).Select(p => Dto(p)).ToList(), s.AggiornatoIl);
+    private static SquadraDto Dto(Squadra s)
+    {
+        var prezzi = s.Politici.ToDictionary(ps => ps.PoliticoId, ps => ps.Prezzo);
+        return new(s.Id, s.Nome,
+            Ordina(s.Politici.Select(ps => ps.Politico))
+                .Select(p => new PoliticoAcquistatoDto(p.Id, p.Nome, p.Cognome, p.Ruolo, p.Partito, p.Costo, prezzi[p.Id]))
+                .ToList(),
+            prezzi.Values.Sum(), s.AggiornatoIl);
+    }
+
+    // Impostazioni del modulo (la riga c'è sempre: la crea la migration).
+    private async Task<ImpostazioniFantapolitica> Impostazioni() =>
+        await _context.ImpostazioniFantapolitica.FindAsync(ImpostazioniFantapolitica.IdUnico)
+        ?? new ImpostazioniFantapolitica();
 
     // ---------------------------------------------------------------------------
     // Utenti da scegliere come membri
@@ -319,7 +348,33 @@ public class FantapoliticaController : ControllerBase
         politico.Cognome = richiesta.Cognome.Trim();
         politico.Ruolo = richiesta.Ruolo;
         politico.Partito = string.IsNullOrWhiteSpace(richiesta.Partito) ? null : richiesta.Partito.Trim();
+        politico.Costo = richiesta.Costo;
         return null;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Impostazioni: tutti le leggono, solo il Super admin le cambia
+    // ---------------------------------------------------------------------------
+
+    [HttpGet("impostazioni")]
+    public async Task<ImpostazioniDto> GetImpostazioni() =>
+        new((await Impostazioni()).CreditiPerSquadra, Squadra.PoliticiPerSquadra);
+
+    // Le squadre già fatte restano valide anche se i crediti scendono; chi le modifica
+    // dovrà rientrare nel nuovo limite.
+    [HttpPut("impostazioni")]
+    [Authorize(Policy = Politiche.Admin)]
+    public async Task<IActionResult> ModificaImpostazioni(ImpostazioniRequest richiesta)
+    {
+        var impostazioni = await _context.ImpostazioniFantapolitica.FindAsync(ImpostazioniFantapolitica.IdUnico);
+        if (impostazioni == null)
+        {
+            impostazioni = new ImpostazioniFantapolitica();
+            _context.ImpostazioniFantapolitica.Add(impostazioni);
+        }
+        impostazioni.CreditiPerSquadra = richiesta.CreditiPerSquadra;
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     // ---------------------------------------------------------------------------
@@ -340,7 +395,7 @@ public class FantapoliticaController : ControllerBase
             .Where(s => s.UtenteId == id)
             .ToDictionaryAsync(s => s.LegaId);
 
-        return new MieSquadreDto(Squadra.PoliticiPerSquadra, leghe
+        return new MieSquadreDto(Squadra.PoliticiPerSquadra, (await Impostazioni()).CreditiPerSquadra, leghe
             .OrderBy(l => l.Nome, Alfabetico)
             .Select(l => new MiaLegaDto(l.Id, l.Nome, squadre.TryGetValue(l.Id, out var s) ? Dto(s) : null))
             .ToList());
@@ -360,11 +415,21 @@ public class FantapoliticaController : ControllerBase
         var scelti = (richiesta.Politici ?? []).ToHashSet();
         if (scelti.Count != Squadra.PoliticiPerSquadra)
             return BadRequest(new { messaggio = $"La squadra deve avere {Squadra.PoliticiPerSquadra} politici." });
-        if (await _context.Politici.CountAsync(p => scelti.Contains(p.Id)) != scelti.Count)
+        var costi = await _context.Politici.Where(p => scelti.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.Costo);
+        if (costi.Count != scelti.Count)
             return BadRequest(new { messaggio = "Uno dei politici scelti non esiste più. Ricarica la pagina." });
 
         var squadra = await _context.Squadre.Include(s => s.Politici)
             .SingleOrDefaultAsync(s => s.LegaId == legaId && s.UtenteId == id);
+
+        // Chi resta in squadra mantiene il prezzo pagato; i nuovi si pagano al costo di oggi.
+        var prezzi = scelti.ToDictionary(p => p,
+            p => squadra?.Politici.FirstOrDefault(ps => ps.PoliticoId == p)?.Prezzo ?? costi[p]);
+        var crediti = (await Impostazioni()).CreditiPerSquadra;
+        var spesi = prezzi.Values.Sum();
+        if (spesi > crediti)
+            return BadRequest(new { messaggio = $"Hai superato i crediti: la squadra costa {spesi} crediti su {crediti}." });
+
         if (squadra == null)
         {
             squadra = new Squadra { LegaId = legaId, UtenteId = id };
@@ -375,7 +440,7 @@ public class FantapoliticaController : ControllerBase
         squadra.AggiornatoIl = DateTime.UtcNow;
         squadra.Politici.RemoveAll(ps => !scelti.Contains(ps.PoliticoId));
         foreach (var politicoId in scelti.Where(p => squadra.Politici.All(ps => ps.PoliticoId != p)))
-            squadra.Politici.Add(new PoliticoSquadra { PoliticoId = politicoId });
+            squadra.Politici.Add(new PoliticoSquadra { PoliticoId = politicoId, Prezzo = prezzi[politicoId] });
 
         await _context.SaveChangesAsync();
         return NoContent();
