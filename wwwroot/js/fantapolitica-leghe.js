@@ -1,9 +1,10 @@
 // Pagina Leghe del modulo Fantapolitica (fantapolitica.html): tutte le leghe con le
-// persone che ne fanno parte. Ognuno può creare una lega, di cui fa sempre parte;
-// modifica ed eliminazione solo per chi l'ha creata e per il Super admin
-// (il server lo indica con "gestibile"). Componenti e funzioni comuni: componenti.js.
+// persone che ne fanno parte e le loro squadre. Ognuno può creare una lega, di cui fa
+// sempre parte; modifica ed eliminazione solo per chi l'ha creata e per il Super admin
+// (il server lo indica con "gestibile").
+// Componenti comuni: componenti.js e js/fantapolitica-comune.js.
 
-const API = "/api/fantapolitica";
+const API = API_FANTAPOLITICA;
 const $ = id => document.getElementById(id);
 
 let utenteCorrente = null;
@@ -13,13 +14,6 @@ let inModifica = null;  // lega in modifica, null se è nuova
 const modulo = moduloFinestra($("finestra"), { primoCampo: $("nome") });
 
 const persone = n => `${n} ${n === 1 ? "persona" : "persone"}`;
-
-// Icona di Bootstrap Icons (solo decorativa).
-function icona(nome, classi = "") {
-    const i = el("i", `bi bi-${nome} ${classi}`.trim());
-    i.setAttribute("aria-hidden", "true");
-    return i;
-}
 
 async function caricaLeghe() {
     try {
@@ -65,26 +59,53 @@ function schedaLega(l) {
         testa.appendChild(azioni);
     }
 
-    const membri = el("ul", "list-unstyled d-flex flex-wrap gap-2 mt-3 mb-0");
-    membri.setAttribute("aria-label", `Persone della lega ${l.nome}`);
-    for (const m of l.membri) {
-        const li = el("li");
-        const creatore = l.creatoDa && m.id === l.creatoDa.id;
-        const io = m.id === utenteCorrente.id;
-        const voce = el("span", "badge rounded-pill fw-normal fs-6 d-inline-flex align-items-center gap-1 " +
-            (io ? "text-bg-primary" : "text-bg-light border"));
-        if (creatore) {
-            voce.appendChild(icona("star-fill", "small"));
-            voce.title = "Ha creato la lega";
+    corpo.appendChild(testa);
+    scheda.appendChild(corpo);
+
+    // Una riga per persona con la sua squadra: toccandola si vedono i politici.
+    const membri = el("ul", "list-group list-group-flush border-top");
+    membri.setAttribute("aria-label", `Persone e squadre della lega ${l.nome}`);
+    membri.append(...l.membri.map(m => rigaMembro(l, m)));
+    scheda.appendChild(membri);
+    return scheda;
+}
+
+function rigaMembro(l, m) {
+    const li = el("li", "list-group-item px-3 py-2");
+    const creatore = l.creatoDa && m.id === l.creatoDa.id;
+    const io = m.id === utenteCorrente.id;
+
+    const persona = el("span", "d-inline-flex align-items-center gap-1 min-w-0" + (io ? " fw-semibold text-primary" : ""));
+    if (creatore) {
+        const stella = iconaBi("star-fill", "small text-warning");
+        persona.title = "Ha creato la lega";
+        persona.appendChild(stella);
+    }
+    persona.appendChild(el("span", "text-break", m.nome + (io ? " (tu)" : "")));
+
+    if (!m.squadra) {
+        const riga = el("div", "d-flex justify-content-between align-items-center gap-2 flex-wrap");
+        riga.append(persona, el("span", "small text-body-secondary fst-italic", "nessuna squadra"));
+        if (io) {
+            const link = el("a", "small", "Crea la tua squadra");
+            link.href = "/fantapolitica-squadra.html";
+            riga.appendChild(link);
         }
-        voce.appendChild(el("span", null, m.nome + (io ? " (tu)" : "")));
-        li.appendChild(voce);
-        membri.appendChild(li);
+        li.appendChild(riga);
+        return li;
     }
 
-    corpo.append(testa, membri);
-    scheda.appendChild(corpo);
-    return scheda;
+    const dettagli = el("details", "squadra-lega");
+    const sommario = el("summary", "d-flex justify-content-between align-items-center gap-2 flex-wrap");
+    const squadra = el("span", "d-inline-flex align-items-center gap-1 small");
+    squadra.append(iconaBi("shield-fill", "text-body-secondary"), el("span", "fw-semibold", m.squadra.nome),
+        el("span", "text-body-secondary", `· ${m.squadra.politici.length} politici`));
+    sommario.append(persona, squadra);
+    const lista = elencoPoliticiSquadra(m.squadra.politici);
+    lista.classList.add("mt-2", "ms-3", "small");
+    dettagli.append(sommario, lista);
+    li.appendChild(dettagli);
+    return li;
 }
 
 // Finestra: nome e caselle per scegliere le persone. Chi ha creato la lega è sempre

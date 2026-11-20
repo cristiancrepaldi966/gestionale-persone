@@ -147,6 +147,7 @@ async function esci() {
 // Moduli dell'app (codici come in Models/Moduli.cs) con nome, icona e pagine.
 // Menu in alto, pagina di ingresso e controllo delle pagine leggono tutti da qui.
 // amministratore: true = pagina riservata al livello Amministratore del modulo.
+// superAdmin: true = pagina riservata al Super admin.
 // colore: colore dell'icona del modulo (pagina di ingresso e pagina del modulo).
 const MODULI = { finanze: "finanze", fantapolitica: "fantapolitica", stampa3d: "stampa3d", ia: "ia", admin: "admin" };
 
@@ -163,7 +164,8 @@ const DEFINIZIONE_MODULI = {
         nome: "Fantapolitica", icona: "bank", colore: "#6250d6", descrizione: "Squadre di politici, eventi e classifica",
         pagine: [
             { testo: "Leghe", href: "/fantapolitica.html", icona: "people", descrizione: "I gruppi di persone che giocano insieme" },
-            { testo: "Politici ed eventi", href: "/fantapolitica-gestione.html", icona: "person-badge", amministratore: true, descrizione: "Elenco dei politici ed eventi che danno punti" },
+            { testo: "La mia squadra", href: "/fantapolitica-squadra.html", icona: "person-check", descrizione: "I tuoi politici in ogni lega" },
+            { testo: "Politici", href: "/fantapolitica-gestione.html", icona: "person-badge", superAdmin: true, descrizione: "Elenco dei politici da scegliere" },
         ]
     },
     stampa3d: {
@@ -199,16 +201,17 @@ const moduliAbilitati = utente => ORDINE_MODULI.filter(m => livello(utente, m));
 
 // Pagine del modulo che l'utente può aprire.
 const pagineAbilitate = (utente, modulo) =>
-    DEFINIZIONE_MODULI[modulo].pagine.filter(p => !p.amministratore || livello(utente, modulo) === "Amministratore");
+    DEFINIZIONE_MODULI[modulo].pagine.filter(p =>
+        (!p.amministratore || livello(utente, modulo) === "Amministratore") && (!p.superAdmin || utente.superAdmin));
 
 // La pagina di ingresso è per tutti.
 const paginaIniziale = () => "/";
 
 // Controlla l'accesso e disegna la barra in alto. Restituisce l'utente corrente.
 // modulo: la pagina richiede l'accesso a quel modulo; amministratore: richiede il
-// livello Amministratore. Senza accesso si torna alla pagina di ingresso.
+// livello Amministratore; superAdmin: richiede il Super admin. Senza accesso si torna alla pagina di ingresso.
 // Se serve cambiare pagina, la promessa non si risolve mai: il resto non viene eseguito.
-async function avviaPagina({ modulo = null, amministratore = false } = {}) {
+async function avviaPagina({ modulo = null, amministratore = false, superAdmin = false } = {}) {
     const response = await fetch("/api/auth/me", { credentials: "same-origin" });
 
     if (!response.ok) {
@@ -218,8 +221,9 @@ async function avviaPagina({ modulo = null, amministratore = false } = {}) {
 
     const utente = await response.json();
 
-    const consentito = !modulo ||
-        (amministratore ? livello(utente, modulo) === "Amministratore" : !!livello(utente, modulo));
+    const consentito = (!modulo ||
+        (amministratore ? livello(utente, modulo) === "Amministratore" : !!livello(utente, modulo))) &&
+        (!superAdmin || utente.superAdmin);
 
     if (!consentito) {
         location.href = paginaIniziale(utente);

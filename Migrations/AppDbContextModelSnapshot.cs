@@ -168,6 +168,138 @@ namespace GestionalePersone.Migrations
                     b.ToTable("MembriLeghe");
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.Politico", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Cognome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Partito")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Ruolo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Politici");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Cognome = "Barbujani",
+                            Nome = "Massimo",
+                            Partito = "Lista Bobo",
+                            Ruolo = "Sindaco"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Cognome = "Simoni",
+                            Nome = "Federico",
+                            Ruolo = "Vicesindaco"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Cognome = "Baratella",
+                            Nome = "Giselda",
+                            Ruolo = "Assessore"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Cognome = "Crepaldi",
+                            Nome = "Giorgio",
+                            Ruolo = "Assessore"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Cognome = "D'Angelo",
+                            Nome = "Giorgio",
+                            Partito = "Lega",
+                            Ruolo = "Assessore"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Cognome = "Paccagnella",
+                            Nome = "Vittoria",
+                            Ruolo = "Assessore"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Cognome = "Ravagnan",
+                            Nome = "Antonella",
+                            Ruolo = "Assessore"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Cognome = "Barbierato",
+                            Nome = "Omar",
+                            Partito = "Impegno per il bene comune",
+                            Ruolo = "Consigliere"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Cognome = "Bonato",
+                            Nome = "Enrico",
+                            Partito = "Impegno per il bene comune",
+                            Ruolo = "Consigliere"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Cognome = "Moda",
+                            Nome = "Sandra",
+                            Partito = "Impegno per il bene comune",
+                            Ruolo = "Consigliere"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Cognome = "Zanellato",
+                            Nome = "Giorgio",
+                            Partito = "PD",
+                            Ruolo = "Consigliere"
+                        });
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.PoliticoSquadra", b =>
+                {
+                    b.Property<int>("SquadraId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PoliticoId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("SquadraId", "PoliticoId");
+
+                    b.HasIndex("PoliticoId");
+
+                    b.ToTable("PoliticiSquadre");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Progetto3d", b =>
                 {
                     b.Property<int>("Id")
@@ -204,6 +336,41 @@ namespace GestionalePersone.Migrations
                     b.HasIndex("CreatoDaId");
 
                     b.ToTable("Progetti3d");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Squadra", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AggiornatoIl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatoIl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LegaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("UtenteId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UtenteId");
+
+                    b.HasIndex("LegaId", "UtenteId")
+                        .IsUnique();
+
+                    b.ToTable("Squadre");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
@@ -364,6 +531,25 @@ namespace GestionalePersone.Migrations
                     b.Navigation("Utente");
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.PoliticoSquadra", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Politico", "Politico")
+                        .WithMany()
+                        .HasForeignKey("PoliticoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestionalePersone.Models.Squadra", "Squadra")
+                        .WithMany("Politici")
+                        .HasForeignKey("SquadraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Politico");
+
+                    b.Navigation("Squadra");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Progetto3d", b =>
                 {
                     b.HasOne("GestionalePersone.Models.Utente", "CreatoDa")
@@ -372,6 +558,23 @@ namespace GestionalePersone.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("CreatoDa");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Squadra", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Utente", "Utente")
+                        .WithMany()
+                        .HasForeignKey("UtenteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestionalePersone.Models.MembroLega", null)
+                        .WithOne()
+                        .HasForeignKey("GestionalePersone.Models.Squadra", "LegaId", "UtenteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Utente");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Uscita", b =>
@@ -395,6 +598,11 @@ namespace GestionalePersone.Migrations
             modelBuilder.Entity("GestionalePersone.Models.Lega", b =>
                 {
                     b.Navigation("Membri");
+                });
+
+            modelBuilder.Entity("GestionalePersone.Models.Squadra", b =>
+                {
+                    b.Navigation("Politici");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Utente", b =>

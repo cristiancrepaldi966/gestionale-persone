@@ -27,6 +27,13 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<MembroLega> MembriLeghe => Set<MembroLega>();
 
+    // Politici (gestiti dal Super admin) e squadre dei membri delle leghe.
+    public DbSet<Politico> Politici => Set<Politico>();
+
+    public DbSet<Squadra> Squadre => Set<Squadra>();
+
+    public DbSet<PoliticoSquadra> PoliticiSquadre => Set<PoliticoSquadra>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -80,6 +87,54 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
                 .OnDelete(DeleteBehavior.Cascade);
             m.HasOne(x => x.Utente).WithMany()
                 .HasForeignKey(x => x.UtenteId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Politico>(p =>
+        {
+            p.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            p.Property(x => x.Cognome).HasMaxLength(100).IsRequired();
+            p.Property(x => x.Ruolo).HasMaxLength(30).IsRequired();
+            p.Property(x => x.Partito).HasMaxLength(100);
+            // Politici iniziali: amministrazione comunale di Adria (fonti pubbliche, 2023).
+            p.HasData(
+                new Politico { Id = 1, Nome = "Massimo", Cognome = "Barbujani", Ruolo = RuoliPolitico.Sindaco, Partito = "Lista Bobo" },
+                new Politico { Id = 2, Nome = "Federico", Cognome = "Simoni", Ruolo = RuoliPolitico.Vicesindaco },
+                new Politico { Id = 3, Nome = "Giselda", Cognome = "Baratella", Ruolo = RuoliPolitico.Assessore },
+                new Politico { Id = 4, Nome = "Giorgio", Cognome = "Crepaldi", Ruolo = RuoliPolitico.Assessore },
+                new Politico { Id = 5, Nome = "Giorgio", Cognome = "D'Angelo", Ruolo = RuoliPolitico.Assessore, Partito = "Lega" },
+                new Politico { Id = 6, Nome = "Vittoria", Cognome = "Paccagnella", Ruolo = RuoliPolitico.Assessore },
+                new Politico { Id = 7, Nome = "Antonella", Cognome = "Ravagnan", Ruolo = RuoliPolitico.Assessore },
+                new Politico { Id = 8, Nome = "Omar", Cognome = "Barbierato", Ruolo = RuoliPolitico.Consigliere, Partito = "Impegno per il bene comune" },
+                new Politico { Id = 9, Nome = "Enrico", Cognome = "Bonato", Ruolo = RuoliPolitico.Consigliere, Partito = "Impegno per il bene comune" },
+                new Politico { Id = 10, Nome = "Sandra", Cognome = "Moda", Ruolo = RuoliPolitico.Consigliere, Partito = "Impegno per il bene comune" },
+                new Politico { Id = 11, Nome = "Giorgio", Cognome = "Zanellato", Ruolo = RuoliPolitico.Consigliere, Partito = "PD" });
+        });
+
+        modelBuilder.Entity<Squadra>(s =>
+        {
+            s.Property(x => x.Nome).HasMaxLength(50).IsRequired();
+            s.HasIndex(x => new { x.LegaId, x.UtenteId }).IsUnique();
+            s.HasIndex(x => x.UtenteId);
+            // La squadra appartiene a un membro della lega: se la persona esce dalla lega,
+            // o la lega viene eliminata, la squadra se ne va con lei.
+            s.HasOne<MembroLega>().WithOne()
+                .HasForeignKey<Squadra>(x => new { x.LegaId, x.UtenteId })
+                .OnDelete(DeleteBehavior.Cascade);
+            s.HasOne(x => x.Utente).WithMany()
+                .HasForeignKey(x => x.UtenteId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PoliticoSquadra>(ps =>
+        {
+            ps.HasKey(x => new { x.SquadraId, x.PoliticoId });
+            ps.HasOne(x => x.Squadra).WithMany(s => s.Politici)
+                .HasForeignKey(x => x.SquadraId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Un politico eliminato esce dalle squadre che lo avevano scelto.
+            ps.HasOne(x => x.Politico).WithMany()
+                .HasForeignKey(x => x.PoliticoId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
