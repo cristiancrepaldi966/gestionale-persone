@@ -22,6 +22,11 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
     // Progetti del modulo Stampa 3D (oggetto del catalogo e misure).
     public DbSet<Progetto3d> Progetti3d => Set<Progetto3d>();
 
+    // Leghe del modulo Fantapolitica e le persone che ne fanno parte.
+    public DbSet<Lega> Leghe => Set<Lega>();
+
+    public DbSet<MembroLega> MembriLeghe => Set<MembroLega>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -56,6 +61,26 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             p.HasOne(x => x.CreatoDa).WithMany()
                 .HasForeignKey(x => x.CreatoDaId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<Lega>(l =>
+        {
+            l.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            l.HasIndex(x => x.CreatoDaId);
+            l.HasOne(x => x.CreatoDa).WithMany()
+                .HasForeignKey(x => x.CreatoDaId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<MembroLega>(m =>
+        {
+            m.HasKey(x => new { x.LegaId, x.UtenteId });
+            m.HasOne(x => x.Lega).WithMany(l => l.Membri)
+                .HasForeignKey(x => x.LegaId)
+                .OnDelete(DeleteBehavior.Cascade);
+            m.HasOne(x => x.Utente).WithMany()
+                .HasForeignKey(x => x.UtenteId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Categoria>(c =>

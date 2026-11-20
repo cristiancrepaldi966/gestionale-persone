@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panoramica - Fantapolitica</title>
+    <title>Leghe - Fantapolitica</title>
     <link rel="stylesheet" href="lib/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="componenti.css">
 </head>
-<body class="in-attesa" data-amministratore="false">
+<body class="in-attesa">
 
 <header class="d-flex flex-wrap align-items-center gap-2 px-3 py-3 bg-dark" data-bs-theme="dark">
     <a href="/" class="casa me-auto link-light link-opacity-75 link-opacity-100-hover" title="Pagina di ingresso" aria-label="Pagina di ingresso"><i class="bi bi-house-door" aria-hidden="true"></i></a>
@@ -17,18 +17,50 @@
 
 <main class="container contenuto py-4">
 
-    <h2 class="h3 fw-bold mb-3">Panoramica</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h3 fw-bold mb-0">Leghe</h2>
+        <button type="button" class="btn btn-primary btn-tondo" id="nuova"
+                title="Nuova lega" aria-label="Nuova lega">+</button>
+    </div>
 
-    <div class="card card-body shadow-sm border-0 p-4 text-center">
-        <i class="bi bi-trophy fs-1 text-body-secondary" aria-hidden="true"></i>
-        <h3 class="h5 fw-bold mt-2">In costruzione</h3>
-        <p class="text-body-secondary mb-0">Qui vedrai la tua squadra di politici e la classifica.</p>
+    <div class="px-1 mb-2 text-body-secondary" id="riepilogo"></div>
+
+    <div class="d-flex flex-column gap-3" id="elencoLeghe">
+        <div class="card shadow-sm border-0">
+            <div class="caricamento-elenco d-flex align-items-center gap-2 text-body-secondary p-3">
+                <span class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></span>
+                <span>Caricamento...</span>
+            </div>
+        </div>
     </div>
 
 </main>
 
+<dialog id="finestra" class="finestra">
+    <form method="dialog" id="formLega" novalidate>
+        <h2 class="h4 fw-bold mb-3" tabindex="-1" autofocus>Nuova lega</h2>
+
+        <label for="nome" class="form-label fw-semibold">Nome della lega</label>
+        <input type="text" id="nome" class="form-control" maxlength="100">
+
+        <div class="d-flex justify-content-between align-items-baseline mt-3 mb-2">
+            <span class="fw-semibold" id="etichettaMembri">Persone</span>
+            <span class="small text-body-secondary" id="contaMembri"></span>
+        </div>
+        <div class="list-group overflow-auto scelta-membri" id="sceltaMembri"
+             role="group" aria-labelledby="etichettaMembri"></div>
+
+        <div id="erroreFinestra" class="small mt-2 text-danger"></div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-light" id="annulla">Annulla</button>
+            <button type="submit" class="btn btn-primary px-4">Salva</button>
+        </div>
+    </form>
+</dialog>
+
 <script src="componenti.js"></script>
-<script src="js/fantapolitica.js"></script>
+<script src="js/fantapolitica-leghe.js"></script>
 
 </body>
 </html>

@@ -319,6 +319,11 @@ body.modale-telefono dialog.finestra[open] {
     border-left: 5px solid var(--colore, #6c757d) !important;
 }
 
+/* Scelta delle persone nella finestra della lega (Fantapolitica): elenco che scorre. */
+.scelta-membri {
+    max-height: 18rem;
+}
+
 /* Scelta di icona e colore nella finestra della categoria. */
 .scelta-icone {
     display: grid;

@@ -162,7 +162,7 @@ const DEFINIZIONE_MODULI = {
     fantapolitica: {
         nome: "Fantapolitica", icona: "bank", colore: "#6250d6", descrizione: "Squadre di politici, eventi e classifica",
         pagine: [
-            { testo: "Panoramica", href: "/fantapolitica.html", icona: "trophy", descrizione: "La tua squadra e la classifica" },
+            { testo: "Leghe", href: "/fantapolitica.html", icona: "people", descrizione: "I gruppi di persone che giocano insieme" },
             { testo: "Politici ed eventi", href: "/fantapolitica-gestione.html", icona: "person-badge", amministratore: true, descrizione: "Elenco dei politici ed eventi che danno punti" },
         ]
     },
