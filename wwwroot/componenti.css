@@ -345,6 +345,11 @@ body.modale-telefono dialog.finestra[open] {
     transform: rotate(180deg);
 }
 
+/* Casella dei crediti per squadra (pagina Politici). */
+.campo-crediti {
+    max-width: 8rem;
+}
+
 /* Scelta di icona e colore nella finestra della categoria. */
 .scelta-icone {
     display: grid;

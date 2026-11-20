@@ -23,6 +23,21 @@
                 title="Nuovo politico" aria-label="Nuovo politico">+</button>
     </div>
 
+    <form class="card card-body shadow-sm border-0 mb-3" id="formImpostazioni" novalidate>
+        <div class="d-flex flex-wrap align-items-end gap-2">
+            <div>
+                <label for="creditiPerSquadra" class="form-label fw-semibold mb-1">Crediti per squadra</label>
+                <div class="input-group">
+                    <input type="number" id="creditiPerSquadra" class="form-control campo-crediti" min="1" max="10000" step="1" inputmode="numeric">
+                    <span class="input-group-text">crediti</span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Salva</button>
+        </div>
+        <div class="small text-body-secondary mt-2" id="spiegazioneCrediti">Ogni giocatore compra i suoi politici spendendo al massimo questi crediti.</div>
+        <div id="messaggioImpostazioni" class="small"></div>
+    </form>
+
     <div class="px-1 mb-2 text-body-secondary" id="riepilogo"></div>
 
     <div class="card shadow-sm border-0">
@@ -61,6 +76,13 @@
             <div class="col-sm-6">
                 <label for="partito" class="form-label fw-semibold">Partito o lista <span class="fw-normal text-body-secondary">(facoltativo)</span></label>
                 <input type="text" id="partito" class="form-control" maxlength="100" autocomplete="off">
+            </div>
+            <div class="col-sm-6">
+                <label for="costo" class="form-label fw-semibold">Costo</label>
+                <div class="input-group">
+                    <input type="number" id="costo" class="form-control" min="0" max="10000" step="1" inputmode="numeric">
+                    <span class="input-group-text">crediti</span>
+                </div>
             </div>
         </div>
 

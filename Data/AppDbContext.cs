@@ -34,6 +34,8 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<PoliticoSquadra> PoliticiSquadre => Set<PoliticoSquadra>();
 
+    public DbSet<ImpostazioniFantapolitica> ImpostazioniFantapolitica => Set<ImpostazioniFantapolitica>();
+
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -98,17 +100,23 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
             p.Property(x => x.Partito).HasMaxLength(100);
             // Politici iniziali: amministrazione comunale di Adria (fonti pubbliche, 2023).
             p.HasData(
-                new Politico { Id = 1, Nome = "Massimo", Cognome = "Barbujani", Ruolo = RuoliPolitico.Sindaco, Partito = "Lista Bobo" },
-                new Politico { Id = 2, Nome = "Federico", Cognome = "Simoni", Ruolo = RuoliPolitico.Vicesindaco },
-                new Politico { Id = 3, Nome = "Giselda", Cognome = "Baratella", Ruolo = RuoliPolitico.Assessore },
-                new Politico { Id = 4, Nome = "Giorgio", Cognome = "Crepaldi", Ruolo = RuoliPolitico.Assessore },
-                new Politico { Id = 5, Nome = "Giorgio", Cognome = "D'Angelo", Ruolo = RuoliPolitico.Assessore, Partito = "Lega" },
-                new Politico { Id = 6, Nome = "Vittoria", Cognome = "Paccagnella", Ruolo = RuoliPolitico.Assessore },
-                new Politico { Id = 7, Nome = "Antonella", Cognome = "Ravagnan", Ruolo = RuoliPolitico.Assessore },
-                new Politico { Id = 8, Nome = "Omar", Cognome = "Barbierato", Ruolo = RuoliPolitico.Consigliere, Partito = "Impegno per il bene comune" },
-                new Politico { Id = 9, Nome = "Enrico", Cognome = "Bonato", Ruolo = RuoliPolitico.Consigliere, Partito = "Impegno per il bene comune" },
-                new Politico { Id = 10, Nome = "Sandra", Cognome = "Moda", Ruolo = RuoliPolitico.Consigliere, Partito = "Impegno per il bene comune" },
-                new Politico { Id = 11, Nome = "Giorgio", Cognome = "Zanellato", Ruolo = RuoliPolitico.Consigliere, Partito = "PD" });
+                new Politico { Id = 1, Nome = "Massimo", Cognome = "Barbujani", Ruolo = RuoliPolitico.Sindaco, Costo = 35, Partito = "Lista Bobo" },
+                new Politico { Id = 2, Nome = "Federico", Cognome = "Simoni", Ruolo = RuoliPolitico.Vicesindaco, Costo = 25 },
+                new Politico { Id = 3, Nome = "Giselda", Cognome = "Baratella", Ruolo = RuoliPolitico.Assessore, Costo = 20 },
+                new Politico { Id = 4, Nome = "Giorgio", Cognome = "Crepaldi", Ruolo = RuoliPolitico.Assessore, Costo = 20 },
+                new Politico { Id = 5, Nome = "Giorgio", Cognome = "D'Angelo", Ruolo = RuoliPolitico.Assessore, Costo = 20, Partito = "Lega" },
+                new Politico { Id = 6, Nome = "Vittoria", Cognome = "Paccagnella", Ruolo = RuoliPolitico.Assessore, Costo = 20 },
+                new Politico { Id = 7, Nome = "Antonella", Cognome = "Ravagnan", Ruolo = RuoliPolitico.Assessore, Costo = 20 },
+                new Politico { Id = 8, Nome = "Omar", Cognome = "Barbierato", Ruolo = RuoliPolitico.Consigliere, Costo = 10, Partito = "Impegno per il bene comune" },
+                new Politico { Id = 9, Nome = "Enrico", Cognome = "Bonato", Ruolo = RuoliPolitico.Consigliere, Costo = 10, Partito = "Impegno per il bene comune" },
+                new Politico { Id = 10, Nome = "Sandra", Cognome = "Moda", Ruolo = RuoliPolitico.Consigliere, Costo = 10, Partito = "Impegno per il bene comune" },
+                new Politico { Id = 11, Nome = "Giorgio", Cognome = "Zanellato", Ruolo = RuoliPolitico.Consigliere, Costo = 10, Partito = "PD" });
+        });
+
+        modelBuilder.Entity<ImpostazioniFantapolitica>(i =>
+        {
+            i.Property(x => x.Id).ValueGeneratedNever();
+            i.HasData(new ImpostazioniFantapolitica { Id = Models.ImpostazioniFantapolitica.IdUnico, CreditiPerSquadra = 100 });
         });
 
         modelBuilder.Entity<Squadra>(s =>

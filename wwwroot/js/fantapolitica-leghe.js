@@ -99,7 +99,7 @@ function rigaMembro(l, m) {
     const sommario = el("summary", "d-flex justify-content-between align-items-center gap-2 flex-wrap");
     const squadra = el("span", "d-inline-flex align-items-center gap-1 small");
     squadra.append(iconaBi("shield-fill", "text-body-secondary"), el("span", "fw-semibold", m.squadra.nome),
-        el("span", "text-body-secondary", `· ${m.squadra.politici.length} politici`));
+        el("span", "text-body-secondary", `· ${m.squadra.politici.length} politici · ${crediti(m.squadra.spesi)}`));
     sommario.append(persona, squadra);
     const lista = elencoPoliticiSquadra(m.squadra.politici);
     lista.classList.add("mt-2", "ms-3", "small");

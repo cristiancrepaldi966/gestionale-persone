@@ -154,7 +154,7 @@ c'è il **Super admin** (`Utenti.SuperAdmin`).
 | Modulo | Contiene | Livelli assegnabili |
 |---|---|---|
 | **Gestione finanze** (`finanze`) | Dashboard, Uscite, Categorie | Utente, Amministratore |
-| **Fantapolitica** (`fantapolitica`) | Leghe: tutti vedono tutte le leghe e ne creano di nuove scegliendo le persone tra gli utenti abilitati al modulo (Super admin compresi); chi crea la lega ne fa sempre parte e solo lui o il Super admin la modifica o la elimina. La mia squadra: in ogni lega ognuno sceglie 5 politici (anche gli stessi degli altri) e la cambia quando vuole; tutti i membri vedono le squadre della lega. Politici: elenco gestito solo dal Super admin (all'inizio i politici di Adria) | Utente, Amministratore |
+| **Fantapolitica** (`fantapolitica`) | Leghe: tutti vedono tutte le leghe e ne creano di nuove scegliendo le persone tra gli utenti abilitati al modulo (Super admin compresi); chi crea la lega ne fa sempre parte e solo lui o il Super admin la modifica o la elimina. La mia squadra: in ogni lega ognuno compra 5 politici (anche gli stessi degli altri) entro i crediti per squadra, e la cambia quando vuole; il prezzo pagato resta bloccato anche se il costo cambia; tutti i membri vedono le squadre della lega. Politici: elenco con costo in crediti e crediti per squadra, gestiti solo dal Super admin (all'inizio i politici di Adria, budget 100) | Utente, Amministratore |
 | **Stampa 3D** (`stampa3d`) | Catalogo, configuratore, progetti propri; l'Amministratore vede i progetti di tutti | Utente, Amministratore |
 | **IA** (`ia`) | IA 3D (per ora uguale per i due livelli) | Utente, Amministratore |
 | **Admin** (`admin`) | Utenti, Moduli | nessuno: solo Super admin |
