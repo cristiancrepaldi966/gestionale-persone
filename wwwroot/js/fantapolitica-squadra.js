@@ -1,6 +1,7 @@
 // Pagina La mia squadra del modulo Fantapolitica (fantapolitica-squadra.html): per ogni
 // lega di cui faccio parte, la mia squadra (nome e politici). Si crea, si modifica e si
-// elimina quando si vuole. I politici si comprano con i crediti per squadra: chi è già in
+// elimina quando si vuole. I punti di un politico contano dal giorno in cui entra in
+// squadra; se esce, i suoi punti vengono tolti. I politici si comprano con i crediti per squadra: chi è già in
 // squadra resta al prezzo pagato, i nuovi costano quanto indica oggi il Super admin. Componenti comuni: componenti.js e js/fantapolitica-comune.js.
 
 const $ = id => document.getElementById(id);
@@ -59,6 +60,11 @@ function schedaSquadra(lega) {
     info.appendChild(el("h3", "h5 fw-bold mb-0 text-break", s ? s.nome : "Nessuna squadra"));
     if (s) info.appendChild(el("div", "small text-body-secondary",
         `Spesi ${s.spesi} di ${crediti(creditiPerSquadra)} · ne restano ${creditiPerSquadra - s.spesi}`));
+    if (s) {
+        const punteggio = etichettaPunti(s.punti);
+        punteggio.classList.add("mt-1");
+        info.appendChild(punteggio);
+    }
     titolo.appendChild(info);
     testa.appendChild(titolo);
 
@@ -107,6 +113,7 @@ function apri(lega) {
         if (p.partito) testo.append(el("span", "d-block small text-body-secondary", p.partito));
         const destra = el("span", "d-flex flex-column align-items-end gap-1 flex-shrink-0");
         destra.append(etichettaRuolo(p.ruolo), etichettaCrediti(prezzo(p)));
+        testo.append(el("span", "d-block small text-body-secondary", `${punti(p.punti)} in totale`));
         if (prezziPagati.has(p.id) && prezzo(p) !== p.costo) {
             destra.appendChild(el("span", "small text-body-secondary", `pagato; oggi ${crediti(p.costo)}`));
         }

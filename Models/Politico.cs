@@ -67,11 +67,23 @@ public class Squadra
     public DateTime AggiornatoIl { get; set; } = DateTime.UtcNow;
 }
 
-// Un politico scelto in una squadra (lo stesso politico può stare in più squadre).
+// Un politico comprato da una squadra (lo stesso politico può stare in più squadre).
+// È anche lo storico: quando lo si vende la riga resta, con la data di vendita (i punti
+// però contano solo per i politici ancora in squadra).
 public class PoliticoSquadra
 {
+    public int Id { get; set; }
+
     // Prezzo pagato al momento dell'acquisto: resta questo anche se poi il costo cambia.
     public int Prezzo { get; set; }
+
+    // Giorno dell'acquisto (ora italiana): contano gli eventi da questo giorno compreso.
+    public DateOnly AcquistatoIl { get; set; }
+
+    // Giorno della vendita, null finché è in squadra.
+    public DateOnly? CedutoIl { get; set; }
+
+    public bool InSquadra => CedutoIl == null;
 
     public int SquadraId { get; set; }
 

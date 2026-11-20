@@ -31,12 +31,26 @@ function etichettaCrediti(n) {
     return e;
 }
 
-// Elenco compatto dei politici di una squadra: "Nome Cognome", ruolo e prezzo pagato.
+// "+5", "-2", "0"
+const conSegno = n => n > 0 ? `+${n}` : String(n);
+
+const punti = n => `${conSegno(n)} ${Math.abs(n) === 1 ? "punto" : "punti"}`;
+
+// Etichetta con i punti: verde se positivi, rossa se negativi, grigia se zero.
+function etichettaPunti(n) {
+    const colore = n > 0 ? "success" : n < 0 ? "danger" : "light border text-body-secondary";
+    const e = el("span", `badge rounded-pill text-bg-${colore} fw-semibold d-inline-flex align-items-center gap-1`);
+    e.append(iconaBi("trophy"), document.createTextNode(punti(n)));
+    return e;
+}
+
+// Elenco compatto dei politici di una squadra: "Nome Cognome", ruolo, prezzo pagato e
+// punti portati alla squadra.
 function elencoPoliticiSquadra(politici) {
     const ul = el("ul", "list-unstyled mb-0 d-flex flex-column gap-1");
     for (const p of politici) {
         const li = el("li", "d-flex align-items-center gap-2 flex-wrap");
-        li.append(el("span", null, nomePolitico(p)), etichettaRuolo(p.ruolo), etichettaCrediti(p.prezzo));
+        li.append(el("span", null, nomePolitico(p)), etichettaRuolo(p.ruolo), etichettaCrediti(p.prezzo), etichettaPunti(p.punti));
         if (p.partito) li.appendChild(el("span", "small text-body-secondary", p.partito));
         ul.appendChild(li);
     }

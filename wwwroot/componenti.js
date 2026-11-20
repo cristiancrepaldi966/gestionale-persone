@@ -165,6 +165,7 @@ const DEFINIZIONE_MODULI = {
         pagine: [
             { testo: "Leghe", href: "/fantapolitica.html", icona: "people", descrizione: "I gruppi di persone che giocano insieme" },
             { testo: "La mia squadra", href: "/fantapolitica-squadra.html", icona: "person-check", descrizione: "I tuoi politici in ogni lega" },
+            { testo: "Eventi", href: "/fantapolitica-eventi.html", icona: "calendar-event", descrizione: "I fatti che danno e tolgono punti ai politici" },
             { testo: "Politici", href: "/fantapolitica-gestione.html", icona: "person-badge", superAdmin: true, descrizione: "Elenco dei politici da scegliere" },
         ]
     },
