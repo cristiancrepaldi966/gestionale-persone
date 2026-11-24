@@ -31,10 +31,16 @@ function etichettaCrediti(n) {
     return e;
 }
 
-// "+5", "-2", "0"
-const conSegno = n => n > 0 ? `+${n}` : String(n);
+// Numeri con la virgola e al massimo un decimale: 8.5 → "8,5", 6 → "6".
+const numero = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 });
+
+// "+5", "-2", "+8,5", "0"
+const conSegno = n => (n > 0 ? "+" : "") + numero.format(n);
 
 const punti = n => `${conSegno(n)} ${Math.abs(n) === 1 ? "punto" : "punti"}`;
+
+// Voto di una pagella: "6,5" oppure "s.v." (senza voto).
+const testoVoto = v => v == null ? "s.v." : numero.format(v);
 
 // Etichetta con i punti: verde se positivi, rossa se negativi, grigia se zero.
 function etichettaPunti(n) {

@@ -350,6 +350,49 @@ body.modale-telefono dialog.finestra[open] {
     transform: rotate(180deg);
 }
 
+/* Finestra larga (pagelle di un evento). */
+dialog.finestra.finestra-larga {
+    width: min(760px, calc(100vw - 32px));
+}
+
+body.modale-telefono dialog.finestra.finestra-larga[open] {
+    max-width: 760px;
+}
+
+/* Pagelle di un evento: elenco che scorre. */
+.pagelle {
+    max-height: 26rem;
+}
+
+.campo-voto {
+    width: 5.5rem;
+}
+
+/* Tendina dei bonus e malus: non più larga della riga (le voci lunghe si accorciano). */
+.bonus-pagella select {
+    max-width: 100%;
+    min-width: 0;
+    text-overflow: ellipsis;
+}
+
+/* Voto nella pagella di un evento: quadratino con il numero (s.v. in grigio). */
+.voto-pagella {
+    flex: none;
+    min-width: 2.5rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: var(--bs-border-radius);
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary-text-emphasis);
+    font-weight: 700;
+    text-align: center;
+}
+
+.voto-pagella.senza-voto {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
+    font-weight: 400;
+}
+
 /* Classifica della lega: posizione in un cerchio (oro, argento, bronzo sul podio). */
 .posizione-classifica {
     flex: none;

@@ -96,8 +96,9 @@ function mostraPolitici() {
             const lista = el("ul", "list-unstyled mb-0 d-flex flex-column gap-1");
             for (const e of x.eventi) {
                 const li = el("li", "d-flex align-items-center gap-2 flex-wrap");
-                li.append(el("span", "text-body-secondary", formatoData(e.data)), etichettaPunti(e.punti), el("span", null, e.voce));
-                if (e.descrizione) li.appendChild(el("span", "text-body-secondary text-break", "· " + e.descrizione));
+                li.append(el("span", "text-body-secondary", formatoData(e.data)), etichettaPunti(e.punti),
+                    el("span", "text-break", e.titolo), el("span", "text-body-secondary", `voto ${testoVoto(e.voto)}`));
+                for (const b of e.bonus) li.appendChild(el("span", "text-body-secondary", `· ${b.voce} ${conSegno(b.punti)}`));
                 lista.appendChild(li);
             }
             dettaglio.appendChild(lista);

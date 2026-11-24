@@ -8,36 +8,43 @@ public class VocePunteggio
 
     public string Nome { get; set; } = string.Empty;
 
-    // Punti dati a ogni politico coinvolto (negativi per i malus).
+    // Punti dati al politico (negativi per i malus).
     public int Punti { get; set; }
 }
 
-// Un fatto che dà punti ai politici coinvolti, secondo una voce del listino.
-// Lo registra il Super admin.
+// Un evento (una "giornata", es. "Consiglio comunale del 12/11"): ogni politico prende un
+// voto da 1 a 10 (anche mezzi voti) oppure resta senza voto, più eventuali bonus e malus
+// del listino. Punti del politico = voto + bonus e malus. Lo registra il Super admin.
 public class Evento
 {
+    public const decimal VotoMinimo = 1m;
+    public const decimal VotoMassimo = 10m;
+
+    // Voto proposto per tutti quando si crea un evento.
+    public const decimal VotoProposto = 6m;
+
     public int Id { get; set; }
 
     public DateOnly Data { get; set; }
 
-    public int VocePunteggioId { get; set; }
+    public string Titolo { get; set; } = string.Empty;
 
-    public VocePunteggio Voce { get; set; } = null!;
-
-    // Punti della voce al momento del salvataggio: se poi il listino cambia,
-    // gli eventi già registrati restano come sono.
-    public int Punti { get; set; }
-
-    // Dettaglio facoltativo (es. "Consiglio del 12/11, intervento sul bilancio").
+    // Dettaglio facoltativo.
     public string? Descrizione { get; set; }
 
-    public List<EventoPolitico> Politici { get; set; } = [];
+    public List<VotoEvento> Voti { get; set; } = [];
+
+    public List<BonusEvento> Bonus { get; set; } = [];
 
     public DateTime CreatoIl { get; set; } = DateTime.UtcNow;
+
+    // Voto valido: da 1 a 10, a passi di mezzo punto.
+    public static bool VotoValido(decimal voto) =>
+        voto >= VotoMinimo && voto <= VotoMassimo && voto * 2 == decimal.Truncate(voto * 2);
 }
 
-// Un politico coinvolto in un evento.
-public class EventoPolitico
+// Il voto di un politico in un evento (chi non ha la riga è "senza voto").
+public class VotoEvento
 {
     public int EventoId { get; set; }
 
@@ -46,4 +53,29 @@ public class EventoPolitico
     public int PoliticoId { get; set; }
 
     public Politico Politico { get; set; } = null!;
+
+    public decimal Voto { get; set; }
+}
+
+// Un bonus o malus del listino dato a un politico in un evento (anche se è senza voto,
+// es. "Assenza in consiglio").
+public class BonusEvento
+{
+    public int Id { get; set; }
+
+    public int EventoId { get; set; }
+
+    public Evento Evento { get; set; } = null!;
+
+    public int PoliticoId { get; set; }
+
+    public Politico Politico { get; set; } = null!;
+
+    public int VocePunteggioId { get; set; }
+
+    public VocePunteggio Voce { get; set; } = null!;
+
+    // Punti della voce al momento del salvataggio: se poi il listino cambia, gli eventi
+    // già registrati restano come sono.
+    public int Punti { get; set; }
 }

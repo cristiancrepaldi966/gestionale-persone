@@ -41,6 +41,37 @@ namespace GestionalePersone.Migrations
                     b.ToTable("Autorizzazioni");
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.BonusEvento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EventoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PoliticoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Punti")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VocePunteggioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventoId");
+
+                    b.HasIndex("PoliticoId");
+
+                    b.HasIndex("VocePunteggioId");
+
+                    b.ToTable("BonusEventi");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Categoria", b =>
                 {
                     b.Property<int>("Id")
@@ -145,34 +176,16 @@ namespace GestionalePersone.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
 
-                    b.Property<int>("Punti")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("VocePunteggioId")
-                        .HasColumnType("integer");
+                    b.Property<string>("Titolo")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Data");
 
-                    b.HasIndex("VocePunteggioId");
-
                     b.ToTable("Eventi");
-                });
-
-            modelBuilder.Entity("GestionalePersone.Models.EventoPolitico", b =>
-                {
-                    b.Property<int>("EventoId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PoliticoId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("EventoId", "PoliticoId");
-
-                    b.HasIndex("PoliticoId");
-
-                    b.ToTable("EventiPolitici");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.ImpostazioniFantapolitica", b =>
@@ -663,6 +676,25 @@ namespace GestionalePersone.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.VotoEvento", b =>
+                {
+                    b.Property<int>("EventoId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PoliticoId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Voto")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)");
+
+                    b.HasKey("EventoId", "PoliticoId");
+
+                    b.HasIndex("PoliticoId");
+
+                    b.ToTable("VotiEventi");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Autorizzazione", b =>
                 {
                     b.HasOne("GestionalePersone.Models.Utente", "Utente")
@@ -674,21 +706,10 @@ namespace GestionalePersone.Migrations
                     b.Navigation("Utente");
                 });
 
-            modelBuilder.Entity("GestionalePersone.Models.Evento", b =>
-                {
-                    b.HasOne("GestionalePersone.Models.VocePunteggio", "Voce")
-                        .WithMany()
-                        .HasForeignKey("VocePunteggioId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Voce");
-                });
-
-            modelBuilder.Entity("GestionalePersone.Models.EventoPolitico", b =>
+            modelBuilder.Entity("GestionalePersone.Models.BonusEvento", b =>
                 {
                     b.HasOne("GestionalePersone.Models.Evento", "Evento")
-                        .WithMany("Politici")
+                        .WithMany("Bonus")
                         .HasForeignKey("EventoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -699,9 +720,17 @@ namespace GestionalePersone.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GestionalePersone.Models.VocePunteggio", "Voce")
+                        .WithMany()
+                        .HasForeignKey("VocePunteggioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Evento");
 
                     b.Navigation("Politico");
+
+                    b.Navigation("Voce");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Lega", b =>
@@ -797,9 +826,30 @@ namespace GestionalePersone.Migrations
                     b.Navigation("CreatoDa");
                 });
 
+            modelBuilder.Entity("GestionalePersone.Models.VotoEvento", b =>
+                {
+                    b.HasOne("GestionalePersone.Models.Evento", "Evento")
+                        .WithMany("Voti")
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestionalePersone.Models.Politico", "Politico")
+                        .WithMany()
+                        .HasForeignKey("PoliticoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Evento");
+
+                    b.Navigation("Politico");
+                });
+
             modelBuilder.Entity("GestionalePersone.Models.Evento", b =>
                 {
-                    b.Navigation("Politici");
+                    b.Navigation("Bonus");
+
+                    b.Navigation("Voti");
                 });
 
             modelBuilder.Entity("GestionalePersone.Models.Lega", b =>

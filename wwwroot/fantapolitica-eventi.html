@@ -22,7 +22,7 @@
         <button type="button" class="btn btn-primary btn-tondo" id="nuovoEvento"
                 title="Nuovo evento" aria-label="Nuovo evento" hidden>+</button>
     </div>
-    <p class="text-body-secondary mb-3">I fatti che danno o tolgono punti ai politici. Alla tua squadra contano quelli dal giorno in cui il politico è entrato; se esce, i suoi punti vengono tolti.</p>
+    <p class="text-body-secondary mb-3">In ogni evento ogni politico prende un voto da 1 a 10, più eventuali bonus e malus del listino. Alla tua squadra contano quelli dal giorno in cui il politico è entrato; se esce, i suoi punti vengono tolti.</p>
 
     <details class="card shadow-sm border-0 mb-3 listino" id="listino">
         <summary class="card-body d-flex justify-content-between align-items-center gap-2">
@@ -48,32 +48,36 @@
 
 </main>
 
-<dialog id="finestraEvento" class="finestra">
+<dialog id="finestraEvento" class="finestra finestra-larga">
     <form method="dialog" id="formEvento" novalidate>
         <h2 class="h4 fw-bold mb-3" tabindex="-1" autofocus>Nuovo evento</h2>
 
         <div class="row g-3">
-            <div class="col-sm-5">
+            <div class="col-sm-4">
                 <label for="data" class="form-label fw-semibold">Data</label>
                 <input type="date" id="data" class="form-control">
             </div>
-            <div class="col-sm-7">
-                <label for="voce" class="form-label fw-semibold">Voce del listino</label>
-                <select id="voce" class="form-select"></select>
+            <div class="col-sm-8">
+                <label for="titolo" class="form-label fw-semibold">Titolo</label>
+                <input type="text" id="titolo" class="form-control" maxlength="150" autocomplete="off"
+                       placeholder="Es. Consiglio comunale">
             </div>
             <div class="col-12">
                 <label for="descrizione" class="form-label fw-semibold">Descrizione <span class="fw-normal text-body-secondary">(facoltativa)</span></label>
                 <input type="text" id="descrizione" class="form-control" maxlength="300" autocomplete="off"
-                       placeholder="Es. Consiglio comunale, intervento sul bilancio">
+                       placeholder="Es. Approvato il bilancio">
             </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-baseline mt-3 mb-2">
-            <span class="fw-semibold" id="etichettaPoliticiEvento">Politici coinvolti</span>
-            <span class="small text-body-secondary" id="contaPoliticiEvento"></span>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 mb-2">
+            <span class="fw-semibold">Pagelle</span>
+            <span class="d-flex gap-1">
+                <button type="button" class="btn btn-sm btn-light border" id="tuttiProposto">Tutti a 6</button>
+                <button type="button" class="btn btn-sm btn-light border" id="tuttiSv">Tutti s.v.</button>
+            </span>
         </div>
-        <div class="list-group overflow-auto scelta-membri" id="sceltaPoliticiEvento"
-             role="group" aria-labelledby="etichettaPoliticiEvento"></div>
+        <div class="small text-body-secondary mb-2">Voto da 1 a 10 (anche mezzi voti) o s.v. se non ha partecipato. Punti = voto + bonus e malus.</div>
+        <div class="list-group overflow-auto pagelle" id="pagelle"></div>
 
         <div id="erroreEvento" class="small mt-2 text-danger"></div>
 
