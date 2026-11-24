@@ -8,9 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GestionalePersone.Controllers;
 
-// Modulo Fantapolitica: listino dei bonus e malus ed eventi che danno i punti ai politici.
-// Tutti gli utenti del modulo li vedono; solo il Super admin li gestisce.
-// Ogni evento usa una voce del listino e dà i suoi punti a ogni politico coinvolto.
+// Modulo Fantapolitica: listino dei bonus e malus ed eventi. Tutti gli utenti del modulo li
+// vedono; solo il Super admin li gestisce.
+// In ogni evento ogni politico prende un voto da 1 a 10 (anche mezzi voti) o resta senza
+// voto, più eventuali bonus e malus del listino: i suoi punti sono la somma.
 [ApiController]
 [Authorize(Policy = Politiche.Fantapolitica)]
 [Route("api/fantapolitica")]
@@ -33,26 +34,43 @@ public class FantapoliticaEventiController : ControllerBase
         public int Punti { get; set; }
     }
 
+    // Voto (null = senza voto) e bonus/malus (id delle voci del listino) di un politico.
+    public class PagellaRequest
+    {
+        public int PoliticoId { get; set; }
+
+        public decimal? Voto { get; set; }
+
+        public List<int>? Bonus { get; set; }
+    }
+
     public class EventoRequest
     {
         [Required(ErrorMessage = "La data è obbligatoria.")]
         public DateOnly? Data { get; set; }
 
-        [Required(ErrorMessage = "Scegli una voce del listino.")]
-        public int? VocePunteggioId { get; set; }
+        [Required(ErrorMessage = "Il titolo è obbligatorio.")]
+        [StringLength(150, ErrorMessage = "Il titolo deve avere al massimo 150 caratteri.")]
+        public string Titolo { get; set; } = string.Empty;
 
         [StringLength(300, ErrorMessage = "La descrizione deve avere al massimo 300 caratteri.")]
         public string? Descrizione { get; set; }
 
-        public List<int>? Politici { get; set; }
+        // I politici non presenti sono senza voto e senza bonus.
+        public List<PagellaRequest>? Politici { get; set; }
     }
 
     public record VoceDto(int Id, string Nome, int Punti, int Eventi);
 
-    public record PoliticoEventoDto(int Id, string Nome, string Cognome, string Ruolo);
+    public record BonusDto(int VocePunteggioId, string Voce, int Punti);
 
-    public record EventoDto(int Id, DateOnly Data, int VocePunteggioId, string Voce, int Punti, string? Descrizione,
-        List<PoliticoEventoDto> Politici);
+    // Pagella di un politico nell'evento.
+    public record PagellaDto(int PoliticoId, string Nome, string Cognome, string Ruolo, decimal? Voto,
+        List<BonusDto> Bonus, decimal Punti);
+
+    public record EventoDto(int Id, DateOnly Data, string Titolo, string? Descrizione, List<PagellaDto> Politici);
+
+    public record RegoleVotoDto(decimal VotoMinimo, decimal VotoMassimo, decimal VotoProposto);
 
     // ---------------------------------------------------------------------------
     // Listino dei bonus e malus
@@ -62,7 +80,8 @@ public class FantapoliticaEventiController : ControllerBase
     public async Task<IEnumerable<VoceDto>> GetVoci()
     {
         var voci = await _context.VociPunteggio.AsNoTracking()
-            .Select(v => new VoceDto(v.Id, v.Nome, v.Punti, _context.Eventi.Count(e => e.VocePunteggioId == v.Id)))
+            .Select(v => new VoceDto(v.Id, v.Nome, v.Punti,
+                _context.BonusEventi.Where(b => b.VocePunteggioId == v.Id).Select(b => b.EventoId).Distinct().Count()))
             .ToListAsync();
         // Prima i bonus (dal più alto), poi i malus.
         return voci.OrderByDescending(v => v.Punti).ThenBy(v => v.Nome);
@@ -106,9 +125,9 @@ public class FantapoliticaEventiController : ControllerBase
         if (voce == null)
             return NotFound(new { messaggio = "Voce non trovata." });
 
-        var eventi = await _context.Eventi.CountAsync(e => e.VocePunteggioId == id);
+        var eventi = await _context.BonusEventi.Where(b => b.VocePunteggioId == id).Select(b => b.EventoId).Distinct().CountAsync();
         if (eventi > 0)
-            return Conflict(new { messaggio = $"La voce è usata da {(eventi == 1 ? "1 evento" : $"{eventi} eventi")}: non si può eliminare." });
+            return Conflict(new { messaggio = $"La voce è usata in {(eventi == 1 ? "1 evento" : $"{eventi} eventi")}: non si può eliminare." });
 
         _context.VociPunteggio.Remove(voce);
         await _context.SaveChangesAsync();
@@ -119,14 +138,19 @@ public class FantapoliticaEventiController : ControllerBase
     // Eventi
     // ---------------------------------------------------------------------------
 
-    // Dal più recente.
+    [HttpGet("eventi/regole")]
+    public RegoleVotoDto GetRegole() => new(Evento.VotoMinimo, Evento.VotoMassimo, Evento.VotoProposto);
+
+    // Dal più recente; in ogni evento i politici dal punteggio più alto.
     [HttpGet("eventi")]
     public async Task<IEnumerable<EventoDto>> GetEventi()
     {
         var eventi = await _context.Eventi.AsNoTracking()
-            .Include(e => e.Voce)
-            .Include(e => e.Politici).ThenInclude(ep => ep.Politico)
+            .Include(e => e.Voti).ThenInclude(v => v.Politico)
+            .Include(e => e.Bonus).ThenInclude(b => b.Politico)
+            .Include(e => e.Bonus).ThenInclude(b => b.Voce)
             .OrderByDescending(e => e.Data).ThenByDescending(e => e.Id)
+            .AsSplitQuery()
             .ToListAsync();
         return eventi.Select(Dto);
     }
@@ -144,12 +168,12 @@ public class FantapoliticaEventiController : ControllerBase
         return Created($"/api/fantapolitica/eventi/{evento.Id}", new { evento.Id });
     }
 
-    // I punti vengono ripresi dalla voce scelta, con il valore di oggi.
+    // I punti dei bonus e malus vengono ripresi dal listino, con il valore di oggi.
     [HttpPut("eventi/{id}")]
     [Authorize(Policy = Politiche.Admin)]
     public async Task<IActionResult> ModificaEvento(int id, EventoRequest richiesta)
     {
-        var evento = await _context.Eventi.Include(e => e.Politici).SingleOrDefaultAsync(e => e.Id == id);
+        var evento = await _context.Eventi.Include(e => e.Voti).Include(e => e.Bonus).SingleOrDefaultAsync(e => e.Id == id);
         if (evento == null)
             return NotFound(new { messaggio = "Evento non trovato." });
 
@@ -179,31 +203,58 @@ public class FantapoliticaEventiController : ControllerBase
             return BadRequest(new { messaggio = "La data è obbligatoria." });
         if (richiesta.Data > PunteggiFantapolitica.Oggi())
             return BadRequest(new { messaggio = "La data non può essere nel futuro." });
+        if (string.IsNullOrWhiteSpace(richiesta.Titolo))
+            return BadRequest(new { messaggio = "Il titolo è obbligatorio." });
 
-        var voce = richiesta.VocePunteggioId == null ? null : await _context.VociPunteggio.FindAsync(richiesta.VocePunteggioId);
-        if (voce == null)
-            return BadRequest(new { messaggio = "Scegli una voce del listino." });
+        var pagelle = richiesta.Politici ?? [];
+        if (pagelle.Select(p => p.PoliticoId).Distinct().Count() != pagelle.Count)
+            return BadRequest(new { messaggio = "Un politico compare due volte." });
+        if (pagelle.Any(p => p.Voto != null && !Evento.VotoValido(p.Voto.Value)))
+            return BadRequest(new { messaggio = $"I voti vanno da {Evento.VotoMinimo:0} a {Evento.VotoMassimo:0}, anche con il mezzo voto." });
 
-        var politici = (richiesta.Politici ?? []).ToHashSet();
-        if (politici.Count == 0)
-            return BadRequest(new { messaggio = "Scegli almeno un politico." });
-        if (await _context.Politici.CountAsync(p => politici.Contains(p.Id)) != politici.Count)
-            return BadRequest(new { messaggio = "Uno dei politici scelti non esiste più. Ricarica la pagina." });
+        var idPolitici = pagelle.Select(p => p.PoliticoId).ToList();
+        if (await _context.Politici.CountAsync(p => idPolitici.Contains(p.Id)) != idPolitici.Count)
+            return BadRequest(new { messaggio = "Uno dei politici non esiste più. Ricarica la pagina." });
+
+        var idVoci = pagelle.SelectMany(p => p.Bonus ?? []).Distinct().ToList();
+        var voci = await _context.VociPunteggio.Where(v => idVoci.Contains(v.Id)).ToDictionaryAsync(v => v.Id, v => v.Punti);
+        if (voci.Count != idVoci.Count)
+            return BadRequest(new { messaggio = "Una delle voci del listino non esiste più. Ricarica la pagina." });
+
+        if (pagelle.All(p => p.Voto == null && (p.Bonus == null || p.Bonus.Count == 0)))
+            return BadRequest(new { messaggio = "Dai almeno un voto o un bonus/malus." });
 
         evento.Data = richiesta.Data.Value;
-        evento.VocePunteggioId = voce.Id;
-        evento.Punti = voce.Punti;
+        evento.Titolo = richiesta.Titolo.Trim();
         evento.Descrizione = string.IsNullOrWhiteSpace(richiesta.Descrizione) ? null : richiesta.Descrizione.Trim();
-        evento.Politici.RemoveAll(ep => !politici.Contains(ep.PoliticoId));
-        foreach (var politicoId in politici.Where(p => evento.Politici.All(ep => ep.PoliticoId != p)))
-            evento.Politici.Add(new EventoPolitico { PoliticoId = politicoId });
+
+        // Voti e bonus si riscrivono da capo.
+        evento.Voti.Clear();
+        evento.Bonus.Clear();
+        foreach (var p in pagelle)
+        {
+            if (p.Voto != null)
+                evento.Voti.Add(new VotoEvento { PoliticoId = p.PoliticoId, Voto = p.Voto.Value });
+            foreach (var voce in p.Bonus ?? [])
+                evento.Bonus.Add(new BonusEvento { PoliticoId = p.PoliticoId, VocePunteggioId = voce, Punti = voci[voce] });
+        }
         return null;
     }
 
-    private static EventoDto Dto(Evento e) => new(
-        e.Id, e.Data, e.VocePunteggioId, e.Voce.Nome, e.Punti, e.Descrizione,
-        e.Politici.Select(ep => ep.Politico)
-            .OrderBy(p => p.Cognome).ThenBy(p => p.Nome)
-            .Select(p => new PoliticoEventoDto(p.Id, p.Nome, p.Cognome, p.Ruolo))
-            .ToList());
+    private static EventoDto Dto(Evento e)
+    {
+        var politici = e.Voti.Select(v => v.Politico).Concat(e.Bonus.Select(b => b.Politico))
+            .DistinctBy(p => p.Id);
+        var pagelle = politici.Select(p =>
+            {
+                var voto = e.Voti.FirstOrDefault(v => v.PoliticoId == p.Id)?.Voto;
+                var bonus = e.Bonus.Where(b => b.PoliticoId == p.Id)
+                    .Select(b => new BonusDto(b.VocePunteggioId, b.Voce.Nome, b.Punti)).ToList();
+                return new PagellaDto(p.Id, p.Nome, p.Cognome, p.Ruolo, voto, bonus,
+                    PunteggiFantapolitica.NellEvento(voto, bonus.Select(b => b.Punti)));
+            })
+            .OrderByDescending(x => x.Punti).ThenBy(x => x.Cognome).ThenBy(x => x.Nome)
+            .ToList();
+        return new(e.Id, e.Data, e.Titolo, e.Descrizione, pagelle);
+    }
 }

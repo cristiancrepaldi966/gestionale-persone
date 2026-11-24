@@ -41,7 +41,9 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Evento> Eventi => Set<Evento>();
 
-    public DbSet<EventoPolitico> EventiPolitici => Set<EventoPolitico>();
+    public DbSet<VotoEvento> VotiEventi => Set<VotoEvento>();
+
+    public DbSet<BonusEvento> BonusEventi => Set<BonusEvento>();
 
     // Chiavi che firmano i cookie di accesso: salvate nel database così
     // gli utenti restano collegati anche dopo un riavvio o un deploy.
@@ -142,23 +144,35 @@ public class AppDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<Evento>(e =>
         {
+            e.Property(x => x.Titolo).HasMaxLength(150).IsRequired();
             e.Property(x => x.Descrizione).HasMaxLength(300);
             e.HasIndex(x => x.Data);
-            // Una voce usata da qualche evento non si può eliminare.
-            e.HasOne(x => x.Voce).WithMany()
-                .HasForeignKey(x => x.VocePunteggioId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<EventoPolitico>(ep =>
+        modelBuilder.Entity<VotoEvento>(v =>
         {
-            ep.HasKey(x => new { x.EventoId, x.PoliticoId });
-            ep.HasOne(x => x.Evento).WithMany(e => e.Politici)
+            v.HasKey(x => new { x.EventoId, x.PoliticoId });
+            v.Property(x => x.Voto).HasPrecision(3, 1);
+            v.HasOne(x => x.Evento).WithMany(e => e.Voti)
                 .HasForeignKey(x => x.EventoId)
                 .OnDelete(DeleteBehavior.Cascade);
-            ep.HasOne(x => x.Politico).WithMany()
+            v.HasOne(x => x.Politico).WithMany()
                 .HasForeignKey(x => x.PoliticoId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BonusEvento>(b =>
+        {
+            b.HasOne(x => x.Evento).WithMany(e => e.Bonus)
+                .HasForeignKey(x => x.EventoId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne(x => x.Politico).WithMany()
+                .HasForeignKey(x => x.PoliticoId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Una voce usata da qualche evento non si può eliminare.
+            b.HasOne(x => x.Voce).WithMany()
+                .HasForeignKey(x => x.VocePunteggioId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Squadra>(s =>

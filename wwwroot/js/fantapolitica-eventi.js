@@ -1,5 +1,6 @@
 // Pagina Eventi del modulo Fantapolitica (fantapolitica-eventi.html): listino dei bonus e
-// malus ed elenco degli eventi, visibili a tutti. Solo il Super admin li aggiunge,
+// malus ed elenco degli eventi con le pagelle (voto da 1 a 10 o s.v., più bonus e malus
+// per ogni politico), visibili a tutti. Solo il Super admin li aggiunge,
 // modifica ed elimina. Componenti comuni: componenti.js e js/fantapolitica-comune.js.
 
 const $ = id => document.getElementById(id);
@@ -10,7 +11,9 @@ let politici = [];
 let eventoInModifica = null;
 let voceInModifica = null;
 
-const finestraEvento = moduloFinestra($("finestraEvento"), { primoCampo: $("voce") });
+let regole = { votoMinimo: 1, votoMassimo: 10, votoProposto: 6 };
+
+const finestraEvento = moduloFinestra($("finestraEvento"), { primoCampo: $("titolo") });
 const finestraVoce = moduloFinestra($("finestraVoce"), { primoCampo: $("nomeVoce") });
 
 const dataLunga = new Intl.DateTimeFormat("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -113,7 +116,7 @@ async function caricaEventi() {
     }
 }
 
-// Un riquadro per giorno, dal più recente.
+// Un riquadro per evento, dal più recente.
 function mostraEventi(eventi) {
     $("riepilogo").textContent = `${eventi.length} ${eventi.length === 1 ? "evento" : "eventi"}`;
     if (eventi.length === 0) {
@@ -122,33 +125,17 @@ function mostraEventi(eventi) {
                        : "Nessun evento registrato per ora."));
         return;
     }
-
-    const giorni = new Map();
-    for (const e of eventi) {
-        if (!giorni.has(e.data)) giorni.set(e.data, []);
-        giorni.get(e.data).push(e);
-    }
-
-    $("elencoEventi").replaceChildren(...[...giorni].map(([data, delGiorno]) => {
-        const scheda = el("section", "card shadow-sm border-0");
-        const titolo = el("h3", "card-header bg-body h6 fw-semibold mb-0 py-2 text-capitalize", dataLunga.format(daIso(data)));
-        const lista = el("div", "list-group list-group-flush");
-        lista.append(...delGiorno.map(rigaEvento));
-        scheda.append(titolo, lista);
-        return scheda;
-    }));
+    $("elencoEventi").replaceChildren(...eventi.map(schedaEvento));
 }
 
-function rigaEvento(e) {
-    const riga = el("div", "list-group-item py-3");
-    const testa = el("div", "d-flex justify-content-between align-items-start gap-2");
+function schedaEvento(e) {
+    const scheda = el("section", "card shadow-sm border-0");
+    const testa = el("div", "card-body d-flex justify-content-between align-items-start gap-2 pb-2");
     const info = el("div", "min-w-0");
-    const titolo = el("div", "d-flex align-items-center gap-2 flex-wrap");
-    titolo.append(etichettaPunti(e.punti), el("span", "fw-semibold text-break", e.voce));
-    info.appendChild(titolo);
-    if (e.descrizione) info.appendChild(el("div", "text-body-secondary small mt-1 text-break", e.descrizione));
+    info.append(el("div", "small text-body-secondary text-capitalize", dataLunga.format(daIso(e.data))),
+        el("h3", "h5 fw-bold mb-0 text-break", e.titolo));
+    if (e.descrizione) info.appendChild(el("div", "small text-body-secondary mt-1 text-break", e.descrizione));
     testa.appendChild(info);
-
     if (superAdmin) {
         const azioni = el("div", "d-flex gap-1 flex-shrink-0");
         azioni.append(pulsanteIcona("pencil", "Modifica evento", "btn-light border", () => apriEvento(e)));
@@ -156,60 +143,150 @@ function rigaEvento(e) {
         testa.appendChild(azioni);
     }
 
-    const coinvolti = el("ul", "list-unstyled d-flex flex-wrap gap-1 mt-2 mb-0");
-    coinvolti.setAttribute("aria-label", "Politici coinvolti");
+    // Pagelle: chi ha un voto o un bonus/malus, dal punteggio più alto (ordine dal server).
+    const pagelle = el("ul", "list-group list-group-flush border-top");
+    pagelle.setAttribute("aria-label", `Pagelle: ${e.titolo}`);
     for (const p of e.politici) {
-        const li = el("li");
-        li.appendChild(el("span", "badge rounded-pill text-bg-light border fw-normal", nomePolitico(p)));
-        coinvolti.appendChild(li);
+        const li = el("li", "list-group-item d-flex align-items-center gap-2 flex-wrap py-2");
+        const voto = el("span", "voto-pagella" + (p.voto == null ? " senza-voto" : ""), testoVoto(p.voto));
+        voto.title = p.voto == null ? "Senza voto" : "Voto";
+        li.append(voto, el("span", "me-auto text-break", nomePolitico(p)));
+        for (const b of p.bonus) {
+            li.appendChild(el("span", `badge rounded-pill fw-normal text-bg-${b.punti >= 0 ? "success" : "danger"} bg-opacity-75`,
+                `${b.voce} ${conSegno(b.punti)}`));
+        }
+        li.appendChild(etichettaPunti(p.punti));
+        pagelle.appendChild(li);
     }
+    const senzaVoto = politici.length - e.politici.length;
+    scheda.append(testa, pagelle);
+    if (senzaVoto > 0) scheda.appendChild(el("div", "card-footer bg-body small text-body-secondary",
+        senzaVoto === 1 ? "1 altro politico senza voto." : `${senzaVoto} altri politici senza voto.`));
+    return scheda;
+}
 
-    riga.append(testa, coinvolti);
+// ---------------------------------------------------------------------------
+// Finestra dell'evento: una riga per politico con voto, bonus e malus, totale
+// ---------------------------------------------------------------------------
+
+// Voti possibili: s.v., poi da 1 a 10 di mezzo in mezzo.
+function opzioniVoto() {
+    const opzioni = [new Option("s.v.", "")];
+    for (let v = regole.votoMinimo; v <= regole.votoMassimo; v += 0.5) opzioni.push(new Option(numero.format(v), v));
+    return opzioni;
+}
+
+function rigaPagella(p, pagella) {
+    const riga = el("div", "list-group-item py-2");
+    riga.dataset.politico = p.id;
+
+    const sopra = el("div", "d-flex align-items-center gap-2 flex-wrap");
+    const nome = el("span", "me-auto min-w-0 d-flex align-items-center gap-2 flex-wrap");
+    nome.append(el("span", "fw-semibold text-break", nomePolitico(p)), etichettaRuolo(p.ruolo));
+
+    const voto = el("select", "form-select form-select-sm campo-voto");
+    voto.setAttribute("aria-label", `Voto di ${nomePolitico(p)}`);
+    voto.append(...opzioniVoto());
+    voto.value = pagella ? (pagella.voto == null ? "" : String(pagella.voto)) : String(regole.votoProposto);
+
+    const totale = el("span", "totale-pagella");
+    sopra.append(nome, voto, totale);
+
+    // Bonus e malus: etichette con la x per toglierle, più una tendina per aggiungerne.
+    const sotto = el("div", "d-flex align-items-center gap-1 flex-wrap mt-1 bonus-pagella");
+    const aggiungi = el("select", "form-select form-select-sm w-auto");
+    aggiungi.setAttribute("aria-label", `Aggiungi bonus o malus a ${nomePolitico(p)}`);
+    aggiungi.append(new Option("+ bonus / malus", ""), ...voci.map(v => new Option(`${v.nome} (${conSegno(v.punti)})`, v.id)));
+    aggiungi.addEventListener("change", () => {
+        if (aggiungi.value) sotto.insertBefore(etichettaBonus(Number(aggiungi.value)), aggiungi);
+        aggiungi.value = "";
+        aggiornaTotale(riga);
+    });
+    for (const b of pagella ? pagella.bonus : []) sotto.appendChild(etichettaBonus(b.vocePunteggioId));
+    sotto.appendChild(aggiungi);
+
+    voto.addEventListener("change", () => aggiornaTotale(riga));
+    riga.append(sopra, sotto);
+    aggiornaTotale(riga);
     return riga;
+}
+
+function etichettaBonus(voceId) {
+    const v = voci.find(x => x.id === voceId) || { nome: "Voce eliminata", punti: 0 };
+    const e = el("span", `badge rounded-pill fw-normal d-inline-flex align-items-center gap-1 text-bg-${v.punti >= 0 ? "success" : "danger"}`);
+    e.dataset.voce = voceId;
+    e.dataset.punti = v.punti;
+    e.appendChild(document.createTextNode(`${v.nome} ${conSegno(v.punti)}`));
+    const togli = el("button", "btn-close btn-close-white btn-sm ms-1");
+    togli.type = "button";
+    togli.setAttribute("aria-label", `Togli ${v.nome}`);
+    togli.addEventListener("click", () => {
+        const riga = e.closest("[data-politico]");
+        e.remove();
+        aggiornaTotale(riga);
+    });
+    e.appendChild(togli);
+    return e;
+}
+
+// Voto + bonus e malus, come fa il server.
+function letturaPagella(riga) {
+    const valore = riga.querySelector(".campo-voto").value;
+    const bonus = [...riga.querySelectorAll("[data-voce]")];
+    return {
+        politicoId: Number(riga.dataset.politico),
+        voto: valore === "" ? null : Number(valore),
+        bonus: bonus.map(b => Number(b.dataset.voce)),
+        punti: (valore === "" ? 0 : Number(valore)) + bonus.reduce((t, b) => t + Number(b.dataset.punti), 0)
+    };
+}
+
+function aggiornaTotale(riga) {
+    const p = letturaPagella(riga);
+    const vuota = p.voto == null && p.bonus.length === 0;
+    riga.querySelector(".totale-pagella").replaceChildren(vuota
+        ? el("span", "small text-body-secondary", "nessun punto")
+        : etichettaPunti(p.punti));
 }
 
 function apriEvento(e) {
     eventoInModifica = e || null;
     $("data").value = e ? e.data : oggi();
     $("data").max = oggi();
-    $("voce").replaceChildren(...voci.map(v => new Option(`${v.nome} (${conSegno(v.punti)})`, v.id)));
-    $("voce").value = e ? e.vocePunteggioId : (voci[0] ? voci[0].id : "");
+    $("titolo").value = e ? e.titolo : "";
     $("descrizione").value = e ? e.descrizione || "" : "";
     $("erroreEvento").textContent = "";
 
-    const scelti = new Set(e ? e.politici.map(p => p.id) : []);
-    $("sceltaPoliticiEvento").replaceChildren(...politici.map(p => {
-        const voce = el("label", "list-group-item d-flex align-items-center gap-2");
-        const casella = el("input", "form-check-input m-0 flex-shrink-0");
-        Object.assign(casella, { type: "checkbox", value: p.id, name: "politicoEvento" });
-        casella.checked = scelti.has(p.id);
-        voce.append(casella, el("span", "me-auto", nomePolitico(p)), etichettaRuolo(p.ruolo));
-        return voce;
+    // In modifica: chi non ha la pagella è senza voto.
+    $("pagelle").replaceChildren(...politici.map(p => {
+        const pagella = e ? (e.politici.find(x => x.politicoId === p.id) || { voto: null, bonus: [] }) : null;
+        return rigaPagella(p, pagella);
     }));
-    aggiornaContaEvento();
 
     finestraEvento.apri(e ? "Modifica evento" : "Nuovo evento");
 }
 
-const politiciEvento = () =>
-    [...document.querySelectorAll('#sceltaPoliticiEvento input[name="politicoEvento"]:checked')].map(c => Number(c.value));
-
-function aggiornaContaEvento() {
-    const n = politiciEvento().length;
-    $("contaPoliticiEvento").textContent = n === 1 ? "1 scelto" : `${n} scelti`;
+function impostaTutti(valore) {
+    for (const riga of $("pagelle").querySelectorAll("[data-politico]")) {
+        riga.querySelector(".campo-voto").value = valore;
+        aggiornaTotale(riga);
+    }
 }
 
 async function salvaEvento() {
     const errore = $("erroreEvento");
+    const pagelle = [...$("pagelle").querySelectorAll("[data-politico]")].map(letturaPagella)
+        .filter(p => p.voto != null || p.bonus.length > 0)
+        .map(({ politicoId, voto, bonus }) => ({ politicoId, voto, bonus }));
     const dati = {
         data: $("data").value,
-        vocePunteggioId: Number($("voce").value) || null,
+        titolo: $("titolo").value.trim(),
         descrizione: $("descrizione").value.trim() || null,
-        politici: politiciEvento()
+        politici: pagelle
     };
     if (!dati.data) { errore.textContent = "Inserisci la data."; return; }
-    if (!dati.vocePunteggioId) { errore.textContent = "Scegli una voce del listino."; return; }
-    if (dati.politici.length === 0) { errore.textContent = "Scegli almeno un politico."; return; }
+    if (!dati.titolo) { errore.textContent = "Inserisci il titolo dell'evento."; return; }
+    if (pagelle.length === 0) { errore.textContent = "Dai almeno un voto o un bonus/malus."; return; }
 
     try {
         const response = eventoInModifica
@@ -227,7 +304,7 @@ async function salvaEvento() {
 }
 
 async function eliminaEvento(e) {
-    if (!confirm(`Eliminare l'evento "${e.voce}" del ${formatoData(e.data)}? I punti verranno tolti.`)) return;
+    if (!confirm(`Eliminare l'evento "${e.titolo}" del ${formatoData(e.data)}? I punti verranno tolti.`)) return;
     try {
         const response = await api(`${API_FANTAPOLITICA}/eventi/${e.id}`, { method: "DELETE" });
         if (!response.ok) {
@@ -242,7 +319,8 @@ async function eliminaEvento(e) {
 
 $("nuovoEvento").addEventListener("click", () => apriEvento(null));
 $("annullaEvento").addEventListener("click", () => finestraEvento.chiudi());
-$("sceltaPoliticiEvento").addEventListener("change", aggiornaContaEvento);
+$("tuttiProposto").addEventListener("click", () => impostaTutti(String(regole.votoProposto)));
+$("tuttiSv").addEventListener("click", () => impostaTutti(""));
 alInvio($("formEvento"), salvaEvento);
 
 $("nuovaVoce").addEventListener("click", () => apriVoce(null));
@@ -254,12 +332,14 @@ avviaPagina({ modulo: MODULI.fantapolitica }).then(async utente => {
     superAdmin = !!utente.superAdmin;
     $("nuovoEvento").hidden = !superAdmin;
     $("azioniListino").hidden = !superAdmin;
-    if (superAdmin) $("listino").open = true;
     try {
-        const [, risposta] = await Promise.all([caricaVoci(), api(`${API_FANTAPOLITICA}/politici`)]);
-        if (risposta.ok) politici = await risposta.json();
+        const [, rPolitici, rRegole] = await Promise.all([caricaVoci(),
+            api(`${API_FANTAPOLITICA}/politici`), api(`${API_FANTAPOLITICA}/eventi/regole`)]);
+        if (rPolitici.ok) politici = await rPolitici.json();
+        if (rRegole.ok) regole = await rRegole.json();
     } catch {
         $("listaVoci").replaceChildren(el("p", "p-3 mb-0 text-danger", "Errore nel caricamento del listino."));
     }
+    $("tuttiProposto").textContent = `Tutti a ${numero.format(regole.votoProposto)}`;
     await caricaEventi();
 });

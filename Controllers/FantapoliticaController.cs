@@ -84,21 +84,21 @@ public class FantapoliticaController : ControllerBase
 
     // Punti: tutti quelli presi dal politico.
     public record PoliticoDto(int Id, string Nome, string Cognome, string Ruolo, string? Partito, int Costo,
-        int Squadre, int Punti);
+        int Squadre, decimal Punti);
 
     // Politico in una squadra: Prezzo è quanto è stato pagato, Costo quanto costa oggi,
     // Punti quelli portati alla squadra da quando c'è.
     public record PoliticoAcquistatoDto(int Id, string Nome, string Cognome, string Ruolo, string? Partito,
-        int Costo, int Prezzo, int Punti, DateOnly AcquistatoIl);
+        int Costo, int Prezzo, decimal Punti, DateOnly AcquistatoIl);
 
     // Punti: totale della squadra (solo i politici che ha adesso).
     public record SquadraDto(int Id, string Nome, List<PoliticoAcquistatoDto> Politici, int Spesi,
-        int Punti, DateTime AggiornatoIl);
+        decimal Punti, DateTime AggiornatoIl);
 
     public record ImpostazioniDto(int CreditiPerSquadra, int PoliticiPerSquadra);
 
     // Posizione in classifica (a pari punti, stessa posizione); chi non ha squadra ha 0 punti.
-    public record MembroDto(int Id, string Nome, SquadraDto? Squadra, int Punti, int Posizione);
+    public record MembroDto(int Id, string Nome, SquadraDto? Squadra, decimal Punti, int Posizione);
 
     // GestioneSquadre: chi guarda può modificare le squadre dei membri (Super admin e
     // Amministratore del modulo).
@@ -113,7 +113,10 @@ public class FantapoliticaController : ControllerBase
 
     public record SquadraInClassificaDto(int Posizione, PersonaDto Utente, LegaBreveDto Lega, SquadraDto Squadra);
 
-    public record EventoDelPoliticoDto(DateOnly Data, string Voce, int Punti, string? Descrizione);
+    // Un evento visto da un politico: voto (null = senza voto), bonus e malus, punti presi.
+    public record BonusDelPoliticoDto(string Voce, int Punti);
+
+    public record EventoDelPoliticoDto(DateOnly Data, string Titolo, decimal? Voto, List<BonusDelPoliticoDto> Bonus, decimal Punti);
 
     public record PoliticoInClassificaDto(int Posizione, PoliticoDto Politico, List<EventoDelPoliticoDto> Eventi);
 
@@ -149,7 +152,7 @@ public class FantapoliticaController : ControllerBase
         .ThenBy(p => p.Cognome, Alfabetico)
         .ThenBy(p => p.Nome, Alfabetico);
 
-    private static PoliticoDto Dto(Politico p, int squadre = 0, int punti = 0) =>
+    private static PoliticoDto Dto(Politico p, int squadre = 0, decimal punti = 0) =>
         new(p.Id, p.Nome, p.Cognome, p.Ruolo, p.Partito, p.Costo, squadre, punti);
 
     // La squadra con i politici che ha adesso e i loro punti.
@@ -365,14 +368,7 @@ public class FantapoliticaController : ControllerBase
             .GroupBy(ps => ps.PoliticoId)
             .Select(g => new { g.Key, Numero = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Numero);
-        var eventi = (await _context.EventiPolitici.AsNoTracking()
-                .Select(ep => new { ep.PoliticoId, ep.Evento.Data, ep.Evento.Id, Voce = ep.Evento.Voce.Nome, ep.Evento.Punti, ep.Evento.Descrizione })
-                .ToListAsync())
-            .GroupBy(e => e.PoliticoId)
-            .ToDictionary(g => g.Key, g => g
-                .OrderByDescending(e => e.Data).ThenByDescending(e => e.Id)
-                .Select(e => new EventoDelPoliticoDto(e.Data, e.Voce, e.Punti, e.Descrizione))
-                .ToList());
+        var eventi = await EventiDeiPolitici();
         var ordinati = Ordina(politici)
             .Select(p => Dto(p, inSquadra.GetValueOrDefault(p.Id), punteggi.DelPolitico(p.Id)))
             .OrderByDescending(p => p.Punti)   // stabile: a pari punti resta l'ordine per ruolo e nome
@@ -385,6 +381,28 @@ public class FantapoliticaController : ControllerBase
                 new LegaBreveDto(x.LegaId, leghe.GetValueOrDefault(x.LegaId, "")), x.Dto)).ToList(),
             ordinati.Select((p, i) => new PoliticoInClassificaDto(posizioniPolitici[i], p,
                 eventi.GetValueOrDefault(p.Id) ?? [])).ToList());
+    }
+
+    // Per ogni politico, gli eventi in cui ha un voto o un bonus/malus (dal più recente).
+    private async Task<Dictionary<int, List<EventoDelPoliticoDto>>> EventiDeiPolitici()
+    {
+        var eventi = await _context.Eventi.AsNoTracking()
+            .Include(e => e.Voti)
+            .Include(e => e.Bonus).ThenInclude(b => b.Voce)
+            .OrderByDescending(e => e.Data).ThenByDescending(e => e.Id)
+            .ToListAsync();
+        return eventi
+            .SelectMany(e => e.Voti.Select(v => v.PoliticoId).Union(e.Bonus.Select(b => b.PoliticoId))
+                .Select(politicoId =>
+                {
+                    var voto = e.Voti.FirstOrDefault(v => v.PoliticoId == politicoId)?.Voto;
+                    var bonus = e.Bonus.Where(b => b.PoliticoId == politicoId).ToList();
+                    return (politicoId, Dto: new EventoDelPoliticoDto(e.Data, e.Titolo, voto,
+                        bonus.Select(b => new BonusDelPoliticoDto(b.Voce.Nome, b.Punti)).ToList(),
+                        PunteggiFantapolitica.NellEvento(voto, bonus.Select(b => b.Punti))));
+                }))
+            .GroupBy(x => x.politicoId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Dto).ToList());
     }
 
     // ---------------------------------------------------------------------------
