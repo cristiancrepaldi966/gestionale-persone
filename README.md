@@ -9,8 +9,9 @@ Applicazione ASP.NET Core 10 + PostgreSQL divisa in **moduli**, con interfaccia 
   modulo abilitato con le sue pagine.
 - **Menu**: in alto la tendina **Moduli ▾** elenca solo i moduli a cui l'utente ha accesso
   (il Super admin li vede tutti); accanto c'è il nome del modulo aperto. Ogni modulo porta
-  alla sua **pagina principale** (`area.html?modulo=codice`), con un riquadro per ogni sua
-  pagina. Dentro un modulo, sotto la barra scura, le **schede** (Home e le pagine) passano da
+  alla sua **pagina principale** (`area.html?modulo=codice`), con una card per ogni sua
+  pagina, due per riga anche su telefono; le pagine riservate (Amministratore del modulo o
+  Super admin) hanno l'etichetta "Admin" e stanno in fondo. Dentro un modulo, sotto la barra scura, le **schede** (Home e le pagine) passano da
   una pagina all'altra. Le pagine riservate all'Amministratore del modulo compaiono solo a lui.
 - **Gestione finanze**:
   - **Dashboard** (`dashboard.html`): filtri come le uscite; grafici in un **carosello**
