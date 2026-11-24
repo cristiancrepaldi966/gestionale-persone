@@ -1,19 +1,23 @@
-// Pagina principale di un modulo (area.html?modulo=codice): un riquadro per ogni pagina
-// del modulo che l'utente può aprire. Chi non ha accesso al modulo torna alla pagina di
+// Pagina principale di un modulo (area.html?modulo=codice): una card per ogni pagina
+// del modulo che l'utente può aprire, due per riga (anche su telefono). Chi non ha accesso al modulo torna alla pagina di
 // ingresso (avviaPagina). Componenti e funzioni comuni: componenti.js.
 
 const codiceModulo = new URLSearchParams(location.search).get("modulo") || "";
 
+// Pagina riservata (Amministratore del modulo o Super admin): sulla card c'è "Admin".
+const paginaAdmin = p => !!(p.amministratore || p.superAdmin);
+
+// Card verticale, due per riga anche su telefono: icona, titolo (con "Admin" sulle pagine
+// riservate) e descrizione breve (al massimo due righe).
 function riquadroPagina(p, colore) {
-    const col = el("div", "col-sm-6");
-    const card = el("a", "card card-body shadow-sm border-0 h-100 text-reset text-decoration-none d-flex flex-row align-items-center gap-3");
+    const col = el("div", "col-6");
+    const card = el("a", "card card-body shadow-sm border-0 h-100 text-reset text-decoration-none card-pagina");
     card.href = p.href;
-    const testo = el("div", "min-w-0");
-    testo.appendChild(el("div", "fw-bold", p.testo));
-    if (p.descrizione) testo.appendChild(el("div", "small text-body-secondary", p.descrizione));
-    const freccia = el("i", "bi bi-chevron-right ms-auto text-body-secondary");
-    freccia.setAttribute("aria-hidden", "true");
-    card.append(iconaCategoria(p.icona, colore), testo, freccia);
+    const titolo = el("div", "d-flex align-items-center gap-2 flex-wrap mt-3");
+    titolo.appendChild(el("span", "fw-bold text-break", p.testo));
+    if (paginaAdmin(p)) titolo.appendChild(etichetta("Admin", "dark"));
+    card.append(iconaCategoria(p.icona, colore), titolo);
+    if (p.descrizione) card.appendChild(el("div", "small text-body-secondary mt-1 descrizione-pagina", p.descrizione));
     col.appendChild(card);
     return col;
 }
@@ -30,7 +34,9 @@ if (!DEFINIZIONE_MODULI[codiceModulo]) {
         titolo.replaceChildren(iconaCategoria(def.icona, colore), el("h2", "h3 fw-bold mb-0", def.nome));
         document.getElementById("descrizione").textContent = def.descrizione;
 
+        // Prima le pagine per tutti (nell'ordine del menu), in fondo quelle Admin.
+        const pagine = pagineAbilitate(utente, codiceModulo);
         document.getElementById("pagine").replaceChildren(
-            ...pagineAbilitate(utente, codiceModulo).map(p => riquadroPagina(p, colore)));
+            ...[...pagine.filter(p => !paginaAdmin(p)), ...pagine.filter(paginaAdmin)].map(p => riquadroPagina(p, colore)));
     });
 }
